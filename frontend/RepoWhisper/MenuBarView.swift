@@ -9,11 +9,17 @@ import SwiftUI
 
 struct MenuBarView: View {
     @EnvironmentObject var authManager: AuthManager
-    @StateObject private var audioManager = AudioManager.shared
+    @StateObject private var audioCapture = AudioCapture.shared
+    @StateObject private var apiClient = APIClient.shared
     
     @State private var selectedMode: IndexMode = .guided
     @State private var showingFilePicker = false
     @State private var repoPath: String = ""
+    @State private var lastTranscription: String = ""
+    @State private var searchResults: [SearchResultItem] = []
+    @State private var searchLatency: Double = 0
+    @State private var isSearching = false
+    @State private var showResults = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -24,6 +30,49 @@ struct MenuBarView: View {
             }
         }
         .frame(width: 320)
+        .onAppear {
+            setupAudioCallback()
+            Task {
+                await apiClient.checkHealth()
+            }
+        }
+    }
+    
+    // MARK: - Audio Callback Setup
+    
+    private func setupAudioCallback() {
+        audioCapture.onAudioChunk = { audioData in
+            Task {
+                await transcribeAndSearch(audioData)
+            }
+        }
+    }
+    
+    private func transcribeAndSearch(_ audioData: Data) async {
+        do {
+            // Transcribe audio
+            let transcription = try await apiClient.transcribe(audioData: audioData)
+            
+            await MainActor.run {
+                lastTranscription = transcription.text
+            }
+            
+            // Search if we have meaningful text
+            if !transcription.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                await MainActor.run { isSearching = true }
+                
+                let searchResponse = try await apiClient.search(query: transcription.text)
+                
+                await MainActor.run {
+                    searchResults = searchResponse.results
+                    searchLatency = searchResponse.latencyMs
+                    isSearching = false
+                    showResults = true
+                }
+            }
+        } catch {
+            print("Error: \(error)")
+        }
     }
     
     // MARK: - Authenticated View
@@ -35,9 +84,14 @@ struct MenuBarView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("RepoWhisper")
                         .font(.headline)
-                    Text(authManager.currentUser?.email ?? "")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(apiClient.isConnected ? Color.green : Color.red)
+                            .frame(width: 6, height: 6)
+                        Text(authManager.currentUser?.email ?? "")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Spacer()
                 Button {
@@ -73,9 +127,15 @@ struct MenuBarView: View {
             
             // Repo Path
             VStack(alignment: .leading, spacing: 8) {
-                Text("Repository")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                HStack {
+                    Text("Repository")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(apiClient.indexCount) chunks")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                }
                 
                 HStack {
                     TextField("Select a folder...", text: $repoPath)
@@ -90,6 +150,15 @@ struct MenuBarView: View {
                         Image(systemName: "folder.badge.plus")
                     }
                     .buttonStyle(.plain)
+                    .fileImporter(
+                        isPresented: $showingFilePicker,
+                        allowedContentTypes: [.folder],
+                        allowsMultipleSelection: false
+                    ) { result in
+                        if case .success(let urls) = result, let url = urls.first {
+                            repoPath = url.path
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -100,20 +169,65 @@ struct MenuBarView: View {
             recordingButton
                 .padding(.horizontal, 16)
             
-            // Status
-            if audioManager.isRecording {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(.red)
-                        .frame(width: 8, height: 8)
-                    Text("Listening...")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(audioManager.lastTranscription)
-                        .font(.caption)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+            // Status and Transcription
+            if audioCapture.isRecording || !lastTranscription.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        if audioCapture.isRecording {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 8, height: 8)
+                            Text("Listening...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                    }
+                    
+                    if !lastTranscription.isEmpty {
+                        Text("\"" + lastTranscription + "\"")
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                            .italic()
+                            .lineLimit(2)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+            
+            // Search Results Preview
+            if showResults && !searchResults.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Results")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Text("\(Int(searchLatency))ms")
+                            .font(.caption2)
+                            .foregroundColor(.green)
+                    }
+                    
+                    ForEach(searchResults.prefix(3)) { result in
+                        HStack {
+                            Image(systemName: "doc.text")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(URL(fileURLWithPath: result.filePath).lastPathComponent)
+                                .font(.caption)
+                                .lineLimit(1)
+                            Spacer()
+                            Text("\(Int(result.score * 100))%")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                        }
+                        .padding(6)
+                        .background(Color.primary.opacity(0.03))
+                        .cornerRadius(4)
+                        .onTapGesture {
+                            NSWorkspace.shared.open(URL(fileURLWithPath: result.filePath))
+                        }
+                    }
                 }
                 .padding(.horizontal, 16)
             }
@@ -135,22 +249,31 @@ struct MenuBarView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 12)
         }
-        .frame(height: 340)
+        .frame(minHeight: 380)
     }
     
     // MARK: - Recording Button
     
     private var recordingButton: some View {
         Button {
-            audioManager.toggleRecording()
+            if audioCapture.isRecording {
+                audioCapture.stopRecording()
+            } else {
+                Task {
+                    let granted = await audioCapture.requestPermission()
+                    if granted {
+                        audioCapture.startRecording()
+                    }
+                }
+            }
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: audioManager.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                Image(systemName: audioCapture.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(audioManager.isRecording ? .red : .purple)
+                    .foregroundStyle(audioCapture.isRecording ? .red : .purple)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(audioManager.isRecording ? "Stop Listening" : "Start Listening")
+                    Text(audioCapture.isRecording ? "Stop Listening" : "Start Listening")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     Text("Click or use ⌘⇧R")
@@ -160,12 +283,12 @@ struct MenuBarView: View {
                 
                 Spacer()
                 
-                if audioManager.isRecording {
+                if audioCapture.isRecording {
                     // Audio level indicator
                     HStack(spacing: 2) {
-                        ForEach(0..<5) { i in
+                        ForEach(0..<5, id: \.self) { i in
                             RoundedRectangle(cornerRadius: 1)
-                                .fill(i < audioManager.audioLevel ? Color.purple : Color.gray.opacity(0.3))
+                                .fill(Float(i) / 5.0 < audioCapture.audioLevel ? Color.purple : Color.gray.opacity(0.3))
                                 .frame(width: 3, height: CGFloat(4 + i * 3))
                         }
                     }
@@ -178,7 +301,7 @@ struct MenuBarView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(audioManager.isRecording ? Color.red.opacity(0.5) : Color.clear, lineWidth: 2)
+                    .stroke(audioCapture.isRecording ? Color.red.opacity(0.5) : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)
@@ -210,16 +333,7 @@ struct MenuBarView: View {
     }
 }
 
-// MARK: - Index Mode Enum
-
-enum IndexMode: String, CaseIterable {
-    case manual = "manual"
-    case guided = "guided"
-    case full = "full"
-}
-
 #Preview {
     MenuBarView()
         .environmentObject(AuthManager.shared)
 }
-
