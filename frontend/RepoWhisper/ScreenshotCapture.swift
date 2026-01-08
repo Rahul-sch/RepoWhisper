@@ -56,11 +56,11 @@ class ScreenshotCapture: ObservableObject {
         await captureActiveWindow()
         
         // Set up timer for every 5 seconds
-        timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true, block: { [weak self] _ in
             Task { @MainActor in
                 await self?.captureActiveWindow()
             }
-        }
+        })
         
         isCapturing = true
         print("📸 Screenshot capture started (every 5s)")
