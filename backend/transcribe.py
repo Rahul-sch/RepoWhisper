@@ -12,7 +12,12 @@ from typing import Optional
 from dataclasses import dataclass
 from functools import lru_cache
 
-from faster_whisper import WhisperModel
+try:
+    from faster_whisper import WhisperModel
+    WHISPER_AVAILABLE = True
+except ImportError:
+    WHISPER_AVAILABLE = False
+    WhisperModel = None  # type: ignore
 
 from config import get_settings
 
@@ -29,13 +34,19 @@ class TranscriptionResult:
 # ============ Model Management ============
 
 @lru_cache(maxsize=1)
-def get_whisper_model() -> WhisperModel:
+def get_whisper_model() -> Optional[WhisperModel]:
     """
     Load and cache the Faster-Whisper model.
     
     Uses 'tiny.en' for fastest inference (~100-200ms).
     For better accuracy, use 'base.en' or 'small.en'.
+    
+    Returns None if faster-whisper is not installed.
     """
+    if not WHISPER_AVAILABLE:
+        print("⚠️  faster-whisper not installed. Install with: pip install faster-whisper")
+        return None
+    
     settings = get_settings()
     
     # Determine compute type based on platform
@@ -98,6 +109,15 @@ def transcribe_audio(
     start_time = time.perf_counter()
     
     model = get_whisper_model()
+    
+    if model is None:
+        # Fallback: return empty transcription if Whisper not available
+        return TranscriptionResult(
+            text="",
+            confidence=0.0,
+            latency_ms=(time.perf_counter() - start_time) * 1000,
+            language=language
+        )
     
     # Convert raw PCM to WAV format for Whisper
     wav_buffer = _pcm_to_wav(audio_data, sample_rate)
@@ -172,6 +192,14 @@ def transcribe_file(file_path: str, language: str = "en") -> TranscriptionResult
     start_time = time.perf_counter()
     
     model = get_whisper_model()
+    
+    if model is None:
+        return TranscriptionResult(
+            text="",
+            confidence=0.0,
+            latency_ms=(time.perf_counter() - start_time) * 1000,
+            language=language
+        )
     
     segments, info = model.transcribe(
         file_path,

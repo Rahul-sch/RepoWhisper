@@ -167,11 +167,7 @@ async def health_check(request: Request):
     """Health check endpoint - no auth required."""
     try:
         # Check if models are loaded
-        model_loaded = True
-        try:
-            get_whisper_model()
-        except:
-            model_loaded = False
+        model_loaded = get_whisper_model() is not None
         
         return HealthResponse(
             status="healthy",
