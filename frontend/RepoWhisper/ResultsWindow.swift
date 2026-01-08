@@ -23,7 +23,13 @@ struct ResultsWindow: View {
             headerView
             
             Divider()
-                .background(Color.white.opacity(0.1))
+                .background(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.1), Color.clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
             
             // Results list
             if isLoading {
@@ -34,24 +40,68 @@ struct ResultsWindow: View {
                 resultsListView
             }
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 520, height: 450)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+            ZStack {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(.ultraThinMaterial)
+                
+                // Subtle gradient overlay
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.purple.opacity(0.05),
+                                Color.blue.opacity(0.02)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+            .shadow(color: .black.opacity(0.25), radius: 25, y: 12)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.15),
+                            Color.white.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         )
     }
     
     // MARK: - Subviews
     
     private var headerView: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.purple.opacity(0.2), Color.blue.opacity(0.15)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: "magnifyingglass")
+                    .font(.caption)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.purple, .blue],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
             
             if query.isEmpty {
                 Text("Say something to search...")
@@ -59,23 +109,49 @@ struct ResultsWindow: View {
                     .italic()
             } else {
                 Text(query)
-                    .fontWeight(.medium)
+                    .font(.system(.subheadline, design: .rounded))
+                    .fontWeight(.semibold)
                     .lineLimit(1)
             }
             
             Spacer()
             
             if latencyMs > 0 {
-                Text("\(Int(latencyMs))ms")
-                    .font(.caption)
-                    .foregroundColor(.green)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.green.opacity(0.15))
-                    .cornerRadius(6)
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.caption2)
+                    Text("\(Int(latencyMs))ms")
+                        .font(.system(.caption, design: .monospaced))
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(.green)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.green.opacity(0.2), Color.green.opacity(0.1)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                )
             }
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            LinearGradient(
+                colors: [Color.primary.opacity(0.03), Color.clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
     
     private var loadingView: some View {
