@@ -11,6 +11,7 @@ struct MenuBarView: View {
     @EnvironmentObject var authManager: AuthManager
     @StateObject private var audioCapture = AudioCapture.shared
     @StateObject private var apiClient = APIClient.shared
+    @StateObject private var screenshotCapture = ScreenshotCapture.shared
     
     @State private var selectedMode: IndexMode = .guided
     @State private var showingFilePicker = false
@@ -20,6 +21,12 @@ struct MenuBarView: View {
     @State private var searchLatency: Double = 0
     @State private var isSearching = false
     @State private var showResults = false
+    
+    // Boss Mode state
+    @State private var bossModeEnabled = false
+    @State private var latestTalkingPoint: String = ""
+    @State private var isGeneratingAdvice = false
+    @State private var latestScreenshotBase64: String? = nil
     
     var body: some View {
         VStack(spacing: 0) {
@@ -32,6 +39,7 @@ struct MenuBarView: View {
         .frame(width: 320)
         .onAppear {
             setupAudioCallback()
+            setupBossMode()
             Task {
                 await apiClient.checkHealth()
             }
@@ -45,6 +53,64 @@ struct MenuBarView: View {
             Task {
                 await transcribeAndSearch(audioData)
             }
+        }
+    }
+    
+    // MARK: - Boss Mode Setup
+    
+    private func setupBossMode() {
+        // Screenshot callback
+        screenshotCapture.onScreenshot = { screenshotData in
+            Task {
+                await processScreenshot(screenshotData)
+            }
+        }
+    }
+    
+    private func processScreenshot(_ screenshotData: Data) async {
+        do {
+            // Upload and get base64
+            let response = try await apiClient.uploadScreenshot(screenshotData)
+            await MainActor.run {
+                latestScreenshotBase64 = response.screenshotBase64
+            }
+            
+            // Generate advice if we have transcript
+            if !lastTranscription.isEmpty {
+                await generateAdvice()
+            }
+        } catch {
+            print("Screenshot processing error: \(error)")
+        }
+    }
+    
+    private func generateAdvice() async {
+        guard !lastTranscription.isEmpty else { return }
+        
+        await MainActor.run {
+            isGeneratingAdvice = true
+        }
+        
+        do {
+            // Extract code snippets from search results
+            let codeSnippets = searchResults.prefix(3).map { $0.chunk }
+            
+            let advice = try await apiClient.getAdvice(
+                transcript: lastTranscription,
+                screenshotBase64: latestScreenshotBase64,
+                codeSnippets: codeSnippets.isEmpty ? nil : Array(codeSnippets),
+                meetingContext: "Code review meeting"
+            )
+            
+            await MainActor.run {
+                latestTalkingPoint = advice.talkingPoint
+                isGeneratingAdvice = false
+            }
+        } catch {
+            await MainActor.run {
+                isGeneratingAdvice = false
+            }
+            print("Advice generation error: \(error)")
         }
     }
     
@@ -82,6 +148,11 @@ struct MenuBarView: View {
                             "latency": searchResponse.latencyMs
                         ]
                     )
+                }
+                
+                // Generate Boss Mode advice if enabled
+                if bossModeEnabled {
+                    await generateAdvice()
                 }
             }
         } catch {
@@ -179,6 +250,13 @@ struct MenuBarView: View {
             
             Divider()
             
+            // Boss Mode Toggle
+            bossModeToggle
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            
+            Divider()
+            
             // Recording Control - Cluely-style button
             recordingButton
                 .padding(.horizontal, 16)
@@ -205,6 +283,32 @@ struct MenuBarView: View {
                             .italic()
                             .lineLimit(2)
                     }
+                }
+                .padding(.horizontal, 16)
+            }
+            
+            // Boss Mode Talking Point
+            if bossModeEnabled && !latestTalkingPoint.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Image(systemName: "lightbulb.fill")
+                            .foregroundColor(.yellow)
+                        Text("Talking Point")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Spacer()
+                        if isGeneratingAdvice {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        }
+                    }
+                    
+                    Text(latestTalkingPoint)
+                        .font(.caption)
+                        .foregroundColor(.primary)
+                        .padding(8)
+                        .background(Color.yellow.opacity(0.1))
+                        .cornerRadius(6)
                 }
                 .padding(.horizontal, 16)
             }
@@ -274,6 +378,39 @@ struct MenuBarView: View {
             .padding(.bottom, 12)
         }
         .frame(minHeight: 380)
+    }
+    
+    // MARK: - Boss Mode Toggle
+    
+    private var bossModeToggle: some View {
+        Toggle(isOn: $bossModeEnabled) {
+            HStack(spacing: 8) {
+                Image(systemName: bossModeEnabled ? "crown.fill" : "crown")
+                    .foregroundColor(bossModeEnabled ? .yellow : .secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Boss Mode")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Text("Meeting intelligence")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .toggleStyle(.switch)
+        .onChange(of: bossModeEnabled) { oldValue, newValue in
+            if newValue {
+                Task {
+                    // Request permissions and start
+                    let screenGranted = await screenshotCapture.requestPermission()
+                    if screenGranted {
+                        await screenshotCapture.startCapture()
+                    }
+                }
+            } else {
+                screenshotCapture.stopCapture()
+            }
+        }
     }
     
     // MARK: - Recording Button
