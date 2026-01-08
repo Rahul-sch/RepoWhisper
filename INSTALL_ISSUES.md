@@ -66,5 +66,39 @@ python main.py
 - Boss Mode works
 - Only transcription returns empty (until faster-whisper installed)
 
-You can test everything else right now!
+**You can test everything else right now!**
+
+## Test It Now
+
+```bash
+# Start backend (works without faster-whisper)
+cd backend
+source venv/bin/activate
+python main.py
+
+# In another terminal, test:
+curl http://127.0.0.1:8000/health
+```
+
+## faster-whisper Installation (Optional)
+
+If you want transcription to work, you may need additional build tools:
+
+```bash
+# Install Xcode Command Line Tools (if not already)
+xcode-select --install
+
+# Install build dependencies
+brew install pkg-config cmake
+
+# Then try again
+cd backend
+source venv/bin/activate
+pip install faster-whisper
+```
+
+**Note**: If faster-whisper still fails to install, you can:
+1. Test everything else (search, indexing, Boss Mode all work)
+2. Install it later when you need transcription
+3. Use a different transcription service
 
