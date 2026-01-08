@@ -36,10 +36,14 @@ class BossModeAdvisor:
     
     def __init__(self):
         self.settings = get_settings()
-        # Initialize OpenAI client (can use API key from env)
-        api_key = os.getenv("OPENAI_API_KEY", "")
+        # Initialize Groq client (OpenAI-compatible API)
+        api_key = os.getenv("GROQ_API_KEY", "")
         if api_key:
-            self.client = openai.OpenAI(api_key=api_key)
+            # Groq uses OpenAI-compatible API, just change base_url
+            self.client = openai.OpenAI(
+                base_url="https://api.groq.com/openai/v1",
+                api_key=api_key
+            )
         else:
             self.client = None
     
@@ -88,9 +92,10 @@ class BossModeAdvisor:
                     }
                 ]
             
-            # Call OpenAI API
+            # Call Groq API (OpenAI-compatible)
+            # Using llama-3.1-70b-versatile for fast inference
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # Fast and cheap
+                model="llama-3.1-70b-versatile",  # Groq's fast model
                 messages=messages,
                 max_tokens=150,
                 temperature=0.7

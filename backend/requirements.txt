@@ -28,7 +28,7 @@ pydantic-settings==2.5.2
 slowapi==0.1.9
 structlog==24.1.0
 
-# AI/LLM for Boss Mode
+# AI/LLM for Boss Mode (Groq uses OpenAI-compatible API)
 openai==1.12.0
 pillow==10.2.0
 
