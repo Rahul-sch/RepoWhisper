@@ -201,13 +201,15 @@ class AuthManager: ObservableObject {
         // Handle email confirmation tokens
         if let token = components.queryItems?.first(where: { $0.name == "token" })?.value,
            let type = components.queryItems?.first(where: { $0.name == "type" })?.value,
-           type == "email" {
+           type == "email",
+           let email = components.queryItems?.first(where: { $0.name == "email" })?.value {
             // This is an email confirmation link
             print("📧 Handling email confirmation")
             do {
                 let session = try await supabase.auth.verifyOTP(
                     type: .email,
-                    token: token
+                    token: token,
+                    email: email
                 )
                 await MainActor.run {
                     self.session = session
