@@ -59,7 +59,10 @@ struct MenuBarView: View {
             
             // Search if we have meaningful text
             if !transcription.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                await MainActor.run { isSearching = true }
+                await MainActor.run {
+                    isSearching = true
+                    NotificationCenter.default.post(name: NSNotification.Name("SearchStarted"), object: nil)
+                }
                 
                 let searchResponse = try await apiClient.search(query: transcription.text)
                 
@@ -68,6 +71,17 @@ struct MenuBarView: View {
                     searchLatency = searchResponse.latencyMs
                     isSearching = false
                     showResults = true
+                    
+                    // Post notification to show results window
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("SearchResults"),
+                        object: nil,
+                        userInfo: [
+                            "results": searchResponse.results,
+                            "query": transcription.text,
+                            "latency": searchResponse.latencyMs
+                        ]
+                    )
                 }
             }
         } catch {
@@ -206,6 +220,16 @@ struct MenuBarView: View {
                         Text("\(Int(searchLatency))ms")
                             .font(.caption2)
                             .foregroundColor(.green)
+                        Button("View All") {
+                            // Open results window
+                            if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "results" }) {
+                                window.makeKeyAndOrderFront(nil)
+                            } else {
+                                NSWorkspace.shared.open(URL(string: "repowhisper://results")!)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .font(.caption2)
                     }
                     
                     ForEach(searchResults.prefix(3)) { result in
