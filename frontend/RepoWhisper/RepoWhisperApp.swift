@@ -40,6 +40,16 @@ struct RepoWhisperApp: App {
             LoginView()
                 .environmentObject(authManager)
                 .frame(width: 400, height: 500)
+                .onChange(of: authManager.isAuthenticated) { oldValue, newValue in
+                    // Auto-close login window when authenticated
+                    if newValue {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "login" }) {
+                                window.close()
+                            }
+                        }
+                    }
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)

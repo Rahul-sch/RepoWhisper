@@ -83,8 +83,28 @@ struct LoginView: View {
                 }
                 .padding(.horizontal, 24)
                 
+                // Success message
+                if authManager.isAuthenticated {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.green)
+                        
+                        Text("Account Created!")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        Text("You're all set. The app will close this window.")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                }
+                
                 // Error message
-                if let error = authManager.errorMessage {
+                if let error = authManager.errorMessage, !authManager.isAuthenticated {
                     Text(error)
                         .font(.caption)
                         .foregroundColor(.red)
@@ -125,7 +145,7 @@ struct LoginView: View {
                         .cornerRadius(10)
                     }
                     .buttonStyle(.plain)
-                    .disabled(authManager.isLoading || email.isEmpty || password.isEmpty)
+                    .disabled(authManager.isLoading || email.isEmpty || password.isEmpty || authManager.isAuthenticated)
                     
                     // GitHub OAuth (optional - only show if enabled)
                     // Note: GitHub OAuth must be enabled in Supabase dashboard
@@ -168,17 +188,39 @@ struct LoginView: View {
                 
                 Spacer()
                 
-                // Toggle sign in/sign up
-                Button {
-                    isSignUp.toggle()
-                    authManager.errorMessage = nil
-                } label: {
-                    Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
-                        .font(.caption)
-                        .foregroundColor(.purple)
+                // Toggle sign in/sign up (hide if authenticated)
+                if !authManager.isAuthenticated {
+                    Button {
+                        isSignUp.toggle()
+                        authManager.errorMessage = nil
+                    } label: {
+                        Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
+                            .font(.caption)
+                            .foregroundColor(.purple)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 24)
+                } else {
+                    // Close button when authenticated
+                    Button {
+                        // Close the login window
+                        if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "login" }) {
+                            window.close()
+                        }
+                    } label: {
+                        Text("Close")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color.gray.opacity(0.3))
+                            .cornerRadius(10)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 24)
+                    .padding(.horizontal, 24)
                 }
-                .buttonStyle(.plain)
-                .padding(.bottom, 24)
             }
         }
     }
