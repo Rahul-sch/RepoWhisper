@@ -617,9 +617,12 @@ struct MenuBarView: View {
                 .multilineTextAlignment(.center)
             
             Button("Open Login") {
-                // Open results window
-                if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "results" }) {
+                // Open login window
+                if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "login" }) {
                     window.makeKeyAndOrderFront(nil)
+                } else {
+                    // If window doesn't exist yet, open it via WindowGroup
+                    NSWorkspace.shared.open(URL(string: "repowhisper://login")!)
                 }
             }
             .buttonStyle(.borderedProminent)

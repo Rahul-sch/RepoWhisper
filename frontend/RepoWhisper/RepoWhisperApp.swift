@@ -43,6 +43,7 @@ struct RepoWhisperApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        .defaultPosition(.center)
         
         // Results window
         Window("Search Results", id: "results") {
