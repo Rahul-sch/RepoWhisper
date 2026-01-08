@@ -161,6 +161,13 @@ class HealthResponse(BaseModel):
 
 # ============ API Endpoints ============
 
+@app.get("/")
+async def root():
+    """Root endpoint - redirects to API docs."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/docs")
+
+
 @app.get("/health", response_model=HealthResponse)
 @limiter.limit("100/minute")
 async def health_check(request: Request):
