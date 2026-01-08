@@ -130,11 +130,10 @@ class AuthManager: ObservableObject {
         errorMessage = nil
         
         do {
-            // Use email redirect to handle confirmation in the app
+            // Sign up (emailRedirectTo is configured in Supabase dashboard)
             let response = try await supabase.auth.signUp(
                 email: email,
-                password: password,
-                emailRedirectTo: URL(string: "repowhisper://auth-callback")
+                password: password
             )
             
             if let session = response.session {
