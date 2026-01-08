@@ -206,18 +206,24 @@ class AuthManager: ObservableObject {
             // This is an email confirmation link
             print("📧 Handling email confirmation")
             do {
-                let session = try await supabase.auth.verifyOTP(
+                let response = try await supabase.auth.verifyOTP(
                     email: email,
                     token: token,
                     type: .email
                 )
-                await MainActor.run {
-                    self.session = session
-                    self.currentUser = session.user
-                    self.isAuthenticated = true
-                    self.errorMessage = nil
+                if let session = response.session {
+                    await MainActor.run {
+                        self.session = session
+                        self.currentUser = session.user
+                        self.isAuthenticated = true
+                        self.errorMessage = nil
+                    }
+                    print("✅ Email confirmation successful")
+                } else {
+                    await MainActor.run {
+                        self.errorMessage = "Email confirmation completed but no session returned"
+                    }
                 }
-                print("✅ Email confirmation successful")
                 return
             } catch {
                 await MainActor.run {
