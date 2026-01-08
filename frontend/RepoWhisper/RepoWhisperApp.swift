@@ -56,7 +56,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Register global keyboard shortcut ⌘⇧R
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
             if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 15 { // R key
-                AudioCapture.shared.toggle()
+                if AudioCapture.shared.isRecording {
+                    AudioCapture.shared.stopRecording()
+                } else {
+                    Task {
+                        let granted = await AudioCapture.shared.requestPermission()
+                        if granted {
+                            AudioCapture.shared.startRecording()
+                        }
+                    }
+                }
             }
         }
     }

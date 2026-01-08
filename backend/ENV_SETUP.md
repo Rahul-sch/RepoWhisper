@@ -5,7 +5,7 @@ Create a `.env` file in the `backend/` directory with the following variables:
 ```bash
 # Supabase Configuration
 SUPABASE_URL=https://kjpxpppaeydireznlzwe.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqcHhwcHBhZXlkaXJlem5sendlIiwicm9sZSI6ImFub24iLCJpYXQOjE3Njc5MDIwNTIsImV4cCI6MjA4MzQ3ODLc8ThKtbqOtvKU2yda_eZv2q91-gUHnMX-laVc
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqcHhwcHBhZXlkaXJlem5sendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDIwNTIsImV4cCI6MjA4MzQ3ODA1Mn0.YAHTxLc8ThKtbqOtvKU2yda_eZv2q91-gUHnMX-laVc
 SUPABASE_JWT_SECRET=your-jwt-secret-here
 
 # Server Configuration
