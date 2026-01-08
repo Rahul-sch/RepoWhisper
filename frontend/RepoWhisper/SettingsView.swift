@@ -231,8 +231,10 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                     
                     Button("Open Login Window") {
-                        // Open login window
-                        NSApp.sendAction(Selector(("showLoginWindow:")), to: nil, from: nil)
+                        // Open login window via window group
+                        if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "login" }) {
+                            window.makeKeyAndOrderFront(nil)
+                        }
                     }
                 }
             }

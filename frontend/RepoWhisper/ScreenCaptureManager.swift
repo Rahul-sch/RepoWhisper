@@ -206,7 +206,7 @@ class ScreenCaptureManager: ObservableObject {
     
     /// Capture a screenshot of the active window
     private func captureScreenshot() async {
-        guard let window = getActiveWindow() else {
+        guard let window = await getActiveWindow() else {
             // Fallback to main display if no active window
             captureMainDisplay()
             return
@@ -249,13 +249,17 @@ class ScreenCaptureManager: ObservableObject {
     }
     
     /// Get the currently active window
-    private func getActiveWindow() -> SCWindow? {
-        // Get all windows
-        let windows = SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true).windows
-        
-        // Find the frontmost window
-        return windows.first { window in
-            window.owningApplication?.bundleIdentifier != Bundle.main.bundleIdentifier
+    private func getActiveWindow() async -> SCWindow? {
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+            let windows = content.windows
+            
+            // Find the frontmost window
+            return windows.first { window in
+                window.owningApplication?.bundleIdentifier != Bundle.main.bundleIdentifier
+            }
+        } catch {
+            return nil
         }
     }
     
