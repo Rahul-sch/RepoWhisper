@@ -1,0 +1,364 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0352452F9BFF1A264CF67600 /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60D43AE79B98DA99C46DE86 /* ScreenCaptureManager.swift */; };
+		046F2E69329442D6F03F6BDC /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56794B25204A09A55F3A9ED8 /* MenuBarView.swift */; };
+		0E280D6318399B3E50671734 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37071BFB05CBC4EF18D008EA /* LoginView.swift */; };
+		28CA9ED9B49250322A143E0E /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E922545E1E2A4B35330C24 /* SupabaseConfig.swift */; };
+		3AEE6B107A1F93D675E424B7 /* ResultsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0693029548C0A143A970956E /* ResultsWindow.swift */; };
+		488918DEF34681AEBFC7A4DE /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2C96FAA45299FB54994AE6 /* AuthManager.swift */; };
+		562661DD852163AE3357A1D8 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 3F52F6F2D80532B5AEC7E4CE /* Supabase */; };
+		600A37313E65F0F18E109957 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CBDBEA81C4E961FC309E87 /* APIClient.swift */; };
+		793E09011824C07AD8B20EB5 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACC49DB057A6532A21E9E57 /* AudioCapture.swift */; };
+		98506C5BBE0C2D8B3FE12007 /* ScreenshotCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */; };
+		AD6A12BFB2DD979D64A395FC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */; };
+		F10DAA4CBDDECE2B9BC04FB2 /* RepoWhisperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0693029548C0A143A970956E /* ResultsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsWindow.swift; sourceTree = "<group>"; };
+		0E2C96FAA45299FB54994AE6 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		28CBDBEA81C4E961FC309E87 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		37071BFB05CBC4EF18D008EA /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		49E922545E1E2A4B35330C24 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
+		4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoWhisperApp.swift; sourceTree = "<group>"; };
+		56794B25204A09A55F3A9ED8 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		9CF68A2E300B00A5DC4B3ABC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotCapture.swift; sourceTree = "<group>"; };
+		BACC49DB057A6532A21E9E57 /* AudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCapture.swift; sourceTree = "<group>"; };
+		C769A250D9E819F6A00C24FE /* RepoWhisper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RepoWhisper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D60D43AE79B98DA99C46DE86 /* ScreenCaptureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureManager.swift; sourceTree = "<group>"; };
+		F3D9270A8D2D21F165255BB6 /* RepoWhisper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RepoWhisper.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2804D18E4DD7427E07772CB6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				562661DD852163AE3357A1D8 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3F1DCC1A1D1F40A1276A5DF7 = {
+			isa = PBXGroup;
+			children = (
+				C49B787ACABBD6332E74200E /* RepoWhisper */,
+				BC032BEAB18F9229066FE7C3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BC032BEAB18F9229066FE7C3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C769A250D9E819F6A00C24FE /* RepoWhisper.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C49B787ACABBD6332E74200E /* RepoWhisper */ = {
+			isa = PBXGroup;
+			children = (
+				28CBDBEA81C4E961FC309E87 /* APIClient.swift */,
+				BACC49DB057A6532A21E9E57 /* AudioCapture.swift */,
+				0E2C96FAA45299FB54994AE6 /* AuthManager.swift */,
+				9CF68A2E300B00A5DC4B3ABC /* Info.plist */,
+				37071BFB05CBC4EF18D008EA /* LoginView.swift */,
+				56794B25204A09A55F3A9ED8 /* MenuBarView.swift */,
+				F3D9270A8D2D21F165255BB6 /* RepoWhisper.entitlements */,
+				4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */,
+				0693029548C0A143A970956E /* ResultsWindow.swift */,
+				D60D43AE79B98DA99C46DE86 /* ScreenCaptureManager.swift */,
+				AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */,
+				9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */,
+				49E922545E1E2A4B35330C24 /* SupabaseConfig.swift */,
+			);
+			path = RepoWhisper;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9E7F33E1277E61B07EA41BB8 /* RepoWhisper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F25719AA76201F230CD3A140 /* Build configuration list for PBXNativeTarget "RepoWhisper" */;
+			buildPhases = (
+				E387A0412F7B4E6B26AA23F9 /* Sources */,
+				2804D18E4DD7427E07772CB6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RepoWhisper;
+			packageProductDependencies = (
+				3F52F6F2D80532B5AEC7E4CE /* Supabase */,
+			);
+			productName = RepoWhisper;
+			productReference = C769A250D9E819F6A00C24FE /* RepoWhisper.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8E91F72B001B08EF9C3E0F75 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = 89325A3FF7D33845209A0582 /* Build configuration list for PBXProject "RepoWhisper" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 3F1DCC1A1D1F40A1276A5DF7;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				11DD5653B7DC145199F8FFC1 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9E7F33E1277E61B07EA41BB8 /* RepoWhisper */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E387A0412F7B4E6B26AA23F9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				600A37313E65F0F18E109957 /* APIClient.swift in Sources */,
+				793E09011824C07AD8B20EB5 /* AudioCapture.swift in Sources */,
+				488918DEF34681AEBFC7A4DE /* AuthManager.swift in Sources */,
+				0E280D6318399B3E50671734 /* LoginView.swift in Sources */,
+				046F2E69329442D6F03F6BDC /* MenuBarView.swift in Sources */,
+				F10DAA4CBDDECE2B9BC04FB2 /* RepoWhisperApp.swift in Sources */,
+				3AEE6B107A1F93D675E424B7 /* ResultsWindow.swift in Sources */,
+				0352452F9BFF1A264CF67600 /* ScreenCaptureManager.swift in Sources */,
+				98506C5BBE0C2D8B3FE12007 /* ScreenshotCapture.swift in Sources */,
+				AD6A12BFB2DD979D64A395FC /* SettingsView.swift in Sources */,
+				28CA9ED9B49250322A143E0E /* SupabaseConfig.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		65D936F60477F54EDFFDEFAA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = RepoWhisper/RepoWhisper.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = RepoWhisper/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.repowhisper.app;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		91B3D19ABC602F0A6A77F18A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = RepoWhisper/RepoWhisper.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = RepoWhisper/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.repowhisper.app;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		9FEC5131CD77B8C87EB42D1B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C49A06AD09D563A42C20B1B3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		89325A3FF7D33845209A0582 /* Build configuration list for PBXProject "RepoWhisper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9FEC5131CD77B8C87EB42D1B /* Debug */,
+				C49A06AD09D563A42C20B1B3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F25719AA76201F230CD3A140 /* Build configuration list for PBXNativeTarget "RepoWhisper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				65D936F60477F54EDFFDEFAA /* Debug */,
+				91B3D19ABC602F0A6A77F18A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		11DD5653B7DC145199F8FFC1 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3F52F6F2D80532B5AEC7E4CE /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 11DD5653B7DC145199F8FFC1 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 8E91F72B001B08EF9C3E0F75 /* Project object */;
+}

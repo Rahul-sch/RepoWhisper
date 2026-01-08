@@ -1,0 +1,26 @@
+name: RepoWhisper
+options:
+  bundleIdPrefix: com.repowhisper
+  deploymentTarget:
+    macOS: "13.0"
+targets:
+  RepoWhisper:
+    type: application
+    platform: macOS
+    sources:
+      - path: RepoWhisper
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.repowhisper.app
+      INFOPLIST_FILE: RepoWhisper/Info.plist
+      SWIFT_VERSION: "5.9"
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      ENABLE_HARDENED_RUNTIME: true
+      CODE_SIGN_ENTITLEMENTS: RepoWhisper/RepoWhisper.entitlements
+    dependencies:
+      - package: supabase-swift
+        product: Supabase
+packages:
+  supabase-swift:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.0.0
+
