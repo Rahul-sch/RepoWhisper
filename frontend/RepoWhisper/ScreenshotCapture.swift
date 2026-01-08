@@ -31,15 +31,20 @@ class ScreenshotCapture: ObservableObject {
     
     /// Request screen recording permission
     func requestPermission() async -> Bool {
+        // Check if already authorized
         if CGPreflightScreenCaptureAccess() {
             return true
         }
         
-        return await withCheckedContinuation { continuation in
-            CGRequestScreenCaptureAccess { (granted: Bool) in
-                continuation.resume(returning: granted)
-            }
-        }
+        // Request permission (triggers system dialog)
+        // Note: CGRequestScreenCaptureAccess doesn't take parameters
+        // The system will prompt the user, and we check status after
+        CGRequestScreenCaptureAccess()
+        
+        // Wait a moment for user to respond, then check status
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        
+        return CGPreflightScreenCaptureAccess()
     }
     
     /// Start capturing screenshots every 5 seconds
