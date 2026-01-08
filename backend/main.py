@@ -21,6 +21,7 @@ from search import get_vector_store, SearchResult as VectorSearchResult
 from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model
 from supabase_client import RepoService
 from logger import setup_logging, get_logger
+from advise import get_advisor, AdvisorContext, process_screenshot
 
 
 # ============ Lifespan Management ============
@@ -405,6 +406,113 @@ async def delete_repo(
     except Exception as e:
         logger.error("delete_repo_failed", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to delete repository")
+
+
+# ============ Boss Mode Endpoints ============
+
+class AdviseRequest(BaseModel):
+    """Request model for Boss Mode advisor."""
+    transcript: str
+    screenshot_base64: Optional[str] = None
+    code_snippets: Optional[list[str]] = None
+    meeting_context: Optional[str] = None
+
+
+class AdviseResponse(BaseModel):
+    """Response model for advisor."""
+    talking_point: str
+    confidence: float
+    context: str
+
+
+@app.post("/advise", response_model=AdviseResponse)
+@limiter.limit("30/minute")
+async def get_advice(
+    request: Request,
+    advise_request: AdviseRequest,
+    user_id: str = Depends(get_user_id)
+):
+    """
+    Boss Mode: Generate talking points from transcript, screenshot, and code.
+    Requires authentication.
+    Rate limited: 30 requests per minute.
+    """
+    logger = get_logger()
+    
+    try:
+        # Validate transcript
+        if not advise_request.transcript or not advise_request.transcript.strip():
+            raise HTTPException(status_code=400, detail="Transcript cannot be empty")
+        
+        # Build context
+        context = AdvisorContext(
+            transcript=advise_request.transcript,
+            screenshot_base64=advise_request.screenshot_base64,
+            code_snippets=advise_request.code_snippets or [],
+            meeting_context=advise_request.meeting_context
+        )
+        
+        # Get advisor and generate talking point
+        advisor = get_advisor()
+        talking_point = advisor.generate_talking_point(context)
+        
+        logger.info("advice_generated", user_id=user_id, confidence=talking_point.confidence)
+        
+        return AdviseResponse(
+            talking_point=talking_point.text,
+            confidence=talking_point.confidence,
+            context=talking_point.context
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("advice_generation_failed", error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate advice. Please try again.")
+
+
+@app.post("/screenshot")
+@limiter.limit("60/minute")
+async def upload_screenshot(
+    request: Request,
+    user_id: str = Depends(get_user_id)
+):
+    """
+    Upload and process screenshot for Boss Mode.
+    Accepts image bytes (JPEG/PNG).
+    Returns base64-encoded processed image.
+    """
+    logger = get_logger()
+    
+    try:
+        # Read image bytes
+        image_data = await request.body()
+        
+        if not image_data:
+            raise HTTPException(status_code=400, detail="Screenshot data cannot be empty")
+        
+        # Validate size (max 20MB)
+        if len(image_data) > 20 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Screenshot too large (max 20MB)")
+        
+        # Process screenshot
+        screenshot_base64 = process_screenshot(image_data)
+        
+        logger.info("screenshot_processed", user_id=user_id, size_bytes=len(image_data))
+        
+        return {
+            "success": True,
+            "screenshot_base64": screenshot_base64,
+            "size_bytes": len(image_data)
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("screenshot_processing_failed", error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to process screenshot.")
 
 
 # ============ Entry Point ============
