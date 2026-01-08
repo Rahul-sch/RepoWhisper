@@ -250,7 +250,8 @@ async def index_repository(
         # Get user-specific vector store
         store = get_vector_store(user_id)
         
-        # Clear existing index for THIS specific repo (non-destructive for other repos)
+        # Note: clear_repo is a no-op - old data will be filtered out during search
+        # Re-indexing will add new data, and search filters by repo_id
         store.clear_repo(user_id, repo_id)
         
         # Collect chunks
