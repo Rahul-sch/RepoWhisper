@@ -54,10 +54,9 @@ class ScreenCaptureManager: ObservableObject {
         
         // Request permission
         return await withCheckedContinuation { continuation in
-            let handler: (Bool) -> Void = { granted in
+            CGRequestScreenCaptureAccess { (granted: Bool) in
                 continuation.resume(returning: granted)
             }
-            CGRequestScreenCaptureAccess(handler)
         }
     }
     
