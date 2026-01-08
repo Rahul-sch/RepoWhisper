@@ -84,9 +84,10 @@ class ScreenCaptureManager: ObservableObject {
                 return
             }
             
+            // Create filter for the display
             let filter = SCContentFilter(
                 display: display,
-                excludingWindows: [],
+                excludingApplications: [],
                 exceptingWindows: []
             )
             
