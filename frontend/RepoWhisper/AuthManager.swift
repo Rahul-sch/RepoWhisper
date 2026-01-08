@@ -130,23 +130,35 @@ class AuthManager: ObservableObject {
         errorMessage = nil
         
         do {
+            // Use email redirect to handle confirmation in the app
             let response = try await supabase.auth.signUp(
                 email: email,
-                password: password
+                password: password,
+                emailRedirectTo: URL(string: "repowhisper://auth-callback")
             )
             
             if let session = response.session {
-                self.session = session
-                self.currentUser = session.user
-                self.isAuthenticated = true
+                // User is immediately signed in (if email confirmation is disabled)
+                await MainActor.run {
+                    self.session = session
+                    self.currentUser = session.user
+                    self.isAuthenticated = true
+                }
             } else {
-                errorMessage = "Please check your email to confirm your account."
+                // Email confirmation required
+                await MainActor.run {
+                    self.errorMessage = "Please check your email and click the confirmation link. The link will open in this app."
+                }
             }
         } catch {
-            errorMessage = error.localizedDescription
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+            }
         }
         
-        isLoading = false
+        await MainActor.run {
+            self.isLoading = false
+        }
     }
     
     /// Sign in with OAuth provider (GitHub, Google, etc.)
@@ -175,32 +187,67 @@ class AuthManager: ObservableObject {
         isLoading = false
     }
     
-    /// Handle OAuth callback URL
+    /// Handle OAuth callback URL (also handles email confirmation links)
     func handleOAuthCallback(url: URL) async {
-        print("🔐 Handling OAuth callback: \(url)")
+        print("🔐 Handling callback URL: \(url)")
         
-        // Extract the code from the URL
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
-            errorMessage = "Invalid OAuth callback URL"
+        // Check if this is an email confirmation link or OAuth callback
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            await MainActor.run {
+                self.errorMessage = "Invalid callback URL"
+            }
             return
         }
         
-        // Exchange the code for a session
-        do {
-            let session = try await supabase.auth.session(from: url)
-            await MainActor.run {
-                self.session = session
-                self.currentUser = session.user
-                self.isAuthenticated = true
-                self.errorMessage = nil
+        // Handle email confirmation tokens
+        if let token = components.queryItems?.first(where: { $0.name == "token" })?.value,
+           let type = components.queryItems?.first(where: { $0.name == "type" })?.value,
+           type == "email" {
+            // This is an email confirmation link
+            print("📧 Handling email confirmation")
+            do {
+                let session = try await supabase.auth.verifyOTP(
+                    type: .email,
+                    token: token
+                )
+                await MainActor.run {
+                    self.session = session
+                    self.currentUser = session.user
+                    self.isAuthenticated = true
+                    self.errorMessage = nil
+                }
+                print("✅ Email confirmation successful")
+                return
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Email confirmation failed: \(error.localizedDescription)"
+                }
+                print("❌ Email confirmation error: \(error)")
+                return
             }
-            print("✅ OAuth authentication successful")
-        } catch {
-            await MainActor.run {
-                self.errorMessage = "Failed to complete OAuth sign in: \(error.localizedDescription)"
+        }
+        
+        // Handle OAuth callback
+        if components.queryItems?.first(where: { $0.name == "code" }) != nil {
+            do {
+                let session = try await supabase.auth.session(from: url)
+                await MainActor.run {
+                    self.session = session
+                    self.currentUser = session.user
+                    self.isAuthenticated = true
+                    self.errorMessage = nil
+                }
+                print("✅ OAuth authentication successful")
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to complete OAuth sign in: \(error.localizedDescription)"
+                }
+                print("❌ OAuth callback error: \(error)")
             }
-            print("❌ OAuth callback error: \(error)")
+        } else {
+            await MainActor.run {
+                self.errorMessage = "Invalid callback URL format"
+            }
         }
     }
     
