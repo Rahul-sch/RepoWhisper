@@ -23,11 +23,6 @@ enum SupabaseConfig {
 /// Shared Supabase client instance
 let supabase = SupabaseClient(
     supabaseURL: SupabaseConfig.url,
-    supabaseKey: SupabaseConfig.anonKey,
-    options: SupabaseClientOptions(
-        auth: AuthClientOptions(
-            emitLocalSessionAsInitialSession: true
-        )
-    )
+    supabaseKey: SupabaseConfig.anonKey
 )
 
