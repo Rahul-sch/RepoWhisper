@@ -77,8 +77,15 @@ class ScreenCaptureManager: ObservableObject {
         
         do {
             // Get available content (system audio)
+            // First get shareable content to create filter
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+            guard let display = content.displays.first else {
+                errorMessage = "No display available for capture"
+                return
+            }
+            
             let filter = SCContentFilter(
-                display: CGMainDisplayID(),
+                display: display,
                 excludingWindows: [],
                 exceptingWindows: []
             )
@@ -101,7 +108,7 @@ class ScreenCaptureManager: ObservableObject {
             // Add audio stream output
             try stream.addStreamOutput(
                 delegate,
-                type: .audio,
+                type: SCStreamOutputType.audio,
                 sampleHandlerQueue: DispatchQueue(label: "system.audio.queue")
             )
             
