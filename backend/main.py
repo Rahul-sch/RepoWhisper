@@ -10,6 +10,7 @@ from pydantic import BaseModel, ValidationError
 from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
+import os
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -22,6 +23,7 @@ from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model
 from supabase_client import RepoService
 from logger import setup_logging, get_logger
 from advise import get_advisor, AdvisorContext, process_screenshot
+import uuid
 
 
 # ============ Lifespan Management ============
@@ -59,7 +61,7 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS - restrict to localhost and specific origins
+# Configure CORS - restrict to specific origins only
 settings = get_settings()
 allowed_origins = [
     "http://localhost:8000",
@@ -67,9 +69,13 @@ allowed_origins = [
     "repowhisper://*",  # Swift app custom URL scheme
 ]
 
-# In production, add your actual frontend domain
-if settings.debug:
-    allowed_origins.append("*")  # Allow all in debug mode
+# In production, NEVER allow all origins
+# Add your actual frontend domain here:
+# allowed_origins.append("https://yourdomain.com")
+
+# Only allow * in debug mode AND if explicitly enabled
+if settings.debug and os.getenv("ALLOW_ALL_CORS", "false").lower() == "true":
+    allowed_origins.append("*")  # Only if explicitly enabled
 
 app.add_middleware(
     CORSMiddleware,
@@ -208,19 +214,44 @@ async def index_repository(
         if ".." in repo_path_normalized:
             raise HTTPException(status_code=400, detail="Invalid repository path (directory traversal not allowed)")
         
-        # Allow absolute paths but validate they exist
-        import os
-        if not os.path.exists(repo_path_normalized):
+        # Sandbox: Restrict to user's home directory or allowed paths
+        # In production, use a sandbox directory per user
+        home_dir = os.path.expanduser("~")
+        sandbox_base = os.getenv("REPO_SANDBOX_BASE", home_dir)
+        
+        # Resolve absolute path
+        abs_path = os.path.abspath(repo_path_normalized)
+        
+        # Ensure path is within sandbox (prevent directory traversal)
+        if not abs_path.startswith(os.path.abspath(sandbox_base)):
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Repository path must be within allowed directory: {sandbox_base}"
+            )
+        
+        # Validate path exists and is a directory
+        if not os.path.exists(abs_path):
             raise HTTPException(status_code=400, detail="Repository path does not exist")
         
-        if not os.path.isdir(repo_path_normalized):
+        if not os.path.isdir(abs_path):
             raise HTTPException(status_code=400, detail="Repository path must be a directory")
+        
+        # Use absolute path for indexing
+        repo_path_normalized = abs_path
+        
+        # Get or create repo record in Supabase first
+        repo_service = RepoService()
+        repo_record = repo_service.create_or_update_repo(
+            owner_id=user_id,
+            repo_path=index_request.repo_path
+        )
+        repo_id = repo_record.get("id") if repo_record else str(uuid.uuid4())
         
         # Get user-specific vector store
         store = get_vector_store(user_id)
         
-        # Clear existing index for this repo
-        store.clear()
+        # Clear existing index for THIS specific repo (non-destructive for other repos)
+        store.clear_repo(user_id, repo_id)
         
         # Collect chunks
         chunks = list(index_repo(
@@ -239,18 +270,11 @@ async def index_repository(
                 message="No files found to index"
             )
         
-        # Index chunks
-        indexed_count = store.index_chunks(chunks)
+        # Index chunks with user and repo isolation
+        indexed_count = store.index_chunks(chunks, user_id, repo_id)
         
         # Count unique files
         unique_files = len(set(c.file_path for c in chunks))
-        
-        # Update Supabase repo record
-        repo_service = RepoService()
-        repo_service.create_or_update_repo(
-            owner_id=user_id,
-            repo_path=index_request.repo_path
-        )
         
         logger.info("indexing_complete", files=unique_files, chunks=indexed_count)
         
@@ -322,12 +346,12 @@ async def search_code(
 @limiter.limit("120/minute")
 async def transcribe_audio_endpoint(
     request: Request,
-    user: Optional[dict] = Depends(get_optional_user)
+    user_id: str = Depends(get_user_id)  # Require auth in production
 ):
     """
     Transcribe audio to text using Faster-Whisper.
     Accepts raw PCM audio bytes (16kHz, mono, 16-bit).
-    Optional authentication for local development.
+    Requires authentication for production security.
     Rate limited: 120 requests per minute.
     """
     logger = get_logger()

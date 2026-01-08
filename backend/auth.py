@@ -54,8 +54,15 @@ class JWTValidator:
             HTTPException: If token is invalid or expired
         """
         try:
-            # If JWT secret is not configured, skip verification (dev mode)
+            # Require JWT secret in production
             if not self.settings.supabase_jwt_secret:
+                # Only allow unverified tokens in explicit debug mode
+                if not self.settings.debug:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="JWT secret not configured. Authentication required.",
+                        headers={"WWW-Authenticate": "Bearer"}
+                    )
                 # Decode without verification (only for development)
                 payload = jwt.decode(
                     token,
