@@ -51,8 +51,9 @@ struct LoginView: View {
                 }
                 .padding(.top, 40)
                 
-                // Form fields
-                VStack(spacing: 16) {
+                // Form fields (hide when authenticated)
+                if !authManager.isAuthenticated {
+                    VStack(spacing: 16) {
                     // Email field
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Email")
@@ -80,8 +81,9 @@ struct LoginView: View {
                             .cornerRadius(10)
                             .foregroundColor(.white)
                     }
+                    }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
                 
                 // Success message
                 if authManager.isAuthenticated {
@@ -111,41 +113,42 @@ struct LoginView: View {
                         .padding(.horizontal)
                 }
                 
-                // Action buttons
-                VStack(spacing: 12) {
-                    // Primary button
-                    Button {
-                        Task {
-                            if isSignUp {
-                                await authManager.signUp(email: email, password: password)
-                            } else {
-                                await authManager.signIn(email: email, password: password)
+                // Action buttons (hide when authenticated)
+                if !authManager.isAuthenticated {
+                    VStack(spacing: 12) {
+                        // Primary button
+                        Button {
+                            Task {
+                                if isSignUp {
+                                    await authManager.signUp(email: email, password: password)
+                                } else {
+                                    await authManager.signIn(email: email, password: password)
+                                }
                             }
-                        }
-                    } label: {
-                        HStack {
-                            if authManager.isLoading {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(0.8)
+                        } label: {
+                            HStack {
+                                if authManager.isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
+                                }
+                                Text(isSignUp ? "Create Account" : "Sign In")
+                                    .fontWeight(.semibold)
                             }
-                            Text(isSignUp ? "Create Account" : "Sign In")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            LinearGradient(
-                                colors: [.purple, .blue],
-                                startPoint: .leading,
-                                endPoint: .trailing
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                LinearGradient(
+                                    colors: [.purple, .blue],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
-                        )
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(authManager.isLoading || email.isEmpty || password.isEmpty || authManager.isAuthenticated)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(authManager.isLoading || email.isEmpty || password.isEmpty)
                     
                     // GitHub OAuth (optional - only show if enabled)
                     // Note: GitHub OAuth must be enabled in Supabase dashboard
@@ -183,8 +186,9 @@ struct LoginView: View {
                     .buttonStyle(.plain)
                     .disabled(authManager.isLoading)
                     */
+                    }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
                 
                 Spacer()
                 
