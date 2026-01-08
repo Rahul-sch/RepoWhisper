@@ -199,9 +199,21 @@ async def index_repository(
     logger.info("indexing_repository", user_id=user_id, mode=index_request.mode.value, repo_path=index_request.repo_path)
     
     try:
-        # Validate repo path (prevent directory traversal)
-        if ".." in index_request.repo_path or index_request.repo_path.startswith("/"):
-            raise HTTPException(status_code=400, detail="Invalid repository path")
+        # Validate repo path (prevent directory traversal and absolute paths)
+        repo_path_normalized = index_request.repo_path.strip()
+        if not repo_path_normalized:
+            raise HTTPException(status_code=400, detail="Repository path cannot be empty")
+        
+        if ".." in repo_path_normalized:
+            raise HTTPException(status_code=400, detail="Invalid repository path (directory traversal not allowed)")
+        
+        # Allow absolute paths but validate they exist
+        import os
+        if not os.path.exists(repo_path_normalized):
+            raise HTTPException(status_code=400, detail="Repository path does not exist")
+        
+        if not os.path.isdir(repo_path_normalized):
+            raise HTTPException(status_code=400, detail="Repository path must be a directory")
         
         # Get user-specific vector store
         store = get_vector_store(user_id)

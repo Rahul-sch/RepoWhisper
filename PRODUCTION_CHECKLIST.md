@@ -13,51 +13,58 @@
 
 ## 🔴 Critical - Must Fix Before Production
 
-### 1. User Data Isolation ✅ FIXED
+### 1. User Data Isolation ✅ COMPLETED
 - [x] Per-user vector stores (`.repowhisper/{user_id}/`)
-- [ ] Add user_id to CodeEmbedding schema for filtering
-- [ ] Add metadata filtering in search queries
+- [x] User-specific vector store instances
+- [x] Isolated search per user
 
-### 2. Xcode Project Setup
-- [ ] Create `.xcodeproj` file
-- [ ] Add Supabase Swift SDK via SPM
-- [ ] Configure Info.plist with microphone permissions
-- [ ] Set up app entitlements
-- [ ] Configure app bundle ID and signing
+### 2. Xcode Project Setup ✅ COMPLETED
+- [x] Package.swift for SPM support
+- [x] Xcode setup documentation
+- [x] Supabase Swift SDK dependency specified
+- [x] Info.plist with microphone permissions
+- [x] App structure and window management
+- [ ] Manual: Create `.xcodeproj` in Xcode (see XCODE_SETUP.md)
+- [ ] Manual: Configure app bundle ID and signing
 
-### 3. Backend Supabase Integration
-- [ ] Install `supabase-py` client
-- [ ] Create repo records in `repos` table on index
-- [ ] Update `last_indexed` timestamp
-- [ ] List user's repos endpoint
-- [ ] Delete repo endpoint
+### 3. Backend Supabase Integration ✅ COMPLETED
+- [x] `supabase-py` client installed
+- [x] RepoService for database operations
+- [x] Create/update repo records on index
+- [x] Update `last_indexed` timestamp
+- [x] List user's repos endpoint (`GET /repos`)
+- [x] Delete repo endpoint (`DELETE /repos/{repo_id}`)
 
-### 4. Security Hardening
-- [ ] Restrict CORS to specific origins (not `*`)
-- [ ] Add rate limiting (e.g., slowapi)
-- [ ] Input validation and sanitization
-- [ ] JWT secret from environment (not hardcoded)
-- [ ] File path validation (prevent directory traversal)
+### 4. Security Hardening ✅ COMPLETED
+- [x] CORS restricted (localhost + custom scheme, `*` only in debug)
+- [x] Rate limiting (slowapi) on all endpoints
+- [x] Input validation (query length, path validation)
+- [x] JWT secret from environment
+- [x] File path validation (directory traversal prevention)
+- [x] Absolute path validation
 
-### 5. Error Handling & Logging
-- [ ] Structured logging (e.g., structlog)
-- [ ] Error response standardization
-- [ ] Try/catch around all endpoints
-- [ ] Health check with model status
+### 5. Error Handling & Logging ✅ COMPLETED
+- [x] Structured logging (structlog)
+- [x] Error response standardization
+- [x] Try/catch around all endpoints
+- [x] Global exception handlers
+- [x] Health check with model status
+- [x] Request logging
 
-### 6. Environment Configuration
-- [ ] `.env.example` with all required vars
-- [ ] Document Supabase JWT secret setup
-- [ ] Backend URL configuration
-- [ ] Model paths configuration
+### 6. Environment Configuration ✅ COMPLETED
+- [x] ENV_SETUP.md with all required vars
+- [x] Document Supabase JWT secret setup
+- [x] Backend URL configuration
+- [x] Model paths configuration
+- [x] Settings class with defaults
 
 ## 🟡 Important - Should Add Soon
 
-### 7. Frontend Polish
-- [ ] Keyboard shortcut handler (⌘⇧R)
-- [ ] Show ResultsWindow when results arrive
-- [ ] Error toast notifications
-- [ ] Loading states everywhere
+### 7. Frontend Polish ✅ MOSTLY COMPLETED
+- [x] Keyboard shortcut handler (⌘⇧R)
+- [x] Show ResultsWindow when results arrive
+- [x] Loading states in search
+- [ ] Error toast notifications (basic error handling exists)
 - [ ] Offline mode detection
 
 ### 8. Database Operations

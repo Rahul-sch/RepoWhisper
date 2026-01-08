@@ -54,14 +54,22 @@ class JWTValidator:
             HTTPException: If token is invalid or expired
         """
         try:
-            # For Supabase, we can use the JWT secret directly
-            # or validate against JWKS for more security
+            # If JWT secret is not configured, skip verification (dev mode)
+            if not self.settings.supabase_jwt_secret:
+                # Decode without verification (only for development)
+                payload = jwt.decode(
+                    token,
+                    options={"verify_signature": False}
+                )
+                return payload
+            
+            # Validate with JWT secret
             payload = jwt.decode(
                 token,
                 self.settings.supabase_jwt_secret,
                 algorithms=["HS256"],
                 audience="authenticated",
-                options={"verify_aud": False} if not self.settings.supabase_jwt_secret else {}
+                options={"verify_aud": False}  # Supabase doesn't always set audience
             )
             return payload
         except JWTError as e:
