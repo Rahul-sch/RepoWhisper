@@ -127,6 +127,10 @@ struct LoginView: View {
                     .buttonStyle(.plain)
                     .disabled(authManager.isLoading || email.isEmpty || password.isEmpty)
                     
+                    // GitHub OAuth (optional - only show if enabled)
+                    // Note: GitHub OAuth must be enabled in Supabase dashboard
+                    // For now, we'll hide it and users can use email/password
+                    /*
                     // Divider
                     HStack {
                         Rectangle()
@@ -158,6 +162,7 @@ struct LoginView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(authManager.isLoading)
+                    */
                 }
                 .padding(.horizontal, 24)
                 

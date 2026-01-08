@@ -160,7 +160,14 @@ class AuthManager: ObservableObject {
                 redirectTo: URL(string: "repowhisper://auth-callback")
             )
         } catch {
-            errorMessage = error.localizedDescription
+            // Provide user-friendly error message
+            if let errorDescription = error.localizedDescription.lowercased(),
+               errorDescription.contains("not enabled") || errorDescription.contains("unsupported provider") {
+                errorMessage = "GitHub OAuth is not enabled in your Supabase project. Please use email/password sign up instead, or enable GitHub OAuth in your Supabase dashboard."
+            } else {
+                errorMessage = "OAuth sign in failed: \(error.localizedDescription)"
+            }
+            print("OAuth error: \(error)")
         }
         
         isLoading = false
