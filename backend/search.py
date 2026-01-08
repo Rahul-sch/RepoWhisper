@@ -218,25 +218,40 @@ class VectorStore:
 _store: Optional[VectorStore] = None
 
 
-def get_vector_store(db_path: str = ".repowhisper") -> VectorStore:
-    """Get the global vector store instance."""
-    global _store
-    if _store is None:
-        _store = VectorStore(db_path)
-    return _store
+# Per-user store cache
+_user_stores: dict[str, VectorStore] = {}
 
 
-def search_code(query: str, top_k: int = 5) -> tuple[list[SearchResult], float]:
+def get_vector_store(user_id: str, db_path: str | None = None) -> VectorStore:
+    """
+    Get user-specific vector store instance.
+    
+    Args:
+        user_id: User UUID for isolation
+        db_path: Optional custom path (defaults to .repowhisper/{user_id})
+        
+    Returns:
+        VectorStore instance for this user
+    """
+    if user_id not in _user_stores:
+        if db_path is None:
+            db_path = f".repowhisper/{user_id}"
+        _user_stores[user_id] = VectorStore(db_path)
+    return _user_stores[user_id]
+
+
+def search_code(user_id: str, query: str, top_k: int = 5) -> tuple[list[SearchResult], float]:
     """
     Convenience function for searching code.
     
     Args:
+        user_id: User UUID for isolation
         query: Search query string
         top_k: Number of results
         
     Returns:
         Tuple of (results, latency_ms)
     """
-    store = get_vector_store()
+    store = get_vector_store(user_id)
     return store.search(query, top_k)
 

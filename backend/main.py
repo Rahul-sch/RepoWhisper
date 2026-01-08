@@ -115,11 +115,11 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint - no auth required."""
-    store = get_vector_store()
+    # Health check doesn't need user-specific store
     return HealthResponse(
         status="healthy",
         model_loaded=True,
-        index_count=store.count(),
+        index_count=0,  # User-specific, can't show global count
         version="0.1.0"
     )
 
@@ -134,7 +134,8 @@ async def index_repository(
     Requires authentication.
     """
     try:
-        store = get_vector_store()
+        # Get user-specific vector store
+        store = get_vector_store(user_id)
         
         # Clear existing index for this repo (simple approach)
         store.clear()
@@ -182,7 +183,8 @@ async def search_code(
     Requires authentication.
     """
     try:
-        store = get_vector_store()
+        # Get user-specific vector store
+        store = get_vector_store(user_id)
         results, latency_ms = store.search(request.query, request.top_k)
         
         return SearchResponse(
