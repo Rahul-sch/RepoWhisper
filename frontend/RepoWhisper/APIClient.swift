@@ -267,6 +267,105 @@ enum IndexMode: String, Codable {
     case full
 }
 
+    // MARK: - Boss Mode
+    
+    /// Get advice/talking point from transcript, screenshot, and code
+    func getAdvice(
+        transcript: String,
+        screenshotBase64: String? = nil,
+        codeSnippets: [String]? = nil,
+        meetingContext: String? = nil
+    ) async throws -> AdviseResponse {
+        let url = baseURL.appendingPathComponent("advise")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Add auth token
+        guard let token = AuthManager.shared.accessToken else {
+            throw APIError.notAuthenticated
+        }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let body = AdviseRequest(
+            transcript: transcript,
+            screenshotBase64: screenshotBase64,
+            codeSnippets: codeSnippets,
+            meetingContext: meetingContext
+        )
+        request.httpBody = try JSONEncoder().encode(body)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw APIError.requestFailed
+        }
+        
+        return try JSONDecoder().decode(AdviseResponse.self, from: data)
+    }
+    
+    /// Upload screenshot for processing
+    func uploadScreenshot(_ screenshotData: Data) async throws -> ScreenshotResponse {
+        let url = baseURL.appendingPathComponent("screenshot")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        
+        // Add auth token
+        guard let token = AuthManager.shared.accessToken else {
+            throw APIError.notAuthenticated
+        }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        request.httpBody = screenshotData
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw APIError.requestFailed
+        }
+        
+        return try JSONDecoder().decode(ScreenshotResponse.self, from: data)
+    }
+}
+
+// MARK: - Boss Mode Models
+
+struct AdviseRequest: Codable {
+    let transcript: String
+    let screenshotBase64: String?
+    let codeSnippets: [String]?
+    let meetingContext: String?
+}
+
+struct AdviseResponse: Codable {
+    let talkingPoint: String
+    let confidence: Double
+    let context: String
+    
+    enum CodingKeys: String, CodingKey {
+        case talkingPoint = "talking_point"
+        case confidence
+        case context
+    }
+}
+
+struct ScreenshotResponse: Codable {
+    let success: Bool
+    let screenshotBase64: String
+    let sizeBytes: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case screenshotBase64 = "screenshot_base64"
+        case sizeBytes = "size_bytes"
+    }
+}
+
 enum APIError: Error, LocalizedError {
     case notAuthenticated
     case requestFailed
