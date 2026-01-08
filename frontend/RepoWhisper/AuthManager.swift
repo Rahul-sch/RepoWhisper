@@ -155,9 +155,11 @@ class AuthManager: ObservableObject {
         errorMessage = nil
         
         do {
+            // Use a proper redirect URL that the app can handle
+            let redirectURL = URL(string: "repowhisper://auth-callback")!
             try await supabase.auth.signInWithOAuth(
                 provider: provider,
-                redirectTo: URL(string: "repowhisper://auth-callback")
+                redirectTo: redirectURL
             )
         } catch {
             // Provide user-friendly error message
@@ -171,6 +173,35 @@ class AuthManager: ObservableObject {
         }
         
         isLoading = false
+    }
+    
+    /// Handle OAuth callback URL
+    func handleOAuthCallback(url: URL) async {
+        print("🔐 Handling OAuth callback: \(url)")
+        
+        // Extract the code from the URL
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
+            errorMessage = "Invalid OAuth callback URL"
+            return
+        }
+        
+        // Exchange the code for a session
+        do {
+            let session = try await supabase.auth.session(from: url)
+            await MainActor.run {
+                self.session = session
+                self.currentUser = session.user
+                self.isAuthenticated = true
+                self.errorMessage = nil
+            }
+            print("✅ OAuth authentication successful")
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Failed to complete OAuth sign in: \(error.localizedDescription)"
+            }
+            print("❌ OAuth callback error: \(error)")
+        }
     }
     
     /// Sign out current user

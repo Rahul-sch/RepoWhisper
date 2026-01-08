@@ -56,7 +56,7 @@ struct RepoWhisperApp: App {
     }
 }
 
-// App delegate for keyboard shortcuts
+// App delegate for keyboard shortcuts and URL handling
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("✅ RepoWhisper app finished launching")
@@ -74,6 +74,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                             AudioCapture.shared.startRecording()
                         }
                     }
+                }
+            }
+        }
+    }
+    
+    // Handle OAuth callback URLs
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            if url.scheme == "repowhisper" {
+                print("📥 Received OAuth callback: \(url)")
+                // Handle the OAuth callback
+                Task { @MainActor in
+                    await AuthManager.shared.handleOAuthCallback(url: url)
                 }
             }
         }
