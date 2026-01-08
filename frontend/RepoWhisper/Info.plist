@@ -4,8 +4,12 @@
 <dict>
     <key>NSMicrophoneUsageDescription</key>
     <string>RepoWhisper needs microphone access to transcribe your voice commands for code search.</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>RepoWhisper needs screen recording access to capture system audio and screenshots for Boss Mode meeting intelligence.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>RepoWhisper needs to control your computer to open files in your editor.</string>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>RepoWhisper needs accessibility access to identify the active window for context-aware screenshots.</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
