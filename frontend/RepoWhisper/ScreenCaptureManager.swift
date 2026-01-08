@@ -289,15 +289,21 @@ class ScreenCaptureManager: ObservableObject {
     }
 }
 
-// MARK: - Stream Delegate
+// MARK: - Stream Delegate & Output
 
-private class SystemAudioStreamDelegate: NSObject, SCStreamDelegate {
+private class SystemAudioStreamDelegate: NSObject, SCStreamDelegate, SCStreamOutput {
     let onSampleBuffer: (CMSampleBuffer) -> Void
     
     init(onSampleBuffer: @escaping (CMSampleBuffer) -> Void) {
         self.onSampleBuffer = onSampleBuffer
     }
     
+    // SCStreamDelegate method
+    func stream(_ stream: SCStream, didStopWithError error: Error) {
+        print("Stream stopped with error: \(error)")
+    }
+    
+    // SCStreamOutput method
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         if type == .audio {
             onSampleBuffer(sampleBuffer)
