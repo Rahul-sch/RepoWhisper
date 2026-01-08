@@ -163,40 +163,74 @@ struct MenuBarView: View {
     // MARK: - Authenticated View
     
     private var authenticatedView: some View {
-        VStack(spacing: 16) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("RepoWhisper")
-                        .font(.headline)
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(apiClient.isConnected ? Color.green : Color.red)
-                            .frame(width: 6, height: 6)
-                        Text(authManager.currentUser?.email ?? "")
+        VStack(spacing: 0) {
+            // Modern header with gradient
+            ZStack {
+                LinearGradient(
+                    colors: [Color.purple.opacity(0.1), Color.blue.opacity(0.05)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                
+                HStack {
+                    HStack(spacing: 10) {
+                        Image(systemName: "waveform.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.purple, .blue],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("RepoWhisper")
+                                .font(.system(.headline, design: .rounded))
+                                .fontWeight(.bold)
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(apiClient.isConnected ? Color.green : Color.red)
+                                    .frame(width: 6, height: 6)
+                                Text(authManager.currentUser?.email ?? "")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Button {
+                        Task { await authManager.signOut() }
+                    } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .padding(6)
+                            .background(Color.secondary.opacity(0.1))
+                            .clipShape(Circle())
                     }
+                    .buttonStyle(.plain)
                 }
-                Spacer()
-                Button {
-                    Task { await authManager.signOut() }
-                } label: {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
             
             Divider()
+                .padding(.vertical, 4)
             
-            // Index Mode Selector
+            // Index Mode Selector - Modern card style
             VStack(alignment: .leading, spacing: 8) {
-                Text("Index Mode")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                HStack {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.caption)
+                        .foregroundColor(.purple)
+                    Text("Index Mode")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                }
                 
                 Picker("Mode", selection: $selectedMode) {
                     Label("Manual", systemImage: "hand.tap")
@@ -207,32 +241,59 @@ struct MenuBarView: View {
                         .tag(IndexMode.full)
                 }
                 .pickerStyle(.segmented)
+                .padding(.vertical, 4)
             }
             .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.primary.opacity(0.02))
+            .cornerRadius(10)
+            .padding(.horizontal, 16)
             
-            // Repo Path
+            // Repo Path - Modern card
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Repository")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 6) {
+                        Image(systemName: "folder.fill")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        Text("Repository")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                    }
                     Spacer()
-                    Text("\(apiClient.indexCount) chunks")
-                        .font(.caption2)
-                        .foregroundColor(.green)
+                    if apiClient.indexCount > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                            Text("\(apiClient.indexCount) chunks")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                        }
+                    }
                 }
                 
-                HStack {
+                HStack(spacing: 8) {
                     TextField("Select a folder...", text: $repoPath)
                         .textFieldStyle(.plain)
-                        .padding(8)
+                        .padding(10)
                         .background(Color.primary.opacity(0.05))
-                        .cornerRadius(6)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                        )
                     
                     Button {
                         showingFilePicker = true
                     } label: {
                         Image(systemName: "folder.badge.plus")
+                            .font(.title3)
+                            .foregroundColor(.blue)
+                            .padding(8)
+                            .background(Color.blue.opacity(0.1))
+                            .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
                     .fileImporter(
@@ -246,6 +307,10 @@ struct MenuBarView: View {
                     }
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.primary.opacity(0.02))
+            .cornerRadius(10)
             .padding(.horizontal, 16)
             
             Divider()
@@ -287,29 +352,59 @@ struct MenuBarView: View {
                 .padding(.horizontal, 16)
             }
             
-            // Boss Mode Talking Point
+            // Boss Mode Talking Point - Premium card
             if bossModeEnabled && !latestTalkingPoint.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Image(systemName: "lightbulb.fill")
-                            .foregroundColor(.yellow)
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.yellow.opacity(0.3), .orange.opacity(0.2)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 28, height: 28)
+                            
+                            Image(systemName: "lightbulb.fill")
+                                .font(.caption)
+                                .foregroundColor(.yellow)
+                        }
+                        
                         Text("Talking Point")
                             .font(.caption)
-                            .fontWeight(.medium)
+                            .fontWeight(.semibold)
+                        
                         Spacer()
+                        
                         if isGeneratingAdvice {
                             ProgressView()
-                                .scaleEffect(0.7)
+                                .scaleEffect(0.6)
                         }
                     }
                     
                     Text(latestTalkingPoint)
-                        .font(.caption)
+                        .font(.system(.caption, design: .rounded))
                         .foregroundColor(.primary)
-                        .padding(8)
-                        .background(Color.yellow.opacity(0.1))
-                        .cornerRadius(6)
+                        .padding(12)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.yellow.opacity(0.15), Color.orange.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
+                        )
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.primary.opacity(0.02))
+                .cornerRadius(12)
                 .padding(.horizontal, 16)
             }
             
@@ -428,41 +523,74 @@ struct MenuBarView: View {
                 }
             }
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: audioCapture.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(audioCapture.isRecording ? .red : .purple)
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: audioCapture.isRecording ? [.red.opacity(0.2), .red.opacity(0.1)] : [.purple.opacity(0.2), .blue.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: audioCapture.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                        .font(.title)
+                        .foregroundStyle(
+                            audioCapture.isRecording ?
+                            LinearGradient(colors: [.red], startPoint: .top, endPoint: .bottom) :
+                            LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                }
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(audioCapture.isRecording ? "Stop Listening" : "Start Listening")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Text("Click or use ⌘⇧R")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .font(.system(.subheadline, design: .rounded))
+                        .fontWeight(.semibold)
+                    HStack(spacing: 4) {
+                        Image(systemName: "keyboard")
+                            .font(.caption2)
+                        Text("⌘⇧R")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.secondary)
                 }
                 
                 Spacer()
                 
                 if audioCapture.isRecording {
-                    // Audio level indicator
-                    HStack(spacing: 2) {
+                    // Modern audio level indicator
+                    HStack(spacing: 3) {
                         ForEach(0..<5, id: \.self) { i in
-                            RoundedRectangle(cornerRadius: 1)
-                                .fill(Float(i) / 5.0 < audioCapture.audioLevel ? Color.purple : Color.gray.opacity(0.3))
-                                .frame(width: 3, height: CGFloat(4 + i * 3))
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(
+                                    Float(i) / 5.0 < audioCapture.audioLevel ?
+                                    LinearGradient(colors: [.purple, .blue], startPoint: .top, endPoint: .bottom) :
+                                    LinearGradient(colors: [.gray.opacity(0.3)], startPoint: .top, endPoint: .bottom)
+                                )
+                                .frame(width: 4, height: CGFloat(6 + i * 4))
+                                .animation(.spring(response: 0.3), value: audioCapture.audioLevel)
                         }
                     }
+                    .padding(.trailing, 4)
                 }
             }
-            .padding(12)
+            .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.primary.opacity(0.05))
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(audioCapture.isRecording ? Color.red.opacity(0.5) : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(
+                        audioCapture.isRecording ?
+                        LinearGradient(colors: [.red.opacity(0.6), .red.opacity(0.3)], startPoint: .top, endPoint: .bottom) :
+                        LinearGradient(colors: [.clear], startPoint: .top, endPoint: .bottom),
+                        lineWidth: 2
+                    )
             )
         }
         .buttonStyle(.plain)
