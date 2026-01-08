@@ -173,7 +173,7 @@ struct MenuBarView: View {
                     endPoint: .bottomTrailing
                 )
                 
-                HStack {
+            HStack {
                     HStack(spacing: 10) {
                         Image(systemName: "waveform.circle.fill")
                             .font(.title2)
@@ -185,36 +185,36 @@ struct MenuBarView: View {
                                 )
                             )
                         
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("RepoWhisper")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("RepoWhisper")
                                 .font(.system(.headline, design: .rounded))
                                 .fontWeight(.bold)
                             HStack(spacing: 6) {
                                 Circle()
                                     .fill(apiClient.isConnected ? Color.green : Color.red)
                                     .frame(width: 6, height: 6)
-                                Text(authManager.currentUser?.email ?? "")
+                    Text(authManager.currentUser?.email ?? "")
                                     .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
+                        .foregroundColor(.secondary)
+                }
                         }
                     }
                     
-                    Spacer()
+                Spacer()
                     
-                    Button {
-                        Task { await authManager.signOut() }
-                    } label: {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                Button {
+                    Task { await authManager.signOut() }
+                } label: {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                        .foregroundColor(.secondary)
                             .padding(6)
                             .background(Color.secondary.opacity(0.1))
                             .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
             
@@ -227,10 +227,10 @@ struct MenuBarView: View {
                     Image(systemName: "slider.horizontal.3")
                         .font(.caption)
                         .foregroundColor(.purple)
-                    Text("Index Mode")
-                        .font(.caption)
+                Text("Index Mode")
+                    .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundColor(.secondary)
+                    .foregroundColor(.secondary)
                 }
                 
                 Picker("Mode", selection: $selectedMode) {
@@ -257,10 +257,10 @@ struct MenuBarView: View {
                         Image(systemName: "folder.fill")
                             .font(.caption)
                             .foregroundColor(.blue)
-                        Text("Repository")
-                            .font(.caption)
+                Text("Repository")
+                    .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(.secondary)
+                    .foregroundColor(.secondary)
                     }
                     Spacer()
                     if apiClient.indexCount > 0 {
@@ -330,16 +330,16 @@ struct MenuBarView: View {
             // Status and Transcription
             if audioCapture.isRecording || !lastTranscription.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
+                HStack(spacing: 8) {
                         if audioCapture.isRecording {
-                            Circle()
-                                .fill(.red)
-                                .frame(width: 8, height: 8)
-                            Text("Listening...")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                    Circle()
+                        .fill(.red)
+                        .frame(width: 8, height: 8)
+                    Text("Listening...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                         }
-                        Spacer()
+                    Spacer()
                     }
                     
                     if !lastTranscription.isEmpty {
@@ -374,7 +374,7 @@ struct MenuBarView: View {
                         }
                         
                         Text("Talking Point")
-                            .font(.caption)
+                        .font(.caption)
                             .fontWeight(.semibold)
                         
                         Spacer()
@@ -439,7 +439,7 @@ struct MenuBarView: View {
                                 .foregroundColor(.secondary)
                             Text(URL(fileURLWithPath: result.filePath).lastPathComponent)
                                 .font(.caption)
-                                .lineLimit(1)
+                        .lineLimit(1)
                             Spacer()
                             Text("\(Int(result.score * 100))%")
                                 .font(.caption2)
@@ -557,9 +557,9 @@ struct MenuBarView: View {
                             .font(.caption2)
                         Text("⌘⇧R")
                             .font(.caption2)
-                            .fontWeight(.medium)
+                        .fontWeight(.medium)
                     }
-                    .foregroundColor(.secondary)
+                        .foregroundColor(.secondary)
                 }
                 
                 Spacer()

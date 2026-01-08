@@ -14,6 +14,11 @@ struct RepoWhisperApp: App {
     @StateObject private var audioCapture = AudioCapture.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
+    init() {
+        // Print to console so we know app launched
+        print("🚀 RepoWhisper app launching...")
+    }
+    
     var body: some Scene {
         // Menu Bar Extra - the main interface
         MenuBarExtra {
@@ -53,6 +58,9 @@ struct RepoWhisperApp: App {
 // App delegate for keyboard shortcuts
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        print("✅ RepoWhisper app finished launching")
+        print("📌 Look for the menu bar icon (waveform.circle.fill) in the top menu bar")
+        
         // Register global keyboard shortcut ⌘⇧R
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
             if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 15 { // R key
