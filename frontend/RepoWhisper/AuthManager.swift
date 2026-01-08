@@ -207,9 +207,9 @@ class AuthManager: ObservableObject {
             print("📧 Handling email confirmation")
             do {
                 let session = try await supabase.auth.verifyOTP(
-                    type: .email,
+                    email: email,
                     token: token,
-                    email: email
+                    type: .email
                 )
                 await MainActor.run {
                     self.session = session
