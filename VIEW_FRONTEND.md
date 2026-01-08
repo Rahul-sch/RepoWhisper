@@ -22,6 +22,17 @@ That's it! The project is **already generated** with:
 - ✅ Entitlements configured
 - ✅ Everything ready to go
 
+## Configure Permissions (One-Time Setup)
+
+**After opening the project, you need to set up permissions:**
+
+1. **Click "RepoWhisper"** (blue icon) in sidebar
+2. **Select "RepoWhisper" target** → **"Signing & Capabilities" tab**
+3. **Add "App Sandbox"** capability
+4. **Enable:** Outgoing Connections, User Selected File, Microphone, Camera
+
+**📖 Full guide:** See [`frontend/XCODE_PERMISSIONS.md`](frontend/XCODE_PERMISSIONS.md)
+
 ## If Project Gets Corrupted
 
 Just regenerate it:
