@@ -1,53 +1,37 @@
 # How to View the Frontend 🎨
 
-## Quick Setup (5 minutes)
+## One-Click Open! 🚀
 
-### Step 1: Open Xcode
-
-1. **Open Xcode** (must be installed from App Store)
-2. **File > New > Project**
-3. Choose **macOS > App**
-4. Product Name: `RepoWhisper`
-5. Interface: **SwiftUI**
-6. Language: **Swift**
-7. Save to: `/Users/rahulbainsla/Desktop/RepoWhisper/frontend/`
-8. Click **Create**
-
-### Step 2: Add Files
-
-1. **Delete** the default `ContentView.swift` and `RepoWhisperApp.swift` (if they exist)
-2. **Drag** all files from `frontend/RepoWhisper/` folder into Xcode project
-   - Make sure "Copy items if needed" is **checked**
-   - Add to target: **RepoWhisper**
-
-### Step 3: Add Supabase SDK
-
-1. **File > Add Package Dependencies**
-2. URL: `https://github.com/supabase/supabase-swift`
-3. Version: `2.0.0` or latest
-4. Add to target: **RepoWhisper**
-
-### Step 4: Configure Info.plist
-
-1. Select project in sidebar > **Target: RepoWhisper** > **Info** tab
-2. Add these keys (or they're already in the files you dragged):
-
+**Just double-click this file:**
 ```
-Privacy - Microphone Usage Description
-Value: RepoWhisper needs microphone access to transcribe your voice commands for code search.
-
-Privacy - Screen Recording Usage Description  
-Value: RepoWhisper needs screen recording access to capture system audio and screenshots for Boss Mode meeting intelligence.
-
-Privacy - Accessibility Usage Description
-Value: RepoWhisper needs accessibility access to identify the active window for context-aware screenshots.
+frontend/RepoWhisper.xcodeproj
 ```
 
-### Step 5: Build & Run
+**OR run:**
+```bash
+cd frontend
+open RepoWhisper.xcodeproj
+```
 
-1. Press **⌘R** or **Product > Run**
-2. Grant permissions when prompted
-3. **Menu bar icon appears** - click it!
+**Then press ⌘R to build and run!**
+
+That's it! The project is **already generated** with:
+- ✅ All Swift files included
+- ✅ Supabase package configured
+- ✅ Info.plist with permissions
+- ✅ Entitlements configured
+- ✅ Everything ready to go
+
+## If Project Gets Corrupted
+
+Just regenerate it:
+```bash
+cd frontend
+xcodegen generate
+open RepoWhisper.xcodeproj
+```
+
+**No manual file dragging needed!** 🎉
 
 ## UI Features ✨
 
