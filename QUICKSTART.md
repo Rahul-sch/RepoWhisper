@@ -13,16 +13,17 @@ source venv/bin/activate
 # Install dependencies (this takes ~2-3 minutes)
 pip install -r requirements.txt
 
-# Create .env file
-cat > .env << EOF
+# Create .env file (minimal - only required vars)
+cp .env.minimal .env
+
+# OR create manually with just Supabase (required):
+cat > .env << 'EOF'
 SUPABASE_URL=https://kjpxpppaeydireznlzwe.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqcHhwcHBhZXlkaXJlem5sendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDIwNTIsImV4cCI6MjA4MzQ3ODA1Mn0.YAHTxLc8ThKtbqOtvKU2yda_eZv2q91-gUHnMX-laVc
 SUPABASE_JWT_SECRET=e77ca237-27bf-4863-924f-22a13d135d40
-HOST=127.0.0.1
-PORT=8000
-DEBUG=true
-WHISPER_MODEL=tiny.en
-EMBEDDING_MODEL=all-MiniLM-L6-v2
+
+# Optional: Add Groq API key for Boss Mode AI
+# GROQ_API_KEY=your-groq-key-here
 EOF
 
 # Start the backend server
