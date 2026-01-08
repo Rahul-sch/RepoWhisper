@@ -40,7 +40,8 @@ struct MenuBarView: View {
         .onAppear {
             setupAudioCallback()
             setupBossMode()
-            Task {
+            // Check health asynchronously without blocking UI
+            Task { @MainActor in
                 await apiClient.checkHealth()
             }
         }

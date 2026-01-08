@@ -34,7 +34,8 @@ class AuthManager: ObservableObject {
     
     private init() {
         setupAuthStateListener()
-        Task {
+        // Check session asynchronously without blocking
+        Task { @MainActor in
             await checkExistingSession()
         }
     }
@@ -66,15 +67,42 @@ class AuthManager: ObservableObject {
     /// Check for existing session on app launch
     private func checkExistingSession() async {
         do {
-            let session = try await supabase.auth.session
-            self.session = session
-            self.currentUser = session.user
-            self.isAuthenticated = true
+            // Add timeout to prevent hanging if Supabase is unreachable
+            let session = try await withTimeout(seconds: 3) {
+                try await supabase.auth.session
+            }
+            await MainActor.run {
+                self.session = session
+                self.currentUser = session.user
+                self.isAuthenticated = true
+            }
         } catch {
-            // No existing session
-            self.isAuthenticated = false
+            // No existing session or timeout
+            await MainActor.run {
+                self.isAuthenticated = false
+            }
         }
     }
+    
+    /// Helper to add timeout to async operations
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+            guard let result = try await group.next() else {
+                throw TimeoutError()
+            }
+            group.cancelAll()
+            return result
+        }
+    }
+    
+    private struct TimeoutError: Error {}
     
     /// Sign in with email and password
     func signIn(email: String, password: String) async {

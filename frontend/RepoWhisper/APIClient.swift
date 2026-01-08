@@ -29,10 +29,10 @@ class APIClient: ObservableObject {
     private init() {
         self.baseURL = SupabaseConfig.backendURL
         
-        // Configure session for low latency
+        // Configure session for low latency with short timeout
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30
-        config.timeoutIntervalForResource = 60
+        config.timeoutIntervalForRequest = 5  // Reduced from 30 to prevent hanging
+        config.timeoutIntervalForResource = 10  // Reduced from 60
         config.waitsForConnectivity = false
         self.session = URLSession(configuration: config)
     }
@@ -43,15 +43,20 @@ class APIClient: ObservableObject {
     func checkHealth() async {
         do {
             let url = baseURL.appendingPathComponent("health")
+            // Add timeout to prevent hanging
             let (data, _) = try await session.data(from: url)
             
             let response = try JSONDecoder().decode(HealthResponse.self, from: data)
-            isConnected = response.status == "healthy"
-            indexCount = response.indexCount
-            errorMessage = nil
+            await MainActor.run {
+                isConnected = response.status == "healthy"
+                indexCount = response.indexCount
+                errorMessage = nil
+            }
         } catch {
-            isConnected = false
-            errorMessage = "Backend not reachable"
+            await MainActor.run {
+                isConnected = false
+                errorMessage = "Backend not reachable"
+            }
         }
     }
     
