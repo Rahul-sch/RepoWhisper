@@ -464,7 +464,10 @@ struct MenuBarView: View {
                     .foregroundColor(.secondary)
                 Spacer()
                 Button("Settings...") {
-                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                    // Open settings window
+                    if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "settings" }) {
+                        window.makeKeyAndOrderFront(nil)
+                    }
                 }
                 .buttonStyle(.plain)
                 .font(.caption)
@@ -613,7 +616,10 @@ struct MenuBarView: View {
                 .multilineTextAlignment(.center)
             
             Button("Open Login") {
-                NSApp.sendAction(Selector(("showWindow:")), to: nil, from: nil)
+                // Open results window
+                if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "results" }) {
+                    window.makeKeyAndOrderFront(nil)
+                }
             }
             .buttonStyle(.borderedProminent)
         }
