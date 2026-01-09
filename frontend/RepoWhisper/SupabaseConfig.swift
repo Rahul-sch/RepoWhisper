@@ -7,7 +7,6 @@
 
 import Foundation
 import Supabase
-import SupabaseAuth
 
 /// Supabase configuration constants
 enum SupabaseConfig {
@@ -43,7 +42,7 @@ let supabase = SupabaseClient(
     supabaseURL: SupabaseConfig.url,
     supabaseKey: SupabaseConfig.anonKey,
     options: SupabaseClientOptions(
-        auth: AuthOptions(
+        auth: AuthClientOptions(
             storage: UserDefaultsStorage()
         )
     )
