@@ -140,14 +140,21 @@ class APIClient: ObservableObject {
     ) async throws -> IndexResponse {
         let url = baseURL.appendingPathComponent("index")
         
+        print("🔍 [INDEX] Starting index request...")
+        print("🔍 [INDEX] URL: \(url)")
+        print("🔍 [INDEX] Repo Path: \(repoPath)")
+        print("🔍 [INDEX] Mode: \(mode)")
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         // Add auth token
         guard let token = AuthManager.shared.accessToken else {
+            print("❌ [INDEX] No auth token available")
             throw APIError.notAuthenticated
         }
+        print("✅ [INDEX] Auth token found")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         let body = IndexRequest(
@@ -158,14 +165,25 @@ class APIClient: ObservableObject {
         )
         request.httpBody = try JSONEncoder().encode(body)
         
+        print("📤 [INDEX] Sending request...")
         let (data, response) = try await session.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ [INDEX] Invalid response type")
+            throw APIError.requestFailed
+        }
+        
+        print("📥 [INDEX] Response status: \(httpResponse.statusCode)")
+        
+        guard httpResponse.statusCode == 200 else {
+            let errorBody = String(data: data, encoding: .utf8) ?? "No error body"
+            print("❌ [INDEX] Request failed with status \(httpResponse.statusCode)")
+            print("❌ [INDEX] Error body: \(errorBody)")
             throw APIError.requestFailed
         }
         
         let indexResponse = try JSONDecoder().decode(IndexResponse.self, from: data)
+        print("✅ [INDEX] Success! Files: \(indexResponse.filesIndexed), Chunks: \(indexResponse.chunksCreated)")
         indexCount = indexResponse.chunksCreated
         return indexResponse
     }

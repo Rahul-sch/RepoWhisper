@@ -231,6 +231,7 @@ struct RepoManagerView: View {
     private func startIndexing() {
         guard !selectedRepoPath.isEmpty else { return }
         
+        print("🚀 [UI] Starting indexing for: \(selectedRepoPath)")
         isIndexing = true
         indexProgress = 0
         statusMessage = "Starting indexing..."
@@ -242,11 +243,13 @@ struct RepoManagerView: View {
                 statusMessage = "Scanning files..."
                 indexProgress = 0.3
                 
+                print("📡 [UI] Calling API client...")
                 try await apiClient.indexRepository(
                     repoPath: selectedRepoPath,
                     mode: selectedIndexMode
                 )
                 
+                print("✅ [UI] Indexing completed successfully")
                 statusMessage = "Indexing complete!"
                 indexProgress = 1.0
                 
@@ -266,6 +269,11 @@ struct RepoManagerView: View {
                     statusMessage = ""
                 }
             } catch {
+                print("❌ [UI] Indexing error: \(error)")
+                print("❌ [UI] Error details: \(error.localizedDescription)")
+                if let apiError = error as? APIError {
+                    print("❌ [UI] API Error: \(apiError.errorDescription ?? "Unknown")")
+                }
                 statusMessage = "Error: \(error.localizedDescription)"
                 isIndexing = false
             }
