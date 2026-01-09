@@ -21,19 +21,18 @@ enum SupabaseConfig {
 }
 
 /// UserDefaults-based storage to avoid keychain prompts
-class UserDefaultsStorage: AuthLocalStorage {
+final class UserDefaultsStorage: AuthLocalStorage, @unchecked Sendable {
     private let defaults = UserDefaults.standard
-    private let key = "supabase.auth.session"
     
-    func getItem(key: String) -> String? {
-        return defaults.string(forKey: key)
-    }
-    
-    func setItem(key: String, value: String) {
+    func store(key: String, value: Data) throws {
         defaults.set(value, forKey: key)
     }
     
-    func removeItem(key: String) {
+    func retrieve(key: String) throws -> Data? {
+        return defaults.data(forKey: key)
+    }
+    
+    func remove(key: String) throws {
         defaults.removeObject(forKey: key)
     }
 }
@@ -43,7 +42,7 @@ let supabase = SupabaseClient(
     supabaseURL: SupabaseConfig.url,
     supabaseKey: SupabaseConfig.anonKey,
     options: SupabaseClientOptions(
-        auth: AuthOptions(
+        auth: .init(
             storage: UserDefaultsStorage()
         )
     )
