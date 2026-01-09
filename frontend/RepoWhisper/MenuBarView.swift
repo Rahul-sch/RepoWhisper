@@ -131,7 +131,7 @@ struct MenuBarView: View {
                 await MainActor.run {
                     isSearching = true
                     // Show loading popup
-                    popupManager.showLoadingPopup(query: transcription.text)
+                    popupManager.showLoadingPopup(query: transcription.text, isRecording: audioCapture.isRecording)
                     NotificationCenter.default.post(name: NSNotification.Name("SearchStarted"), object: nil)
                 }
                 
@@ -147,7 +147,8 @@ struct MenuBarView: View {
                     popupManager.showPopup(
                         results: searchResponse.results,
                         query: transcription.text,
-                        latency: searchResponse.latencyMs
+                        latency: searchResponse.latencyMs,
+                        isRecording: audioCapture.isRecording
                     )
                     
                     // Also post notification for backward compatibility
