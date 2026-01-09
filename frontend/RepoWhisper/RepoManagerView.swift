@@ -140,9 +140,8 @@ struct RepoManagerView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(
-                            isIndexing ? Color.gray :
                             LinearGradient(
-                                colors: [.green, .blue],
+                                colors: isIndexing ? [.gray, .gray] : [.green, .blue],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -244,7 +243,7 @@ struct RepoManagerView: View {
                 indexProgress = 0.3
                 
                 try await apiClient.indexRepository(
-                    path: selectedRepoPath,
+                    repoPath: selectedRepoPath,
                     mode: selectedIndexMode
                 )
                 
