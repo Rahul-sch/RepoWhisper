@@ -81,6 +81,13 @@ struct ResultsWindow: View {
             x: 0,
             y: 25
         )
+        .onAppear {
+            if isRecording {
+                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                    pulsatingOpacity = 1.0
+                }
+            }
+        }
     }
     
     // MARK: - Drag Area
@@ -210,12 +217,6 @@ struct ResultsWindow: View {
     // MARK: - Pulsating Animation
     
     @State private var pulsatingOpacity: Double = 0.3
-    
-    private func startPulsating() {
-        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-            pulsatingOpacity = 1.0
-        }
-    }
     
     // MARK: - Actions
     
