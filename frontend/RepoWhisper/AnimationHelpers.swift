@@ -200,39 +200,6 @@ struct PulsingCircles: View {
     }
 }
 
-struct WaveformAnimation: View {
-    @State private var animating = false
-    var isActive: Bool
-    var color: Color = .blue
-    
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<5, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(color)
-                    .frame(width: 3)
-                    .frame(height: animating ? CGFloat.random(in: 6...20) : 6)
-                    .animation(
-                        isActive ?
-                        .easeInOut(duration: 0.4)
-                            .repeatForever()
-                            .delay(Double(index) * 0.1) :
-                            .default,
-                        value: animating
-                    )
-            }
-        }
-        .onChange(of: isActive) { _, newValue in
-            animating = newValue
-        }
-        .onAppear {
-            if isActive {
-                animating = true
-            }
-        }
-    }
-}
-
 // MARK: - Badge Components
 
 struct StatusBadge: View {
@@ -270,7 +237,7 @@ struct StatusBadge: View {
     VStack(spacing: 30) {
         PulsingCircles(color: .purple)
         
-        WaveformAnimation(isActive: true, color: .blue)
+        WaveformAnimation(isActive: true)
         
         StatusBadge(text: "45ms", color: .green, icon: "bolt.fill")
         
