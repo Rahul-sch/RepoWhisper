@@ -279,11 +279,6 @@ class AuthManager: ObservableObject {
         isLoading = false
     }
     
-    /// Get the current access token for API calls
-    var accessToken: String? {
-        session?.accessToken
-    }
-    
     deinit {
         authStateTask?.cancel()
     }

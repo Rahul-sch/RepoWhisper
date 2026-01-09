@@ -200,13 +200,3 @@ class FloatingPopupManager: ObservableObject {
     }
 }
 
-/// Sample search result item for the popup
-struct SearchResultItem: Identifiable, Codable {
-    let id = UUID()
-    let filePath: String
-    let chunk: String
-    let score: Double
-    let lineStart: Int
-    let lineEnd: Int
-}
-
