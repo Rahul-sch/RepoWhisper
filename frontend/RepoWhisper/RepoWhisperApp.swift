@@ -11,12 +11,18 @@ import AppKit
 @main
 struct RepoWhisperApp: App {
     @StateObject private var authManager = AuthManager.shared
-    @StateObject private var audioCapture = AudioCapture.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
         // Print to console so we know app launched
         print("🚀 RepoWhisper app launching...")
+        
+        // Add crash protection
+        NSSetUncaughtExceptionHandler { exception in
+            print("💥 [CRASH] Uncaught exception: \(exception)")
+            print("💥 [CRASH] Reason: \(exception.reason ?? "Unknown")")
+            print("💥 [CRASH] Call stack: \(exception.callStackSymbols.joined(separator: "\n"))")
+        }
     }
     
     var body: some Scene {
@@ -43,29 +49,36 @@ struct RepoWhisperApp: App {
             CommandGroup(replacing: .newItem) { }
         }
         
-        // Menu Bar Extra - quick access (use menu style to avoid window issues)
+        // Menu Bar Extra - simplified to prevent crashes
         MenuBarExtra {
-            MenuBarView()
-                .environmentObject(authManager)
+            VStack(spacing: 8) {
+                Text("RepoWhisper")
+                    .font(.headline)
+                Divider()
+                Button("Open App") {
+                    // Open main window
+                    if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "main" }) {
+                        window.makeKeyAndOrderFront(nil)
+                    }
+                }
+                if authManager.devMode {
+                    Button("Disable Dev Mode") {
+                        authManager.disableDevMode()
+                    }
+                }
+            }
+            .padding()
+            .frame(width: 200)
         } label: {
             Image(systemName: "waveform.circle.fill")
         }
-        .menuBarExtraStyle(.menu) // Changed from .window to .menu to avoid ViewBridge issues
+        .menuBarExtraStyle(.menu)
         
         // Settings window
         Settings {
             SettingsView()
                 .environmentObject(authManager)
         }
-        
-        // Results window
-        Window("Search Results", id: "results") {
-            ResultsWindowContainer()
-                .environmentObject(authManager)
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
-        .defaultSize(width: 500, height: 400)
     }
 }
 

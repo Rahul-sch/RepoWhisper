@@ -11,13 +11,23 @@ import Supabase
 /// Supabase configuration constants
 enum SupabaseConfig {
     /// Supabase project URL
-    static let url = URL(string: "https://kjpxpppaeydireznlzwe.supabase.co")!
+    static let url: URL = {
+        guard let url = URL(string: "https://kjpxpppaeydireznlzwe.supabase.co") else {
+            fatalError("Invalid Supabase URL")
+        }
+        return url
+    }()
     
     /// Supabase anonymous/public key
     static let anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqcHhwcHBhZXlkaXJlem5sendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDIwNTIsImV4cCI6MjA4MzQ3ODA1Mn0.YAHTxLc8ThKtbqOtvKU2yda_eZv2q91-gUHnMX-laVc"
     
     /// Backend API URL for local development
-    static let backendURL = URL(string: "http://127.0.0.1:8000")!
+    static let backendURL: URL = {
+        guard let url = URL(string: "http://127.0.0.1:8000") else {
+            fatalError("Invalid backend URL")
+        }
+        return url
+    }()
 }
 
 /// UserDefaults-based storage to avoid keychain prompts
