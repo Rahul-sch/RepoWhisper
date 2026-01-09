@@ -72,10 +72,11 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token if available
-        if let token = AuthManager.shared.accessToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        // Add auth token (required for SaaS)
+        guard let token = AuthManager.shared.accessToken else {
+            throw APIError.notAuthenticated
         }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         request.httpBody = audioData
         
