@@ -14,9 +14,9 @@ struct SettingsView: View {
     @EnvironmentObject var authManager: AuthManager
     @StateObject private var apiClient = APIClient.shared
     
-    @AppStorage("indexMode") private var indexMode: String = "guided"
+    @AppStorage("indexMode") private var indexMode: String = "smart"
     @AppStorage("repoPath") private var repoPath: String = ""
-    @AppStorage("guidedPatterns") private var guidedPatterns: String = "*.py, *.swift, *.ts"
+    @AppStorage("smartPatterns") private var smartPatterns: String = "*.py, *.swift, *.ts"
     @AppStorage("manualFiles") private var manualFiles: String = ""
     
     @State private var isIndexing = false
@@ -77,8 +77,8 @@ struct SettingsView: View {
                 Picker("Mode", selection: $indexMode) {
                     Label("Manual - Select specific files", systemImage: "hand.tap")
                         .tag("manual")
-                    Label("Guided - File patterns", systemImage: "sparkles")
-                        .tag("guided")
+                    Label("Smart - File patterns", systemImage: "sparkles")
+                        .tag("smart")
                     Label("Full - Entire repository", systemImage: "folder")
                         .tag("full")
                 }
@@ -88,8 +88,8 @@ struct SettingsView: View {
                 switch indexMode {
                 case "manual":
                     manualModeOptions
-                case "guided":
-                    guidedModeOptions
+                case "smart":
+                    smartModeOptions
                 case "full":
                     fullModeOptions
                 default:
@@ -165,13 +165,13 @@ struct SettingsView: View {
         }
     }
     
-    private var guidedModeOptions: some View {
+    private var smartModeOptions: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("File Patterns (comma-separated):")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            TextField("*.py, *.swift, *.ts", text: $guidedPatterns)
+            TextField("*.py, *.swift, *.ts", text: $smartPatterns)
                 .textFieldStyle(.roundedBorder)
             
             Text("Examples: *.py, src/**/*.ts, tests/*.swift")
@@ -322,9 +322,9 @@ struct SettingsView: View {
                 case "manual":
                     mode = .manual
                     filePaths = manualFiles.split(separator: "\n").map(String.init)
-                case "guided":
-                    mode = .guided
-                    patterns = guidedPatterns.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                case "smart":
+                    mode = .smart
+                    patterns = smartPatterns.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 default:
                     mode = .full
                 }

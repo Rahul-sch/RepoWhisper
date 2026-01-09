@@ -130,7 +130,7 @@ class APIClient: ObservableObject {
     ///   - repoPath: Path to the repository
     ///   - mode: Indexing mode
     ///   - filePaths: Specific files (manual mode)
-    ///   - patterns: Glob patterns (guided mode)
+    ///   - patterns: Glob patterns (smart mode)
     /// - Returns: Index result
     func indexRepository(
         repoPath: String,
