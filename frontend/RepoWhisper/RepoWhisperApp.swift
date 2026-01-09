@@ -115,7 +115,8 @@ struct ResultsWindowContainer: View {
             results: results,
             query: query,
             latencyMs: latency,
-            isLoading: isLoading
+            isLoading: isLoading,
+            isRecording: false
         )
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SearchResults"))) { notification in
             if let data = notification.userInfo,

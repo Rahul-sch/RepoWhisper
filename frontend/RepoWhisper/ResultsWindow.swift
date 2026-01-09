@@ -14,7 +14,7 @@ struct ResultsWindow: View {
     let query: String
     let latencyMs: Double
     let isLoading: Bool
-    let isRecording: Bool = false // Pass from parent
+    let isRecording: Bool
     
     @State private var selectedResult: SearchResultItem?
     @State private var hoveredResult: SearchResultItem?

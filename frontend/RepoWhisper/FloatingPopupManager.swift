@@ -18,7 +18,7 @@ class FloatingPopupManager: ObservableObject {
     private init() {}
     
     /// Show the floating popup with search results
-    func showPopup(results: [SearchResultItem], query: String, latency: Double, isRecording: Bool = false) {
+    func showPopup(results: [SearchResultItem], query: String, latency: Double, isRecording: Bool) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
@@ -100,7 +100,7 @@ class FloatingPopupManager: ObservableObject {
     }
     
     /// Show the popup in loading state
-    func showLoadingPopup(query: String, isRecording: Bool = false) {
+    func showLoadingPopup(query: String, isRecording: Bool) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
