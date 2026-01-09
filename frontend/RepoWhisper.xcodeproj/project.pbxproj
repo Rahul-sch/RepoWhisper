@@ -21,6 +21,7 @@
 		793E09011824C07AD8B20EB5 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACC49DB057A6532A21E9E57 /* AudioCapture.swift */; };
 		98506C5BBE0C2D8B3FE12007 /* ScreenshotCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */; };
 		AD6A12BFB2DD979D64A395FC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */; };
+		BD8C5F87BCF7A81A6112F627 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9525BF6FA708784BB4732856 /* MainWindowView.swift */; };
 		F10DAA4CBDDECE2B9BC04FB2 /* RepoWhisperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */; };
 /* End PBXBuildFile section */
 
@@ -34,6 +35,7 @@
 		4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoWhisperApp.swift; sourceTree = "<group>"; };
 		56794B25204A09A55F3A9ED8 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		82051857B3D32E1DE0EB6CAB /* AnimationHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationHelpers.swift; sourceTree = "<group>"; };
+		9525BF6FA708784BB4732856 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
 		9CF68A2E300B00A5DC4B3ABC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotCapture.swift; sourceTree = "<group>"; };
@@ -82,6 +84,7 @@
 				F785716971D242601F437E64 /* FloatingPopupManager.swift */,
 				9CF68A2E300B00A5DC4B3ABC /* Info.plist */,
 				37071BFB05CBC4EF18D008EA /* LoginView.swift */,
+				9525BF6FA708784BB4732856 /* MainWindowView.swift */,
 				56794B25204A09A55F3A9ED8 /* MenuBarView.swift */,
 				39D17F56AFD20E211D9DBA23 /* RepoManagerView.swift */,
 				F3D9270A8D2D21F165255BB6 /* RepoWhisper.entitlements */,
@@ -159,6 +162,7 @@
 				488918DEF34681AEBFC7A4DE /* AuthManager.swift in Sources */,
 				3084E8BAF248811A2BECAA65 /* FloatingPopupManager.swift in Sources */,
 				0E280D6318399B3E50671734 /* LoginView.swift in Sources */,
+				BD8C5F87BCF7A81A6112F627 /* MainWindowView.swift in Sources */,
 				046F2E69329442D6F03F6BDC /* MenuBarView.swift in Sources */,
 				65DA88E60D57364B4F0F4FF3 /* RepoManagerView.swift in Sources */,
 				F10DAA4CBDDECE2B9BC04FB2 /* RepoWhisperApp.swift in Sources */,
