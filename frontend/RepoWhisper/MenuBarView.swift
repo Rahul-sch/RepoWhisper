@@ -2,7 +2,8 @@
 //  MenuBarView.swift
 //  RepoWhisper
 //
-//  Main menu bar interface with recording controls and mode selection.
+//  Premium menu bar interface with ultra-minimalist glassmorphism design.
+//  VC-backed quality: Cluely, Linear, Raycast aesthetic.
 //
 
 import SwiftUI
@@ -15,7 +16,6 @@ struct MenuBarView: View {
     @StateObject private var popupManager = FloatingPopupManager.shared
     
     @State private var selectedMode: IndexMode = .smart
-    @State private var showingFilePicker = false
     @State private var showingRepoManager = false
     @State private var repoPath: String = ""
     @State private var lastTranscription: String = ""
@@ -38,11 +38,10 @@ struct MenuBarView: View {
                 unauthenticatedView
             }
         }
-        .frame(width: 320)
+        .frame(width: 360)
         .onAppear {
             setupAudioCallback()
             setupBossMode()
-            // Check health asynchronously without blocking UI
             Task { @MainActor in
                 await apiClient.checkHealth()
             }
@@ -62,7 +61,6 @@ struct MenuBarView: View {
     // MARK: - Boss Mode Setup
     
     private func setupBossMode() {
-        // Screenshot callback
         screenshotCapture.onScreenshot = { screenshotData in
             Task {
                 await processScreenshot(screenshotData)
@@ -72,13 +70,11 @@ struct MenuBarView: View {
     
     private func processScreenshot(_ screenshotData: Data) async {
         do {
-            // Upload and get base64
             let response = try await apiClient.uploadScreenshot(screenshotData)
             await MainActor.run {
                 latestScreenshotBase64 = response.screenshotBase64
             }
             
-            // Generate advice if we have transcript
             if !lastTranscription.isEmpty {
                 await generateAdvice()
             }
@@ -95,7 +91,6 @@ struct MenuBarView: View {
         }
         
         do {
-            // Extract code snippets from search results
             let codeSnippets = searchResults.prefix(3).map { $0.chunk }
             
             let advice = try await apiClient.getAdvice(
@@ -119,18 +114,15 @@ struct MenuBarView: View {
     
     private func transcribeAndSearch(_ audioData: Data) async {
         do {
-            // Transcribe audio
             let transcription = try await apiClient.transcribe(audioData: audioData)
             
             await MainActor.run {
                 lastTranscription = transcription.text
             }
             
-            // Search if we have meaningful text
             if !transcription.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 await MainActor.run {
                     isSearching = true
-                    // Show loading popup
                     popupManager.showLoadingPopup(query: transcription.text, isRecording: audioCapture.isRecording)
                     NotificationCenter.default.post(name: NSNotification.Name("SearchStarted"), object: nil)
                 }
@@ -143,7 +135,6 @@ struct MenuBarView: View {
                     isSearching = false
                     showResults = true
                     
-                    // Show floating popup (Cluely-style)
                     popupManager.showPopup(
                         results: searchResponse.results,
                         query: transcription.text,
@@ -151,7 +142,6 @@ struct MenuBarView: View {
                         isRecording: audioCapture.isRecording
                     )
                     
-                    // Also post notification for backward compatibility
                     NotificationCenter.default.post(
                         name: NSNotification.Name("SearchResults"),
                         object: nil,
@@ -163,7 +153,6 @@ struct MenuBarView: View {
                     )
                 }
                 
-                // Generate Boss Mode advice if enabled
                 if bossModeEnabled {
                     await generateAdvice()
                 }
@@ -173,358 +162,122 @@ struct MenuBarView: View {
         }
     }
     
-    // MARK: - Authenticated View
+    // MARK: - Authenticated View (Premium)
     
     private var authenticatedView: some View {
         VStack(spacing: 0) {
-            // Modern header with gradient
-            ZStack {
-                LinearGradient(
-                    colors: [Color.purple.opacity(0.1), Color.blue.opacity(0.05)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                
-            HStack {
-                    HStack(spacing: 10) {
-                        Image(systemName: "waveform.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.purple, .blue],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                        
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("RepoWhisper")
-                                .font(.system(.headline, design: .rounded))
-                                .fontWeight(.bold)
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(apiClient.isConnected ? Color.green : Color.red)
-                                    .frame(width: 6, height: 6)
-                    Text(authManager.currentUser?.email ?? "")
-                                    .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                        }
-                    }
-                    
-                Spacer()
-                    
-                Button {
-                    Task { await authManager.signOut() }
-                } label: {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.caption)
-                        .foregroundColor(.secondary)
-                            .padding(6)
-                            .background(Color.secondary.opacity(0.1))
-                            .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
+            // Premium header
+            premiumHeader
             
             Divider()
-                .padding(.vertical, 4)
+                .background(Color.white.opacity(0.1))
+                .padding(.horizontal, 20)
             
-            // Index Mode Selector - Modern card style
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.caption)
-                        .foregroundColor(.purple)
-                Text("Index Mode")
-                    .font(.caption)
-                        .fontWeight(.medium)
-                    .foregroundColor(.secondary)
+            // Content
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Recording control (premium)
+                    premiumRecordingButton
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                    
+                    // Status section
+                    if audioCapture.isRecording || !lastTranscription.isEmpty {
+                        statusSection
+                            .padding(.horizontal, 20)
+                    }
+                    
+                    // Repository section
+                    repositorySection
+                        .padding(.horizontal, 20)
+                    
+                    // Boss Mode
+                    bossModeSection
+                        .padding(.horizontal, 20)
+                    
+                    // Talking point (if available)
+                    if bossModeEnabled && !latestTalkingPoint.isEmpty {
+                        talkingPointCard
+                            .padding(.horizontal, 20)
+                    }
                 }
-                
-                Picker("Mode", selection: $selectedMode) {
-                    Label("Manual", systemImage: "hand.tap")
-                        .tag(IndexMode.manual)
-                    Label("Smart", systemImage: "sparkles")
-                        .tag(IndexMode.smart)
-                    Label("Full Repo", systemImage: "folder")
-                        .tag(IndexMode.full)
-                }
-                .pickerStyle(.segmented)
-                .padding(.vertical, 4)
+                .padding(.bottom, 20)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.primary.opacity(0.02))
-            .cornerRadius(10)
-            .padding(.horizontal, 16)
-            
-            // Repository Management - Modern card
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    HStack(spacing: 6) {
-                        Image(systemName: "folder.fill")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                        Text("Repository")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                    if apiClient.indexCount > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.caption2)
-                                .foregroundColor(.green)
-                            Text("\(apiClient.indexCount) chunks indexed")
-                                .font(.caption2)
-                                .foregroundColor(.green)
-                        }
-                    }
-                }
-                
-                Button {
-                    showingRepoManager = true
-                } label: {
-                    HStack {
-                        Image(systemName: "folder.badge.gearshape")
-                            .font(.callout)
-                        Text("Manage Repositories")
-                            .font(.callout)
-                            .fontWeight(.medium)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(12)
-                    .background(
+        }
+        .background(
+            // Premium glassmorphism background
+            RoundedRectangle(cornerRadius: 0)
+                .fill(.ultraThinMaterial)
+        )
+    }
+    
+    // MARK: - Premium Header
+    
+    private var premiumHeader: some View {
+        HStack(spacing: 12) {
+            // Logo
+            ZStack {
+                Circle()
+                    .fill(
                         LinearGradient(
-                            colors: [.blue, .purple],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                            colors: [
+                                Color.purple.opacity(0.2),
+                                Color.blue.opacity(0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
                     )
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                }
-                .buttonStyle(.plain)
-                .sheet(isPresented: $showingRepoManager) {
-                    RepoManagerView()
-                }
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: "waveform.circle.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.purple, .blue],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color.primary.opacity(0.02))
-            .cornerRadius(10)
-            .padding(.horizontal, 16)
             
-            Divider()
-            
-            // Boss Mode Toggle
-            bossModeToggle
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            
-            Divider()
-            
-            // Recording Control - Cluely-style button
-            recordingButton
-                .padding(.horizontal, 16)
-            
-            // Status and Transcription
-            if audioCapture.isRecording || !lastTranscription.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                        if audioCapture.isRecording {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("RepoWhisper")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                HStack(spacing: 6) {
                     Circle()
-                        .fill(.red)
-                        .frame(width: 8, height: 8)
-                    Text("Listening...")
-                        .font(.caption)
+                        .fill(apiClient.isConnected ? Color.green : Color.red)
+                        .frame(width: 6, height: 6)
+                    
+                    Text(authManager.currentUser?.email ?? "")
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
                         .foregroundColor(.secondary)
-                        }
-                    Spacer()
-                    }
-                    
-                    if !lastTranscription.isEmpty {
-                        Text("\"" + lastTranscription + "\"")
-                            .font(.caption)
-                            .foregroundColor(.primary)
-                            .italic()
-                            .lineLimit(2)
-                    }
                 }
-                .padding(.horizontal, 16)
-            }
-            
-            // Boss Mode Talking Point - Premium card
-            if bossModeEnabled && !latestTalkingPoint.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [.yellow.opacity(0.3), .orange.opacity(0.2)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 28, height: 28)
-                            
-                            Image(systemName: "lightbulb.fill")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                        }
-                        
-                        Text("Talking Point")
-                        .font(.caption)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        if isGeneratingAdvice {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                        }
-                    }
-                    
-                    Text(latestTalkingPoint)
-                        .font(.system(.caption, design: .rounded))
-                        .foregroundColor(.primary)
-                        .padding(12)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.yellow.opacity(0.15), Color.orange.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
-                        )
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color.primary.opacity(0.02))
-                .cornerRadius(12)
-                .padding(.horizontal, 16)
-            }
-            
-            // Search Results Preview
-            if showResults && !searchResults.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text("Results")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                        Spacer()
-                        Text("\(Int(searchLatency))ms")
-                            .font(.caption2)
-                            .foregroundColor(.green)
-                        Button("View All") {
-                            // Open results window
-                            if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "results" }) {
-                                window.makeKeyAndOrderFront(nil)
-                            } else {
-                                NSWorkspace.shared.open(URL(string: "repowhisper://results")!)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .font(.caption2)
-                    }
-                    
-                    ForEach(searchResults.prefix(3)) { result in
-                        HStack {
-                            Image(systemName: "doc.text")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(URL(fileURLWithPath: result.filePath).lastPathComponent)
-                                .font(.caption)
-                        .lineLimit(1)
-                            Spacer()
-                            Text("\(Int(result.score * 100))%")
-                                .font(.caption2)
-                                .foregroundColor(.green)
-                        }
-                        .padding(6)
-                        .background(Color.primary.opacity(0.03))
-                        .cornerRadius(4)
-                        .onTapGesture {
-                            NSWorkspace.shared.open(URL(fileURLWithPath: result.filePath))
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
             }
             
             Spacer()
             
-            // Footer
-            HStack {
-                Text("⌘ + Shift + R to toggle")
-                    .font(.caption2)
+            Button {
+                Task { await authManager.signOut() }
+            } label: {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
-                Spacer()
-                Button("Settings...") {
-                    // Open settings window
-                    if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "settings" }) {
-                        window.makeKeyAndOrderFront(nil)
-                    }
-                }
-                .buttonStyle(.plain)
-                .font(.caption)
+                    .frame(width: 28, height: 28)
+                    .background(Color.white.opacity(0.05))
+                    .clipShape(Circle())
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
+            .buttonStyle(.plain)
         }
-        .frame(minHeight: 380)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
     }
     
-    // MARK: - Boss Mode Toggle
+    // MARK: - Premium Recording Button
     
-    private var bossModeToggle: some View {
-        Toggle(isOn: $bossModeEnabled) {
-            HStack(spacing: 8) {
-                Image(systemName: bossModeEnabled ? "crown.fill" : "crown")
-                    .foregroundColor(bossModeEnabled ? .yellow : .secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Boss Mode")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Text("Meeting intelligence")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .toggleStyle(.switch)
-        .onChange(of: bossModeEnabled) { oldValue, newValue in
-            if newValue {
-                Task {
-                    // Request permissions and start
-                    let screenGranted = await screenshotCapture.requestPermission()
-                    if screenGranted {
-                        await screenshotCapture.startCapture()
-                    }
-                }
-            } else {
-                screenshotCapture.stopCapture()
-            }
-        }
-    }
-    
-    // MARK: - Recording Button
-    
-    private var recordingButton: some View {
+    private var premiumRecordingButton: some View {
         Button {
             if audioCapture.isRecording {
                 audioCapture.stopRecording()
@@ -541,16 +294,22 @@ struct MenuBarView: View {
                 ZStack {
                     Circle()
                         .fill(
+                            audioCapture.isRecording ?
                             LinearGradient(
-                                colors: audioCapture.isRecording ? [.red.opacity(0.2), .red.opacity(0.1)] : [.purple.opacity(0.2), .blue.opacity(0.1)],
+                                colors: [Color.red.opacity(0.2), Color.red.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ) :
+                            LinearGradient(
+                                colors: [Color.purple.opacity(0.2), Color.blue.opacity(0.1)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 50, height: 50)
+                        .frame(width: 56, height: 56)
                     
                     Image(systemName: audioCapture.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                        .font(.title)
+                        .font(.system(size: 28, weight: .medium))
                         .foregroundStyle(
                             audioCapture.isRecording ?
                             LinearGradient(colors: [.red], startPoint: .top, endPoint: .bottom) :
@@ -560,14 +319,14 @@ struct MenuBarView: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(audioCapture.isRecording ? "Stop Listening" : "Start Listening")
-                        .font(.system(.subheadline, design: .rounded))
-                        .fontWeight(.semibold)
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
                     HStack(spacing: 4) {
                         Image(systemName: "keyboard")
-                            .font(.caption2)
+                            .font(.system(size: 10))
                         Text("⌘⇧R")
-                            .font(.caption2)
-                        .fontWeight(.medium)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
                     }
                         .foregroundColor(.secondary)
                 }
@@ -575,70 +334,264 @@ struct MenuBarView: View {
                 Spacer()
                 
                 if audioCapture.isRecording {
-                    // Modern audio level indicator
-                    HStack(spacing: 3) {
+                    // Premium audio level indicator
+                    HStack(spacing: 2) {
                         ForEach(0..<5, id: \.self) { i in
-                            RoundedRectangle(cornerRadius: 2)
+                            RoundedRectangle(cornerRadius: 1.5)
                                 .fill(
                                     Float(i) / 5.0 < audioCapture.audioLevel ?
                                     LinearGradient(colors: [.purple, .blue], startPoint: .top, endPoint: .bottom) :
-                                    LinearGradient(colors: [.gray.opacity(0.3)], startPoint: .top, endPoint: .bottom)
+                                    LinearGradient(colors: [.gray.opacity(0.2)], startPoint: .top, endPoint: .bottom)
                                 )
-                                .frame(width: 4, height: CGFloat(6 + i * 4))
-                                .animation(.spring(response: 0.3), value: audioCapture.audioLevel)
+                                .frame(width: 3, height: CGFloat(6 + i * 3))
+                                .animation(.spring(response: 0.2), value: audioCapture.audioLevel)
                         }
                     }
-                    .padding(.trailing, 4)
                 }
             }
-            .padding(16)
+            .padding(18)
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(
                         audioCapture.isRecording ?
-                        LinearGradient(colors: [.red.opacity(0.6), .red.opacity(0.3)], startPoint: .top, endPoint: .bottom) :
-                        LinearGradient(colors: [.clear], startPoint: .top, endPoint: .bottom),
-                        lineWidth: 2
+                        LinearGradient(
+                            colors: [Color.red.opacity(0.3), Color.red.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ) :
+                        LinearGradient(colors: [Color.clear], startPoint: .top, endPoint: .bottom),
+                        lineWidth: 0.5
                     )
             )
         }
         .buttonStyle(.plain)
     }
     
-    // MARK: - Unauthenticated View
+    // MARK: - Status Section
+    
+    private var statusSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if audioCapture.isRecording {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(.red)
+                        .frame(width: 8, height: 8)
+                        .shadow(color: .red.opacity(0.5), radius: 4)
+                    
+                    Text("Listening...")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            if !lastTranscription.isEmpty {
+                Text("\"" + lastTranscription + "\"")
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundColor(.primary)
+                    .italic()
+                    .lineLimit(2)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.white.opacity(0.05))
+                    )
+            }
+        }
+    }
+    
+    // MARK: - Repository Section
+    
+    private var repositorySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Repository", systemImage: "folder.fill")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                if apiClient.indexCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.green)
+                        Text("\(apiClient.indexCount)")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+            
+            Button {
+                showingRepoManager = true
+            } label: {
+                HStack {
+                    Image(systemName: "folder.badge.gearshape")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("Manage Repositories")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary.opacity(0.6))
+                }
+                .foregroundColor(.white)
+                .padding(14)
+                .background(
+                    LinearGradient(
+                        colors: [.blue, .purple],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $showingRepoManager) {
+                RepoManagerView()
+            }
+        }
+    }
+    
+    // MARK: - Boss Mode Section
+    
+    private var bossModeSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(isOn: $bossModeEnabled) {
+                HStack(spacing: 10) {
+                    Image(systemName: bossModeEnabled ? "crown.fill" : "crown")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(bossModeEnabled ? Color(red: 0.98, green: 0.80, blue: 0.36) : .secondary)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Boss Mode")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        Text("Meeting intelligence")
+                            .font(.system(size: 11, weight: .regular, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .toggleStyle(.switch)
+            .onChange(of: bossModeEnabled) { oldValue, newValue in
+                if newValue {
+                    Task {
+                        let screenGranted = await screenshotCapture.requestPermission()
+                        if screenGranted {
+                            await screenshotCapture.startCapture()
+                        }
+                    }
+                } else {
+                    screenshotCapture.stopCapture()
+                }
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.03))
+        )
+    }
+    
+    // MARK: - Talking Point Card
+    
+    private var talkingPointCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.98, green: 0.80, blue: 0.36).opacity(0.3),
+                                    Color(red: 0.96, green: 0.65, blue: 0.38).opacity(0.2)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 24, height: 24)
+                    
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color(red: 0.98, green: 0.80, blue: 0.36))
+                }
+                
+                Text("Talking Point")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                
+                Spacer()
+                
+                if isGeneratingAdvice {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                }
+            }
+            
+            Text(latestTalkingPoint)
+                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .foregroundColor(.primary)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.98, green: 0.80, blue: 0.36).opacity(0.12),
+                                    Color(red: 0.96, green: 0.65, blue: 0.38).opacity(0.08)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color(red: 0.98, green: 0.80, blue: 0.36).opacity(0.2), lineWidth: 0.5)
+                )
+        }
+    }
+    
+    // MARK: - Unauthenticated View (Premium)
     
     private var unauthenticatedView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Image(systemName: "waveform.circle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.purple)
+                .font(.system(size: 56, weight: .medium))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.purple, .blue],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
             
+            VStack(spacing: 8) {
             Text("Sign in to RepoWhisper")
-                .font(.headline)
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
             
             Text("Connect your account to start voice-powered code search.")
-                .font(.caption)
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+            }
             
             Button("Open Login") {
-                // Open login window
                 if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "login" }) {
                     window.makeKeyAndOrderFront(nil)
-                } else {
-                    // If window doesn't exist yet, open it via WindowGroup
-                    NSWorkspace.shared.open(URL(string: "repowhisper://login")!)
                 }
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
         }
-        .padding(24)
-        .frame(height: 200)
+        .padding(32)
+        .frame(height: 280)
     }
 }
 
