@@ -20,7 +20,25 @@ struct RepoWhisperApp: App {
     }
     
     var body: some Scene {
-        // Menu Bar Extra - the main interface
+        // Main Window - Full app interface
+        WindowGroup("RepoWhisper", id: "main") {
+            if authManager.isAuthenticated {
+                MainWindowView()
+                    .environmentObject(authManager)
+                    .frame(minWidth: 800, minHeight: 600)
+            } else {
+                LoginView()
+                    .environmentObject(authManager)
+                    .frame(width: 400, height: 500)
+            }
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+        .commands {
+            CommandGroup(replacing: .newItem) { }
+        }
+        
+        // Menu Bar Extra - quick access
         MenuBarExtra {
             MenuBarView()
                 .environmentObject(authManager)
@@ -34,26 +52,6 @@ struct RepoWhisperApp: App {
             SettingsView()
                 .environmentObject(authManager)
         }
-        
-        // Login window (shown when not authenticated)
-        Window("RepoWhisper Login", id: "login") {
-            LoginView()
-                .environmentObject(authManager)
-                .frame(width: 400, height: 500)
-                .onChange(of: authManager.isAuthenticated) { oldValue, newValue in
-                    // Auto-close login window when authenticated
-                    if newValue {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "login" }) {
-                                window.close()
-                            }
-                        }
-                    }
-                }
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
         
         // Results window
         Window("Search Results", id: "results") {
