@@ -12,6 +12,7 @@
 		0E280D6318399B3E50671734 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37071BFB05CBC4EF18D008EA /* LoginView.swift */; };
 		28CA9ED9B49250322A143E0E /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E922545E1E2A4B35330C24 /* SupabaseConfig.swift */; };
 		3084E8BAF248811A2BECAA65 /* FloatingPopupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F785716971D242601F437E64 /* FloatingPopupManager.swift */; };
+		3454F3336749C798404C9BD7 /* AnimationHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82051857B3D32E1DE0EB6CAB /* AnimationHelpers.swift */; };
 		3AEE6B107A1F93D675E424B7 /* ResultsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0693029548C0A143A970956E /* ResultsWindow.swift */; };
 		488918DEF34681AEBFC7A4DE /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2C96FAA45299FB54994AE6 /* AuthManager.swift */; };
 		562661DD852163AE3357A1D8 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 3F52F6F2D80532B5AEC7E4CE /* Supabase */; };
@@ -32,6 +33,7 @@
 		49E922545E1E2A4B35330C24 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
 		4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoWhisperApp.swift; sourceTree = "<group>"; };
 		56794B25204A09A55F3A9ED8 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		82051857B3D32E1DE0EB6CAB /* AnimationHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationHelpers.swift; sourceTree = "<group>"; };
 		9CF68A2E300B00A5DC4B3ABC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotCapture.swift; sourceTree = "<group>"; };
@@ -73,6 +75,7 @@
 		C49B787ACABBD6332E74200E /* RepoWhisper */ = {
 			isa = PBXGroup;
 			children = (
+				82051857B3D32E1DE0EB6CAB /* AnimationHelpers.swift */,
 				28CBDBEA81C4E961FC309E87 /* APIClient.swift */,
 				BACC49DB057A6532A21E9E57 /* AudioCapture.swift */,
 				0E2C96FAA45299FB54994AE6 /* AuthManager.swift */,
@@ -151,6 +154,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				600A37313E65F0F18E109957 /* APIClient.swift in Sources */,
+				3454F3336749C798404C9BD7 /* AnimationHelpers.swift in Sources */,
 				793E09011824C07AD8B20EB5 /* AudioCapture.swift in Sources */,
 				488918DEF34681AEBFC7A4DE /* AuthManager.swift in Sources */,
 				3084E8BAF248811A2BECAA65 /* FloatingPopupManager.swift in Sources */,
