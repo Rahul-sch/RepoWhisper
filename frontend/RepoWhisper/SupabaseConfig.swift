@@ -42,7 +42,7 @@ let supabase = SupabaseClient(
     supabaseURL: SupabaseConfig.url,
     supabaseKey: SupabaseConfig.anonKey,
     options: SupabaseClientOptions(
-        auth: AuthClientOptions(
+        auth: SupabaseClientOptions.AuthOptions(
             storage: UserDefaultsStorage()
         )
     )
