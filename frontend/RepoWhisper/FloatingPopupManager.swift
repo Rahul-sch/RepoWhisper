@@ -41,9 +41,9 @@ class FloatingPopupManager: ObservableObject {
             guard let screen = NSScreen.main else { return }
             let screenFrame = screen.visibleFrame
             
-            // Window size
-            let windowWidth: CGFloat = 520
-            let windowHeight: CGFloat = 450
+            // Window size (premium glassmorphism)
+            let windowWidth: CGFloat = 580
+            let windowHeight: CGFloat = 520
             let padding: CGFloat = 20
             
             // Position at top-right
@@ -123,9 +123,9 @@ class FloatingPopupManager: ObservableObject {
             guard let screen = NSScreen.main else { return }
             let screenFrame = screen.visibleFrame
             
-            // Window size
-            let windowWidth: CGFloat = 520
-            let windowHeight: CGFloat = 450
+            // Window size (premium glassmorphism)
+            let windowWidth: CGFloat = 580
+            let windowHeight: CGFloat = 520
             let padding: CGFloat = 20
             
             // Position at top-right
