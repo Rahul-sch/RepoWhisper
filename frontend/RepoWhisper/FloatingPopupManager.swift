@@ -19,11 +19,17 @@ class FloatingPopupManager: ObservableObject {
     
     /// Show the floating popup with search results
     func showPopup(results: [SearchResultItem], query: String, latency: Double, isRecording: Bool) {
+        print("🎯 [POPUP] showPopup called with \(results.count) results, query: '\(query)'")
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+            guard let self = self else {
+                print("❌ [POPUP] self is nil, aborting")
+                return
+            }
             
+            print("✅ [POPUP] Creating popup window...")
             // Close existing window if any (with delay to prevent ViewBridge errors)
             if let existingWindow = self.popupWindow {
+                print("🔄 [POPUP] Closing existing window first")
                 // Animate out first
                 NSAnimationContext.runAnimationGroup({ context in
                     context.duration = 0.15
@@ -44,6 +50,7 @@ class FloatingPopupManager: ObservableObject {
     }
     
     private func createAndShowPopup(results: [SearchResultItem], query: String, latency: Double, isRecording: Bool) {
+        print("🎨 [POPUP] createAndShowPopup - creating window with \(results.count) results")
         // Create the SwiftUI view
         let contentView = ResultsWindow(
             results: results,
@@ -55,9 +62,14 @@ class FloatingPopupManager: ObservableObject {
         
         // Create hosting view
         let hostingView = NSHostingView(rootView: contentView)
+        print("✅ [POPUP] Created hosting view")
             
         // Calculate position (top-right corner of screen with padding)
-        guard let screen = NSScreen.main else { return }
+        guard let screen = NSScreen.main else {
+            print("❌ [POPUP] No main screen found!")
+            return
+        }
+        print("✅ [POPUP] Got main screen: \(screen.frame)")
         let screenFrame = screen.visibleFrame
         
         // Window size (premium glassmorphism)
@@ -101,15 +113,20 @@ class FloatingPopupManager: ObservableObject {
         self.popupWindow = panel
         self.isVisible = true
         
+        print("📺 [POPUP] Window created at position: x=\(xPos), y=\(yPos), size=\(windowWidth)x\(windowHeight)")
+        
         // Animate in
         panel.alphaValue = 0
         panel.makeKeyAndOrderFront(nil)
+        print("✅ [POPUP] Window ordered front - should be visible now!")
         
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1.0
-        }, completionHandler: nil)
+        }, completionHandler: {
+            print("✨ [POPUP] Animation complete - window fully visible")
+        })
         
         // Auto-dismiss after 15 seconds (like Cluely)
         DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in

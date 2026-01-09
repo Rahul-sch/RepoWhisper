@@ -261,16 +261,25 @@ struct SearchView: View {
     private func performSearch() {
         guard !searchQuery.isEmpty else { return }
         
+        print("🔍 [SEARCH] Starting search for: '\(searchQuery)'")
         isSearching = true
+        
+        // Show loading popup immediately
+        popupManager.showLoadingPopup(query: searchQuery, isRecording: audioCapture.isRecording)
+        
         Task {
             do {
+                print("📡 [SEARCH] Calling API...")
                 let results = try await apiClient.search(query: searchQuery)
+                print("✅ [SEARCH] Got \(results.results.count) results")
+                
                 await MainActor.run {
                     searchResults = results.results
                     searchLatency = results.latencyMs
                     isSearching = false
                     
                     // Show popup with results
+                    print("🎯 [SEARCH] Showing popup with results...")
                     popupManager.showPopup(
                         results: results.results,
                         query: searchQuery,
@@ -279,6 +288,7 @@ struct SearchView: View {
                     )
                 }
             } catch {
+                print("❌ [SEARCH] Search error: \(error)")
                 await MainActor.run {
                     isSearching = false
                 }
