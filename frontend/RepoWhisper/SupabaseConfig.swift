@@ -20,9 +20,32 @@ enum SupabaseConfig {
     static let backendURL = URL(string: "http://127.0.0.1:8000")!
 }
 
-/// Shared Supabase client instance
+/// UserDefaults-based storage to avoid keychain prompts
+class UserDefaultsStorage: AuthLocalStorage {
+    private let defaults = UserDefaults.standard
+    private let key = "supabase.auth.session"
+    
+    func getItem(key: String) -> String? {
+        return defaults.string(forKey: key)
+    }
+    
+    func setItem(key: String, value: String) {
+        defaults.set(value, forKey: key)
+    }
+    
+    func removeItem(key: String) {
+        defaults.removeObject(forKey: key)
+    }
+}
+
+/// Shared Supabase client instance (using UserDefaults instead of keychain)
 let supabase = SupabaseClient(
     supabaseURL: SupabaseConfig.url,
-    supabaseKey: SupabaseConfig.anonKey
+    supabaseKey: SupabaseConfig.anonKey,
+    options: SupabaseClientOptions(
+        auth: AuthOptions(
+            storage: UserDefaultsStorage()
+        )
+    )
 )
 
