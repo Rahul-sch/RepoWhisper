@@ -194,15 +194,31 @@ struct LoginView: View {
                 
                 // Toggle sign in/sign up (hide if authenticated)
                 if !authManager.isAuthenticated {
-                    Button {
-                        isSignUp.toggle()
-                        authManager.errorMessage = nil
-                    } label: {
-                        Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
+                    VStack(spacing: 12) {
+                        Button {
+                            isSignUp.toggle()
+                            authManager.errorMessage = nil
+                        } label: {
+                            Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
+                                .font(.caption)
+                                .foregroundColor(.purple)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Testing button (dev mode)
+                        Button {
+                            authManager.enableDevMode()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "testtube.2")
+                                Text("Testing Mode (Skip Login)")
+                            }
                             .font(.caption)
-                            .foregroundColor(.purple)
+                            .foregroundColor(.orange)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 8)
                     }
-                    .buttonStyle(.plain)
                     .padding(.bottom, 24)
                 } else {
                     // Close button when authenticated

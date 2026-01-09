@@ -30,19 +30,57 @@ class AuthManager: ObservableObject {
     /// Error message from last auth operation
     @Published var errorMessage: String?
     
+    /// Dev mode flag (bypasses authentication for testing)
+    @Published var devMode: Bool {
+        didSet {
+            UserDefaults.standard.set(devMode, forKey: "RepoWhisper.DevMode")
+            if devMode {
+                // Auto-authenticate in dev mode
+                isAuthenticated = true
+            }
+        }
+    }
+    
     /// Access token for API requests
     var accessToken: String? {
-        session?.accessToken
+        if devMode {
+            return "dev-mode-token" // Dummy token for dev mode
+        }
+        return session?.accessToken
     }
     
     private var authStateTask: Task<Void, Never>?
     
     private init() {
+        // Load dev mode from UserDefaults
+        self.devMode = UserDefaults.standard.bool(forKey: "RepoWhisper.DevMode")
+        
         setupAuthStateListener()
-        // Check session asynchronously without blocking
-        Task { @MainActor in
-            await checkExistingSession()
+        
+        // If dev mode is enabled, skip auth check
+        if devMode {
+            isAuthenticated = true
+            print("🧪 [DEV] Dev mode enabled - authentication bypassed")
+        } else {
+            // Check session asynchronously without blocking
+            Task { @MainActor in
+                await checkExistingSession()
+            }
         }
+    }
+    
+    /// Enable dev mode (bypasses authentication)
+    func enableDevMode() {
+        devMode = true
+        isAuthenticated = true
+        print("🧪 [DEV] Dev mode enabled - you can now test without logging in")
+    }
+    
+    /// Disable dev mode (requires real authentication)
+    func disableDevMode() {
+        devMode = false
+        isAuthenticated = false
+        print("🧪 [DEV] Dev mode disabled - authentication required")
     }
     
     /// Set up listener for auth state changes

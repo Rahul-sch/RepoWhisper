@@ -72,11 +72,13 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token (required for SaaS)
-        guard let token = AuthManager.shared.accessToken else {
-            throw APIError.notAuthenticated
+        // Add auth token (skip in dev mode)
+        if !AuthManager.shared.devMode {
+            guard let token = AuthManager.shared.accessToken else {
+                throw APIError.notAuthenticated
+            }
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         request.httpBody = audioData
         
@@ -104,11 +106,13 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token
-        guard let token = AuthManager.shared.accessToken else {
-            throw APIError.notAuthenticated
+        // Add auth token (skip in dev mode)
+        if !AuthManager.shared.devMode {
+            guard let token = AuthManager.shared.accessToken else {
+                throw APIError.notAuthenticated
+            }
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         let body = SearchRequest(query: query, topK: topK)
         request.httpBody = try JSONEncoder().encode(body)
@@ -149,13 +153,17 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token
-        guard let token = AuthManager.shared.accessToken else {
-            print("❌ [INDEX] No auth token available")
-            throw APIError.notAuthenticated
+        // Add auth token (skip in dev mode)
+        if !AuthManager.shared.devMode {
+            guard let token = AuthManager.shared.accessToken else {
+                print("❌ [INDEX] No auth token available")
+                throw APIError.notAuthenticated
+            }
+            print("✅ [INDEX] Auth token found")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        } else {
+            print("🧪 [INDEX] Dev mode - skipping auth token")
         }
-        print("✅ [INDEX] Auth token found")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         let body = IndexRequest(
             mode: mode,
@@ -203,11 +211,13 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token
-        guard let token = AuthManager.shared.accessToken else {
-            throw APIError.notAuthenticated
+        // Add auth token (skip in dev mode)
+        if !AuthManager.shared.devMode {
+            guard let token = AuthManager.shared.accessToken else {
+                throw APIError.notAuthenticated
+            }
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         let body = AdviseRequest(
             transcript: transcript,
@@ -235,11 +245,13 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token
-        guard let token = AuthManager.shared.accessToken else {
-            throw APIError.notAuthenticated
+        // Add auth token (skip in dev mode)
+        if !AuthManager.shared.devMode {
+            guard let token = AuthManager.shared.accessToken else {
+                throw APIError.notAuthenticated
+            }
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         request.httpBody = screenshotData
         
