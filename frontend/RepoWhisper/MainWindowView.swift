@@ -274,7 +274,8 @@ struct SearchView: View {
                     popupManager.showPopup(
                         results: results.results,
                         query: searchQuery,
-                        latency: results.latencyMs
+                        latency: results.latencyMs,
+                        isRecording: audioCapture.isRecording
                     )
                 }
             } catch {
