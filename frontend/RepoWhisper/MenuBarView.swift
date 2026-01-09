@@ -12,9 +12,11 @@ struct MenuBarView: View {
     @StateObject private var audioCapture = AudioCapture.shared
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var screenshotCapture = ScreenshotCapture.shared
+    @StateObject private var popupManager = FloatingPopupManager.shared
     
     @State private var selectedMode: IndexMode = .guided
     @State private var showingFilePicker = false
+    @State private var showingRepoManager = false
     @State private var repoPath: String = ""
     @State private var lastTranscription: String = ""
     @State private var searchResults: [SearchResultItem] = []
@@ -128,6 +130,8 @@ struct MenuBarView: View {
             if !transcription.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 await MainActor.run {
                     isSearching = true
+                    // Show loading popup
+                    popupManager.showLoadingPopup(query: transcription.text)
                     NotificationCenter.default.post(name: NSNotification.Name("SearchStarted"), object: nil)
                 }
                 
@@ -139,7 +143,14 @@ struct MenuBarView: View {
                     isSearching = false
                     showResults = true
                     
-                    // Post notification to show results window
+                    // Show floating popup (Cluely-style)
+                    popupManager.showPopup(
+                        results: searchResponse.results,
+                        query: transcription.text,
+                        latency: searchResponse.latencyMs
+                    )
+                    
+                    // Also post notification for backward compatibility
                     NotificationCenter.default.post(
                         name: NSNotification.Name("SearchResults"),
                         object: nil,
@@ -250,17 +261,17 @@ struct MenuBarView: View {
             .cornerRadius(10)
             .padding(.horizontal, 16)
             
-            // Repo Path - Modern card
-            VStack(alignment: .leading, spacing: 8) {
+            // Repository Management - Modern card
+            VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     HStack(spacing: 6) {
                         Image(systemName: "folder.fill")
                             .font(.caption)
                             .foregroundColor(.blue)
-                Text("Repository")
-                    .font(.caption)
+                        Text("Repository")
+                            .font(.caption)
                             .fontWeight(.medium)
-                    .foregroundColor(.secondary)
+                            .foregroundColor(.secondary)
                     }
                     Spacer()
                     if apiClient.indexCount > 0 {
@@ -268,44 +279,42 @@ struct MenuBarView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.caption2)
                                 .foregroundColor(.green)
-                            Text("\(apiClient.indexCount) chunks")
+                            Text("\(apiClient.indexCount) chunks indexed")
                                 .font(.caption2)
                                 .foregroundColor(.green)
                         }
                     }
                 }
                 
-                HStack(spacing: 8) {
-                    TextField("Select a folder...", text: $repoPath)
-                        .textFieldStyle(.plain)
-                        .padding(10)
-                        .background(Color.primary.opacity(0.05))
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                Button {
+                    showingRepoManager = true
+                } label: {
+                    HStack {
+                        Image(systemName: "folder.badge.gearshape")
+                            .font(.callout)
+                        Text("Manage Repositories")
+                            .font(.callout)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(12)
+                    .background(
+                        LinearGradient(
+                            colors: [.blue, .purple],
+                            startPoint: .leading,
+                            endPoint: .trailing
                         )
-                    
-                    Button {
-                        showingFilePicker = true
-                    } label: {
-                        Image(systemName: "folder.badge.plus")
-                            .font(.title3)
-                            .foregroundColor(.blue)
-                            .padding(8)
-                            .background(Color.blue.opacity(0.1))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .fileImporter(
-                        isPresented: $showingFilePicker,
-                        allowedContentTypes: [.folder],
-                        allowsMultipleSelection: false
-                    ) { result in
-                        if case .success(let urls) = result, let url = urls.first {
-                            repoPath = url.path
-                        }
-                    }
+                    )
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showingRepoManager) {
+                    RepoManagerView()
                 }
             }
             .padding(.horizontal, 16)
