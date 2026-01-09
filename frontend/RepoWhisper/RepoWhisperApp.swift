@@ -22,14 +22,19 @@ struct RepoWhisperApp: App {
     var body: some Scene {
         // Main Window - Full app interface
         WindowGroup("RepoWhisper", id: "main") {
-            if authManager.isAuthenticated {
-                MainWindowView()
-                    .environmentObject(authManager)
-                    .frame(minWidth: 800, minHeight: 600)
-            } else {
-                LoginView()
-                    .environmentObject(authManager)
-                    .frame(width: 400, height: 500)
+            Group {
+                if authManager.isAuthenticated || authManager.devMode {
+                    MainWindowView()
+                        .environmentObject(authManager)
+                        .frame(minWidth: 800, minHeight: 600)
+                } else {
+                    LoginView()
+                        .environmentObject(authManager)
+                        .frame(width: 400, height: 500)
+                }
+            }
+            .onAppear {
+                print("🪟 [APP] Main window appeared")
             }
         }
         .windowStyle(.titleBar)
@@ -38,14 +43,14 @@ struct RepoWhisperApp: App {
             CommandGroup(replacing: .newItem) { }
         }
         
-        // Menu Bar Extra - quick access
+        // Menu Bar Extra - quick access (use menu style to avoid window issues)
         MenuBarExtra {
             MenuBarView()
                 .environmentObject(authManager)
         } label: {
             Image(systemName: "waveform.circle.fill")
         }
-        .menuBarExtraStyle(.window)
+        .menuBarExtraStyle(.menu) // Changed from .window to .menu to avoid ViewBridge issues
         
         // Settings window
         Settings {
@@ -69,22 +74,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("✅ RepoWhisper app finished launching")
         print("📌 Look for the menu bar icon (waveform.circle.fill) in the top menu bar")
+        print("🔍 [APP] Auth state: authenticated=\(AuthManager.shared.isAuthenticated), devMode=\(AuthManager.shared.devMode)")
         
-        // Register global keyboard shortcut ⌘⇧R
-        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
-            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 15 { // R key
-                if AudioCapture.shared.isRecording {
-                    AudioCapture.shared.stopRecording()
-                } else {
-                    Task {
-                        let granted = await AudioCapture.shared.requestPermission()
-                        if granted {
-                            AudioCapture.shared.startRecording()
+        // Register global keyboard shortcut ⌘⇧R (with error handling)
+        do {
+            NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                guard let self = self else { return }
+                if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 15 { // R key
+                    if AudioCapture.shared.isRecording {
+                        AudioCapture.shared.stopRecording()
+                    } else {
+                        Task {
+                            let granted = await AudioCapture.shared.requestPermission()
+                            if granted {
+                                AudioCapture.shared.startRecording()
+                            }
                         }
                     }
                 }
             }
+        } catch {
+            print("⚠️ [APP] Failed to register global keyboard shortcut: \(error)")
         }
+    }
+    
+    func applicationWillTerminate(_ notification: Notification) {
+        print("🛑 [APP] Application will terminate")
     }
     
     // Handle OAuth callback URLs

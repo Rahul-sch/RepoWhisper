@@ -57,10 +57,12 @@ class AuthManager: ObservableObject {
         
         setupAuthStateListener()
         
-        // If dev mode is enabled, skip auth check
+        // If dev mode is enabled, skip auth check (set on main thread)
         if devMode {
-            isAuthenticated = true
-            print("🧪 [DEV] Dev mode enabled - authentication bypassed")
+            Task { @MainActor in
+                self.isAuthenticated = true
+                print("🧪 [DEV] Dev mode enabled - authentication bypassed")
+            }
         } else {
             // Check session asynchronously without blocking
             Task { @MainActor in
