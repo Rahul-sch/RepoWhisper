@@ -24,12 +24,19 @@ class FloatingPopupManager: ObservableObject {
             
             // Close existing window if any (with delay to prevent ViewBridge errors)
             if let existingWindow = self.popupWindow {
-                existingWindow.close()
-                self.popupWindow = nil
-                // Small delay to let the window fully close
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.createAndShowPopup(results: results, query: query, latency: latency, isRecording: isRecording)
-                }
+                // Animate out first
+                NSAnimationContext.runAnimationGroup({ context in
+                    context.duration = 0.15
+                    context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                    existingWindow.animator().alphaValue = 0
+                }, completionHandler: {
+                    existingWindow.close()
+                    self.popupWindow = nil
+                    // Delay to let the window fully close before creating new one
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        self.createAndShowPopup(results: results, query: query, latency: latency, isRecording: isRecording)
+                    }
+                })
             } else {
                 self.createAndShowPopup(results: results, query: query, latency: latency, isRecording: isRecording)
             }
@@ -117,11 +124,19 @@ class FloatingPopupManager: ObservableObject {
             
             // Close existing window if any (with delay to prevent ViewBridge errors)
             if let existingWindow = self.popupWindow {
-                existingWindow.close()
-                self.popupWindow = nil
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.createAndShowLoadingPopup(query: query, isRecording: isRecording)
-                }
+                // Animate out first
+                NSAnimationContext.runAnimationGroup({ context in
+                    context.duration = 0.15
+                    context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                    existingWindow.animator().alphaValue = 0
+                }, completionHandler: {
+                    existingWindow.close()
+                    self.popupWindow = nil
+                    // Delay to let the window fully close before creating new one
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        self.createAndShowLoadingPopup(query: query, isRecording: isRecording)
+                    }
+                })
             } else {
                 self.createAndShowLoadingPopup(query: query, isRecording: isRecording)
             }
@@ -213,9 +228,10 @@ class FloatingPopupManager: ObservableObject {
                 context.timingFunction = CAMediaTimingFunction(name: .easeIn)
                 panel.animator().alphaValue = 0
             }, completionHandler: {
-                panel.close()
-                // Small delay before clearing to prevent ViewBridge errors
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                panel.orderOut(nil) // Use orderOut instead of close for smoother transition
+                // Delay before clearing to prevent ViewBridge errors
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    panel.close()
                     self?.popupWindow = nil
                     self?.isVisible = false
                 }
