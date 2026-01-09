@@ -148,53 +148,57 @@ class FloatingPopupManager: ObservableObject {
         // Window size (premium glassmorphism)
         let windowWidth: CGFloat = 580
         let windowHeight: CGFloat = 520
-            let padding: CGFloat = 20
-            
-            // Position at top-right
-            let xPos = screenFrame.maxX - windowWidth - padding
-            let yPos = screenFrame.maxY - windowHeight - padding
-            
-            let windowFrame = NSRect(
-                x: xPos,
-                y: yPos,
-                width: windowWidth,
-                height: windowHeight
-            )
-            
-            // Create the popup panel
-            let panel = NSPanel(
-                contentRect: windowFrame,
-                styleMask: [.nonactivatingPanel, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-            
-            // Configure panel appearance
-            panel.contentView = hostingView
-            panel.isFloatingPanel = true
-            panel.level = .floating
-            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-            panel.backgroundColor = .clear
-            panel.isOpaque = false
-            panel.hasShadow = true
-            panel.titlebarAppearsTransparent = true
-            panel.titleVisibility = .hidden
-            panel.isMovableByWindowBackground = true
-            panel.animationBehavior = .documentWindow
-            
-            // Store and show
-            self.popupWindow = panel
-            self.isVisible = true
-            
-            // Animate in
-            panel.alphaValue = 0
-            panel.makeKeyAndOrderFront(nil)
-            
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.3
-                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                panel.animator().alphaValue = 1.0
-            }
+        let padding: CGFloat = 20
+        
+        // Position at top-right
+        let xPos = screenFrame.maxX - windowWidth - padding
+        let yPos = screenFrame.maxY - windowHeight - padding
+        
+        let windowFrame = NSRect(
+            x: xPos,
+            y: yPos,
+            width: windowWidth,
+            height: windowHeight
+        )
+        
+        // Create the popup panel
+        let panel = NSPanel(
+            contentRect: windowFrame,
+            styleMask: [.nonactivatingPanel, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        
+        // Configure panel appearance
+        panel.contentView = hostingView
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = true
+        panel.titlebarAppearsTransparent = true
+        panel.titleVisibility = .hidden
+        panel.isMovableByWindowBackground = true
+        panel.animationBehavior = .documentWindow
+        
+        // Store and show
+        self.popupWindow = panel
+        self.isVisible = true
+        
+        // Animate in
+        panel.alphaValue = 0
+        panel.makeKeyAndOrderFront(nil)
+        
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.3
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1.0
+        }, completionHandler: nil)
+        
+        // Auto-dismiss after 15 seconds (like Cluely)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
+            self?.hidePopup()
         }
     }
     
@@ -221,7 +225,7 @@ class FloatingPopupManager: ObservableObject {
     
     /// Toggle popup visibility
     func togglePopup() {
-        if isVisible {
+        if self.isVisible {
             hidePopup()
         }
     }
