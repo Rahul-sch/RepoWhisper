@@ -30,6 +30,11 @@ class AuthManager: ObservableObject {
     /// Error message from last auth operation
     @Published var errorMessage: String?
     
+    /// Access token for API requests
+    var accessToken: String? {
+        session?.accessToken
+    }
+    
     private var authStateTask: Task<Void, Never>?
     
     private init() {
