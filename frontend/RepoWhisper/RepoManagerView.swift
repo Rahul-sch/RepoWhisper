@@ -290,44 +290,11 @@ struct RepoManagerView: View {
 // MARK: - Models
 
 struct IndexedRepo: Identifiable, Codable {
-    let id = UUID()
+    var id = UUID()
     let name: String
     let path: String
     let fileCount: Int
     let lastIndexed: Date
-}
-
-enum IndexMode: String, CaseIterable, Codable {
-    case manual = "manual"
-    case smart = "smart"
-    case full = "full"
-    
-    var displayName: String {
-        switch self {
-        case .manual: return "Manual Selection"
-        case .smart: return "Smart Index"
-        case .full: return "Full Repository"
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .manual: return "Choose specific files"
-        case .smart: return "Index commonly used files"
-        case .full: return "Index entire repository"
-        }
-    }
-    
-    var detailedDescription: String {
-        switch self {
-        case .manual:
-            return "⚡️ Fastest • You manually select which files to index. Best for large repos when you only need specific files."
-        case .smart:
-            return "🎯 Optimal • Automatically indexes commonly used files (source code, docs). Ignores node_modules, build artifacts, etc."
-        case .full:
-            return "🔍 Complete • Indexes everything in the repository. Slowest but most comprehensive."
-        }
-    }
 }
 
 #Preview {

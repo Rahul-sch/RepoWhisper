@@ -14,7 +14,7 @@ struct MenuBarView: View {
     @StateObject private var screenshotCapture = ScreenshotCapture.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
     
-    @State private var selectedMode: IndexMode = .guided
+    @State private var selectedMode: IndexMode = .smart
     @State private var showingFilePicker = false
     @State private var showingRepoManager = false
     @State private var repoPath: String = ""
@@ -247,8 +247,8 @@ struct MenuBarView: View {
                 Picker("Mode", selection: $selectedMode) {
                     Label("Manual", systemImage: "hand.tap")
                         .tag(IndexMode.manual)
-                    Label("Guided", systemImage: "sparkles")
-                        .tag(IndexMode.guided)
+                    Label("Smart", systemImage: "sparkles")
+                        .tag(IndexMode.smart)
                     Label("Full Repo", systemImage: "folder")
                         .tag(IndexMode.full)
                 }
