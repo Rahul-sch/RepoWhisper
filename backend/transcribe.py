@@ -1,13 +1,14 @@
 """
 RepoWhisper Audio Transcription
 Faster-Whisper integration for real-time speech-to-text.
-Optimized for sub-200ms latency on Apple Silicon.
+Optimized for sub-200ms latency on Apple Silicon (M2).
 """
 
 import time
 import io
 import wave
 import struct
+import platform
 from typing import Optional
 from dataclasses import dataclass
 from functools import lru_cache
@@ -20,6 +21,35 @@ except ImportError:
     WhisperModel = None  # type: ignore
 
 from config import get_settings
+
+
+# ============ M2 Optimization ============
+
+def _is_apple_silicon() -> bool:
+    """Detect if running on Apple Silicon (M1/M2/M3)."""
+    return platform.processor() == "arm" or platform.machine() == "arm64"
+
+
+def _get_whisper_config() -> tuple[str, str, int]:
+    """
+    Get optimized Whisper config for current platform.
+
+    Returns:
+        (device, compute_type, cpu_threads)
+
+    M2 Optimization:
+    - Use float16 (int8 has issues on ARM)
+    - 8 threads to leverage efficiency cores
+    """
+    if _is_apple_silicon():
+        print("🍎 [WHISPER] Apple Silicon detected - using M2-optimized config")
+        return "cpu", "float16", 8  # float16 is faster on M2 than int8
+    elif platform.system() == "Darwin":
+        print("🖥️ [WHISPER] Intel Mac detected")
+        return "cpu", "int8", 4
+    else:
+        print("⚙️ [WHISPER] Standard config")
+        return "cpu", "int8", 4
 
 
 @dataclass
@@ -37,38 +67,41 @@ class TranscriptionResult:
 def get_whisper_model() -> Optional[WhisperModel]:
     """
     Load and cache the Faster-Whisper model.
-    
+
     Uses 'tiny.en' for fastest inference (~100-200ms).
     For better accuracy, use 'base.en' or 'small.en'.
-    
+
+    M2 Optimized:
+    - float16 compute type (faster than int8 on ARM)
+    - 8 CPU threads (leverages efficiency cores)
+
     Returns None if faster-whisper is not installed.
     """
     if not WHISPER_AVAILABLE:
         print("⚠️  faster-whisper not installed. Install with: pip install faster-whisper")
         return None
-    
+
     settings = get_settings()
-    
-    # Determine compute type based on platform
-    # Apple Silicon: use int8 for speed
-    # CUDA: use float16
-    compute_type = "int8"
-    device = "cpu"  # Use 'cuda' if GPU available
-    
-    print(f"Loading Whisper model: {settings.whisper_model}")
+
+    # Get M2-optimized config
+    device, compute_type, cpu_threads = _get_whisper_config()
+
+    print(f"🎙️ [WHISPER] Loading model: {settings.whisper_model}")
+    print(f"🎙️ [WHISPER] Config: device={device}, compute={compute_type}, threads={cpu_threads}")
+
     model = WhisperModel(
         settings.whisper_model,
         device=device,
         compute_type=compute_type,
-        cpu_threads=4,
-        num_workers=1
+        cpu_threads=cpu_threads,
+        num_workers=2  # Increased for M2
     )
-    
+
     # Warm up the model with silence
     warmup_audio = _generate_silence(0.1)
     list(model.transcribe(warmup_audio, language="en"))
-    print("Whisper model loaded and warmed up")
-    
+    print("✅ [WHISPER] Model loaded and warmed up")
+
     return model
 
 

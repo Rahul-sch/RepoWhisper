@@ -55,6 +55,32 @@ struct RepoWhisperApp: App {
                 Text("RepoWhisper")
                     .font(.headline)
                 Divider()
+
+                // Show Demo Popup for testing
+                Button("Show Demo Popup") {
+                    FloatingPopupManager.shared.showPopup(
+                        results: [
+                            SearchResultItem(
+                                filePath: "/demo/auth.swift",
+                                chunk: "func authenticate(user: String, password: String) -> Bool {\n    // Demo code for testing\n    return true\n}",
+                                score: 0.95,
+                                lineStart: 10,
+                                lineEnd: 14
+                            ),
+                            SearchResultItem(
+                                filePath: "/demo/login.swift",
+                                chunk: "struct LoginView: View {\n    @State var email = \"\"\n    @State var password = \"\"\n}",
+                                score: 0.82,
+                                lineStart: 1,
+                                lineEnd: 4
+                            )
+                        ],
+                        query: "authentication demo",
+                        latency: 42.0,
+                        isRecording: false
+                    )
+                }
+
                 Button("Open App") {
                     // Open main window
                     if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "main" }) {
@@ -88,6 +114,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         print("✅ RepoWhisper app finished launching")
         print("📌 Look for the menu bar icon (waveform.circle.fill) in the top menu bar")
         print("🔍 [APP] Auth state: authenticated=\(AuthManager.shared.isAuthenticated), devMode=\(AuthManager.shared.devMode)")
+
+        // Auto-launch: Show centered welcome popup on first launch
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            print("🎯 [APP] Auto-launching centered welcome popup...")
+            FloatingPopupManager.shared.showPopup(
+                results: [
+                    SearchResultItem(
+                        filePath: "Welcome to RepoWhisper",
+                        chunk: "Press ⌘⇧R to start voice recording\\nYour query will search the indexed codebase\\n\\nHotkeys:\\n• ⌘⇧R - Toggle recording\\n• ⌘⇧Space - Center popup\\n• ⌘B - Toggle visibility\\n• ⌘⇧H - Stealth mode",
+                        score: 1.0,
+                        lineStart: 1,
+                        lineEnd: 8
+                    )
+                ],
+                query: "Getting Started",
+                latency: 0,
+                isRecording: false
+            )
+            // Center the popup after it's created
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                FloatingPopupManager.shared.centerAndShow()
+            }
+        }
 
         // Register global keyboard shortcuts
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
