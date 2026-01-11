@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 /// Premium floating results panel with glassmorphism
 struct ResultsWindow: View {
@@ -20,6 +21,15 @@ struct ResultsWindow: View {
     @State private var selectedResult: SearchResultItem?
     @State private var hoveredResult: SearchResultItem?
     @State private var isDragging = false
+    @State private var searchMode: SearchMode = .fullRepo
+    @State private var toastMessage: String?
+    @State private var showToast = false
+    @ObservedObject private var audioCapture = AudioCapture.shared
+
+    enum SearchMode: String, CaseIterable {
+        case fullRepo = "Full Repo"
+        case activeFile = "Active File"
+    }
 
     init(results: [SearchResultItem], query: String, latencyMs: Double,
          isLoading: Bool, isRecording: Bool, isStealthMode: Bool = false) {
@@ -103,6 +113,28 @@ struct ResultsWindow: View {
                 }
             }
         }
+        .overlay(alignment: .top) {
+            // Toast notification overlay
+            if showToast, let message = toastMessage {
+                ToastView(message: message)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, 60)
+            }
+        }
+    }
+
+    // MARK: - Toast Helper
+
+    func showToastMessage(_ message: String) {
+        toastMessage = message
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            showToast = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                showToast = false
+            }
+        }
     }
     
     // MARK: - Drag Area
@@ -155,15 +187,16 @@ struct ResultsWindow: View {
     @State private var isHoveringClearBtn = false
 
     private var controlBar: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 12) {
+            // Filter toggle (left side)
+            FilterToggle(mode: $searchMode)
+
             Spacer()
 
-            // Record button
-            ControlBarButton(
-                icon: "record.circle",
-                label: "Record",
-                isActive: isRecording,
-                activeColor: .red,
+            // Record button with voice pulse
+            VoicePulseButton(
+                isRecording: isRecording,
+                audioLevel: audioCapture.audioLevel,
                 isHovering: isHoveringRecordBtn
             ) {
                 if AudioCapture.shared.isRecording {
@@ -379,9 +412,12 @@ struct PremiumResultCard: View {
     let rank: Int
     let isSelected: Bool
     let isHovered: Bool
-    
+    var onCopy: (() -> Void)?
+
     @State private var isHovering = false
-    
+    @State private var isHoveringCopy = false
+    @State private var showCopied = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header row
@@ -394,27 +430,49 @@ struct PremiumResultCard: View {
                     .padding(.vertical, 3)
                     .background(rankBadgeColor)
                     .clipShape(Capsule())
-                
+
                 // File info
                 HStack(spacing: 6) {
                     Image(systemName: iconForFile(result.filePath))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(fileTypeColor)
-                    
+
                     Text(fileName)
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundColor(.primary)
                         .lineLimit(1)
                 }
-                
+
                 Spacer()
-                
+
+                // Copy button (appears on hover)
+                if isHovered || isHoveringCopy {
+                    Button(action: copyToClipboard) {
+                        HStack(spacing: 4) {
+                            Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                                .font(.system(size: 10, weight: .medium))
+                            Text(showCopied ? "Copied!" : "Copy")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                        }
+                        .foregroundColor(showCopied ? .green : (isHoveringCopy ? .primary : .secondary))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(showCopied ? Color.green.opacity(0.15) : Color.white.opacity(isHoveringCopy ? 0.15 : 0.08))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { isHoveringCopy = $0 }
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
+
                 // Metadata
                 HStack(spacing: 12) {
                     Text("L\(result.lineStart)-\(result.lineEnd)")
                         .font(.system(size: 11, weight: .regular, design: .monospaced))
                         .foregroundColor(.secondary)
-                    
+
                     // Score badge
                     Text("\(Int(result.score * 100))%")
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -506,6 +564,23 @@ struct PremiumResultCard: View {
         case "md": return "doc.text"
         case "json", "yaml", "yml": return "curlybraces"
         default: return "doc"
+        }
+    }
+
+    // MARK: - Clipboard
+
+    private func copyToClipboard() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(result.chunk, forType: .string)
+
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+            showCopied = true
+        }
+        onCopy?()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation { showCopied = false }
         }
     }
 }
@@ -623,6 +698,127 @@ struct ControlBarButton: View {
         .scaleEffect(isHovering ? 1.05 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isHovering)
         .animation(.easeOut(duration: 0.15), value: isActive)
+    }
+}
+
+// MARK: - Filter Toggle (Full Repo / Active File)
+
+struct FilterToggle: View {
+    @Binding var mode: ResultsWindow.SearchMode
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(ResultsWindow.SearchMode.allCases, id: \.self) { option in
+                Button(action: { mode = option }) {
+                    Text(option == .fullRepo ? "Repo" : "File")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(mode == option ? .white : .secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(mode == option ? Color.blue.opacity(0.7) : Color.clear)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(
+            Capsule()
+                .fill(Color.white.opacity(0.08))
+        )
+    }
+}
+
+// MARK: - Voice Pulse Button (Record with Audio Level)
+
+struct VoicePulseButton: View {
+    let isRecording: Bool
+    let audioLevel: Float
+    let isHovering: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                ZStack {
+                    // Outer pulse ring (based on audio level)
+                    if isRecording {
+                        Circle()
+                            .stroke(Color.red.opacity(0.4), lineWidth: 2)
+                            .frame(width: 40 + CGFloat(audioLevel) * 20, height: 40 + CGFloat(audioLevel) * 20)
+                            .animation(.easeOut(duration: 0.1), value: audioLevel)
+
+                        Circle()
+                            .stroke(Color.red.opacity(0.2), lineWidth: 1)
+                            .frame(width: 48 + CGFloat(audioLevel) * 25, height: 48 + CGFloat(audioLevel) * 25)
+                            .animation(.easeOut(duration: 0.15), value: audioLevel)
+                    }
+
+                    // Base circle
+                    Circle()
+                        .fill(
+                            isRecording
+                                ? Color.red.opacity(0.25 + Double(audioLevel) * 0.3)
+                                : (isHovering ? Color.white.opacity(0.15) : Color.white.opacity(0.08))
+                        )
+                        .frame(width: 40, height: 40)
+                        .animation(.easeOut(duration: 0.1), value: audioLevel)
+
+                    // Icon
+                    Image(systemName: isRecording ? "waveform" : "record.circle")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(isRecording ? .red : (isHovering ? .primary : .primary.opacity(0.6)))
+                        .scaleEffect(isRecording ? 1.0 + CGFloat(audioLevel) * 0.2 : 1.0)
+                        .animation(.easeOut(duration: 0.1), value: audioLevel)
+                }
+
+                // Label
+                Text("Record")
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .foregroundColor(isRecording ? .red : .secondary.opacity(0.8))
+            }
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(isHovering ? 1.05 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isHovering)
+    }
+}
+
+// MARK: - Toast View
+
+struct ToastView: View {
+    let message: String
+    @State private var isError: Bool = false
+
+    init(message: String) {
+        self.message = message
+        self._isError = State(initialValue: message.lowercased().contains("error") || message.lowercased().contains("fail"))
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(isError ? .orange : .green)
+
+            Text(message)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundColor(.primary)
+                .lineLimit(2)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.2), radius: 10, y: 5)
+        )
+        .overlay(
+            Capsule()
+                .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+        )
     }
 }
 

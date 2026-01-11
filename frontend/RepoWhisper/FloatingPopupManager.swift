@@ -12,13 +12,70 @@ import AppKit
 class FloatingPopupManager: ObservableObject {
     static let shared = FloatingPopupManager()
 
+    // MARK: - UserDefaults Keys
+    private enum Keys {
+        static let stealthMode = "RepoWhisper.stealthMode"
+        static let windowX = "RepoWhisper.windowX"
+        static let windowY = "RepoWhisper.windowY"
+        static let hasCustomPosition = "RepoWhisper.hasCustomPosition"
+    }
+
     @Published var isVisible = false
-    @Published var isStealthMode = false
+    @Published var isStealthMode: Bool {
+        didSet {
+            UserDefaults.standard.set(isStealthMode, forKey: Keys.stealthMode)
+        }
+    }
+    @Published var toastMessage: String?
+    @Published var showToast = false
+
     private var popupWindow: NSPanel?
     private var savedPosition: NSPoint?
     private var autoDismissTask: DispatchWorkItem?
 
-    private init() {}
+    private init() {
+        // Load persisted settings
+        self.isStealthMode = UserDefaults.standard.bool(forKey: Keys.stealthMode)
+
+        // Load saved position if exists
+        if UserDefaults.standard.bool(forKey: Keys.hasCustomPosition) {
+            let x = UserDefaults.standard.double(forKey: Keys.windowX)
+            let y = UserDefaults.standard.double(forKey: Keys.windowY)
+            self.savedPosition = NSPoint(x: x, y: y)
+            print("📍 [POPUP] Loaded saved position: (\(x), \(y))")
+        }
+
+        print("⚙️ [POPUP] Loaded settings: stealth=\(isStealthMode)")
+    }
+
+    // MARK: - Persistence
+
+    /// Save current window position
+    private func saveWindowPosition() {
+        guard let panel = popupWindow else { return }
+        let origin = panel.frame.origin
+        UserDefaults.standard.set(origin.x, forKey: Keys.windowX)
+        UserDefaults.standard.set(origin.y, forKey: Keys.windowY)
+        UserDefaults.standard.set(true, forKey: Keys.hasCustomPosition)
+        savedPosition = origin
+        print("💾 [POPUP] Saved position: (\(origin.x), \(origin.y))")
+    }
+
+    // MARK: - Toast Notification
+
+    func showErrorToast(_ message: String) {
+        DispatchQueue.main.async {
+            self.toastMessage = message
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                self.showToast = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    self.showToast = false
+                }
+            }
+        }
+    }
     
     /// Show the floating popup with search results
     func showPopup(results: [SearchResultItem], query: String, latency: Double, isRecording: Bool) {
@@ -63,11 +120,11 @@ class FloatingPopupManager: ObservableObject {
             isRecording: isRecording,
             isStealthMode: isStealthMode
         )
-        
+
         // Create hosting view
         let hostingView = NSHostingView(rootView: contentView)
         print("✅ [POPUP] Created hosting view")
-            
+
         // Calculate position (top-right corner of screen with padding)
         guard let screen = NSScreen.main else {
             print("❌ [POPUP] No main screen found!")
@@ -81,11 +138,20 @@ class FloatingPopupManager: ObservableObject {
         let windowHeight: CGFloat = isStealthMode ? 460 : 560
         let padding: CGFloat = 20
 
-        // Position at top-right (or bottom-right in stealth)
-        let xPos = screenFrame.maxX - windowWidth - padding
-        let yPos = isStealthMode
-            ? screenFrame.minY + padding
-            : screenFrame.maxY - windowHeight - padding
+        // Use saved position if available, otherwise default to top-right (or bottom-right in stealth)
+        let xPos: CGFloat
+        let yPos: CGFloat
+
+        if let saved = savedPosition {
+            xPos = saved.x
+            yPos = saved.y
+            print("📍 [POPUP] Using saved position: (\(xPos), \(yPos))")
+        } else {
+            xPos = screenFrame.maxX - windowWidth - padding
+            yPos = isStealthMode
+                ? screenFrame.minY + padding
+                : screenFrame.maxY - windowHeight - padding
+        }
 
         let windowFrame = NSRect(
             x: xPos,
@@ -201,11 +267,19 @@ class FloatingPopupManager: ObservableObject {
         let windowHeight: CGFloat = isStealthMode ? 460 : 560
         let padding: CGFloat = 20
 
-        // Position at top-right (or bottom-right in stealth)
-        let xPos = screenFrame.maxX - windowWidth - padding
-        let yPos = isStealthMode
-            ? screenFrame.minY + padding
-            : screenFrame.maxY - windowHeight - padding
+        // Use saved position if available
+        let xPos: CGFloat
+        let yPos: CGFloat
+
+        if let saved = savedPosition {
+            xPos = saved.x
+            yPos = saved.y
+        } else {
+            xPos = screenFrame.maxX - windowWidth - padding
+            yPos = isStealthMode
+                ? screenFrame.minY + padding
+                : screenFrame.maxY - windowHeight - padding
+        }
 
         let windowFrame = NSRect(
             x: xPos,
@@ -346,10 +420,14 @@ class FloatingPopupManager: ObservableObject {
             y: panel.frame.origin.y + direction.y
         )
         panel.setFrameOrigin(newOrigin)
+        saveWindowPosition() // Persist position
     }
 
     /// Hide the floating popup
     func hidePopup() {
+        // Save position before hiding
+        saveWindowPosition()
+
         DispatchQueue.main.async { [weak self] in
             guard let panel = self?.popupWindow else { return }
             
