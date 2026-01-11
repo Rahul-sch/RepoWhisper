@@ -24,7 +24,9 @@ struct ResultsWindow: View {
     @State private var searchMode: SearchMode = .fullRepo
     @State private var toastMessage: String?
     @State private var showToast = false
+    @State private var typedQuery: String = ""
     @ObservedObject private var audioCapture = AudioCapture.shared
+    @ObservedObject private var popupManager = FloatingPopupManager.shared
 
     enum SearchMode: String, CaseIterable {
         case fullRepo = "Full Repo"
@@ -46,8 +48,46 @@ struct ResultsWindow: View {
             // Drag area (top 44px)
             dragArea
 
-            // Header with query
+            // Ask Bar (typed search input)
+            AskBar(
+                query: $typedQuery,
+                isRecording: isRecording,
+                audioLevel: audioCapture.audioLevel,
+                onSubmit: { query in
+                    popupManager.triggerTypedSearch(query: query)
+                },
+                onToggleRecording: {
+                    if AudioCapture.shared.isRecording {
+                        AudioCapture.shared.stopRecording()
+                    } else {
+                        Task {
+                            let granted = await AudioCapture.shared.requestPermission()
+                            if granted {
+                                AudioCapture.shared.startRecording()
+                            } else {
+                                popupManager.showErrorToast("Microphone access denied")
+                            }
+                        }
+                    }
+                }
+            )
+
+            // Header with query/status
             headerView
+
+            // Search history (collapsible)
+            if !popupManager.searchHistory.isEmpty {
+                SearchHistoryView(
+                    history: $popupManager.searchHistory,
+                    isExpanded: $popupManager.isHistoryExpanded,
+                    onSelect: { item in
+                        popupManager.triggerTypedSearch(query: item.query)
+                    },
+                    onClear: {
+                        popupManager.clearSearchHistory()
+                    }
+                )
+            }
 
             // Content
             if isLoading {
@@ -114,8 +154,12 @@ struct ResultsWindow: View {
             }
         }
         .overlay(alignment: .top) {
-            // Toast notification overlay
+            // Toast notification overlay (local or from popupManager)
             if showToast, let message = toastMessage {
+                ToastView(message: message)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, 60)
+            } else if popupManager.showToast, let message = popupManager.toastMessage {
                 ToastView(message: message)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .padding(.top, 60)
@@ -355,16 +399,7 @@ struct ResultsWindow: View {
     // MARK: - Loading View
     
     private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.1)
-                .tint(.primary.opacity(0.6))
-            
-            Text("Searching...")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SkeletonLoadingView()
     }
     
     // MARK: - Empty State with Waveform
@@ -841,6 +876,383 @@ struct ToastView: View {
             Capsule()
                 .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
         )
+    }
+}
+
+// MARK: - Search History View
+
+struct SearchHistoryView: View {
+    @Binding var history: [SearchHistoryItem]
+    @Binding var isExpanded: Bool
+    let onSelect: (SearchHistoryItem) -> Void
+    let onClear: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header with toggle
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.secondary)
+
+                    Text("Recent Searches")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+
+                    Text("\(history.count)")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary.opacity(0.7))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(Color.white.opacity(0.1))
+                        )
+
+                    Spacer()
+
+                    if isExpanded && !history.isEmpty {
+                        Button(action: onClear) {
+                            Text("Clear")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.08))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+            }
+            .buttonStyle(.plain)
+
+            // Expanded history list
+            if isExpanded && !history.isEmpty {
+                VStack(spacing: 4) {
+                    ForEach(history) { item in
+                        SearchHistoryRow(item: item) {
+                            onSelect(item)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            // Separator
+            Rectangle()
+                .fill(Color.white.opacity(0.1))
+                .frame(height: 0.5)
+        }
+    }
+}
+
+// MARK: - Search History Row
+
+struct SearchHistoryRow: View {
+    let item: SearchHistoryItem
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.7))
+
+                Text(item.query)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                // Results count badge
+                Text("\(item.resultsCount)")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(Color.white.opacity(0.08))
+                    )
+
+                // Relative time
+                Text(item.relativeTime)
+                    .font(.system(size: 10, weight: .regular, design: .rounded))
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isHovering ? Color.white.opacity(0.08) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+    }
+}
+
+// MARK: - Ask Bar (Typed Search Input)
+
+struct AskBar: View {
+    @Binding var query: String
+    let isRecording: Bool
+    let audioLevel: Float
+    let onSubmit: (String) -> Void
+    let onToggleRecording: () -> Void
+
+    @State private var isFocused = false
+    @FocusState private var textFieldFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Text field
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+
+                TextField("What code are you searching for?", text: $query)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .focused($textFieldFocused)
+                    .onSubmit {
+                        if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            onSubmit(query)
+                        }
+                    }
+                    .onChange(of: textFieldFocused) { focused in
+                        isFocused = focused
+                    }
+
+                if !query.isEmpty {
+                    Button(action: { query = "" }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary.opacity(0.6))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(
+                        isFocused || isRecording
+                            ? (isRecording ? Color.red.opacity(0.5) : Color.blue.opacity(0.4))
+                            : Color.white.opacity(0.1),
+                        lineWidth: isFocused || isRecording ? 1.5 : 0.5
+                    )
+            )
+
+            // Mic button with hotkey badge
+            AskBarMicButton(
+                isRecording: isRecording,
+                audioLevel: audioLevel,
+                action: onToggleRecording
+            )
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+}
+
+// MARK: - Ask Bar Mic Button
+
+struct AskBarMicButton: View {
+    let isRecording: Bool
+    let audioLevel: Float
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                // Outer pulse ring (when recording)
+                if isRecording {
+                    Circle()
+                        .stroke(Color.red.opacity(0.3), lineWidth: 2)
+                        .frame(width: 36 + CGFloat(audioLevel) * 15, height: 36 + CGFloat(audioLevel) * 15)
+                        .animation(.easeOut(duration: 0.1), value: audioLevel)
+                }
+
+                // Base circle
+                Circle()
+                    .fill(
+                        isRecording
+                            ? Color.red.opacity(0.2 + Double(audioLevel) * 0.3)
+                            : (isHovering ? Color.white.opacity(0.12) : Color.white.opacity(0.08))
+                    )
+                    .frame(width: 36, height: 36)
+
+                // Mic icon
+                Image(systemName: isRecording ? "waveform" : "mic.fill")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(isRecording ? .red : (isHovering ? .primary : .secondary))
+                    .scaleEffect(isRecording ? 1.0 + CGFloat(audioLevel) * 0.15 : 1.0)
+                    .animation(.easeOut(duration: 0.1), value: audioLevel)
+
+                // Hotkey badge
+                if !isRecording {
+                    HotkeyBadge(keys: "⌘⇧R")
+                        .offset(x: 14, y: -14)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+    }
+}
+
+// MARK: - Hotkey Badge
+
+struct HotkeyBadge: View {
+    let keys: String
+
+    var body: some View {
+        Text(keys)
+            .font(.system(size: 8, weight: .semibold, design: .rounded))
+            .foregroundColor(.secondary.opacity(0.8))
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(Color.white.opacity(0.1))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+    }
+}
+
+// MARK: - Skeleton Loading
+
+struct SkeletonLoadingView: View {
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 10) {
+                ForEach(0..<3, id: \.self) { index in
+                    SkeletonResultCard()
+                        .opacity(1.0 - Double(index) * 0.15)
+                }
+            }
+            .padding(20)
+        }
+        .transition(.opacity)
+    }
+}
+
+struct SkeletonResultCard: View {
+    @State private var shimmerPhase: CGFloat = -200
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header row skeleton
+            HStack(spacing: 10) {
+                // Rank badge skeleton
+                SkeletonShape()
+                    .frame(width: 32, height: 18)
+                    .clipShape(Capsule())
+
+                // File name skeleton
+                SkeletonShape()
+                    .frame(width: 120, height: 16)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                Spacer()
+
+                // Line number skeleton
+                SkeletonShape()
+                    .frame(width: 50, height: 14)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                // Score skeleton
+                SkeletonShape()
+                    .frame(width: 40, height: 18)
+                    .clipShape(Capsule())
+            }
+
+            // Code preview skeleton (3 lines)
+            VStack(alignment: .leading, spacing: 6) {
+                SkeletonShape()
+                    .frame(height: 12)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                SkeletonShape()
+                    .frame(width: 280, height: 12)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                SkeletonShape()
+                    .frame(width: 200, height: 12)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(red: 0.10, green: 0.10, blue: 0.12))
+            )
+
+            // File path skeleton
+            SkeletonShape()
+                .frame(width: 180, height: 10)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.03))
+        )
+        .overlay(
+            // Shimmer overlay
+            GeometryReader { geometry in
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        .clear,
+                        .white.opacity(0.08),
+                        .clear
+                    ]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: 100)
+                .offset(x: shimmerPhase)
+                .onAppear {
+                    withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                        shimmerPhase = geometry.size.width + 100
+                    }
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        )
+    }
+}
+
+struct SkeletonShape: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.08))
     }
 }
 

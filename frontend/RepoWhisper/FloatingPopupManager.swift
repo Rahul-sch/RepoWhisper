@@ -8,6 +8,27 @@
 import SwiftUI
 import AppKit
 
+/// Search history item for recent queries
+struct SearchHistoryItem: Codable, Identifiable {
+    let id: UUID
+    let query: String
+    let resultsCount: Int
+    let timestamp: Date
+
+    init(id: UUID = UUID(), query: String, resultsCount: Int, timestamp: Date = Date()) {
+        self.id = id
+        self.query = query
+        self.resultsCount = resultsCount
+        self.timestamp = timestamp
+    }
+
+    var relativeTime: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: timestamp, relativeTo: Date())
+    }
+}
+
 /// Manages floating popup windows that appear on screen
 class FloatingPopupManager: ObservableObject {
     static let shared = FloatingPopupManager()
@@ -18,7 +39,10 @@ class FloatingPopupManager: ObservableObject {
         static let windowX = "RepoWhisper.windowX"
         static let windowY = "RepoWhisper.windowY"
         static let hasCustomPosition = "RepoWhisper.hasCustomPosition"
+        static let searchHistory = "RepoWhisper.searchHistory"
     }
+
+    private let maxHistoryItems = 10
 
     @Published var isVisible = false
     @Published var isStealthMode: Bool {
@@ -28,6 +52,8 @@ class FloatingPopupManager: ObservableObject {
     }
     @Published var toastMessage: String?
     @Published var showToast = false
+    @Published var searchHistory: [SearchHistoryItem] = []
+    @Published var isHistoryExpanded = false
 
     private var popupWindow: NSPanel?
     private var savedPosition: NSPoint?
@@ -45,7 +71,10 @@ class FloatingPopupManager: ObservableObject {
             print("📍 [POPUP] Loaded saved position: (\(x), \(y))")
         }
 
-        print("⚙️ [POPUP] Loaded settings: stealth=\(isStealthMode)")
+        // Load search history
+        loadSearchHistory()
+
+        print("⚙️ [POPUP] Loaded settings: stealth=\(isStealthMode), history=\(searchHistory.count) items")
     }
 
     // MARK: - Persistence
@@ -59,6 +88,94 @@ class FloatingPopupManager: ObservableObject {
         UserDefaults.standard.set(true, forKey: Keys.hasCustomPosition)
         savedPosition = origin
         print("💾 [POPUP] Saved position: (\(origin.x), \(origin.y))")
+    }
+
+    // MARK: - Search History
+
+    /// Load search history from UserDefaults
+    private func loadSearchHistory() {
+        guard let data = UserDefaults.standard.data(forKey: Keys.searchHistory) else {
+            searchHistory = []
+            return
+        }
+        do {
+            searchHistory = try JSONDecoder().decode([SearchHistoryItem].self, from: data)
+            print("📚 [POPUP] Loaded \(searchHistory.count) history items")
+        } catch {
+            print("❌ [POPUP] Failed to decode search history: \(error)")
+            searchHistory = []
+        }
+    }
+
+    /// Save search history to UserDefaults
+    private func saveSearchHistoryLocal() {
+        do {
+            let data = try JSONEncoder().encode(searchHistory)
+            UserDefaults.standard.set(data, forKey: Keys.searchHistory)
+            print("💾 [POPUP] Saved \(searchHistory.count) history items")
+        } catch {
+            print("❌ [POPUP] Failed to encode search history: \(error)")
+        }
+    }
+
+    /// Add a search query to history
+    func addToSearchHistory(query: String, resultsCount: Int) {
+        // Skip empty queries
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+        // Remove duplicate if exists (same query)
+        searchHistory.removeAll { $0.query.lowercased() == query.lowercased() }
+
+        // Add new item at the beginning
+        let item = SearchHistoryItem(query: query, resultsCount: resultsCount)
+        searchHistory.insert(item, at: 0)
+
+        // Trim to max items
+        if searchHistory.count > maxHistoryItems {
+            searchHistory = Array(searchHistory.prefix(maxHistoryItems))
+        }
+
+        saveSearchHistoryLocal()
+        print("📝 [POPUP] Added to history: '\(query)' (\(resultsCount) results)")
+
+        // Optional: Sync to Supabase if authenticated
+        Task {
+            await syncHistoryToSupabase(item)
+        }
+    }
+
+    /// Clear all search history
+    func clearSearchHistory() {
+        searchHistory.removeAll()
+        UserDefaults.standard.removeObject(forKey: Keys.searchHistory)
+        print("🗑️ [POPUP] Cleared search history")
+    }
+
+    // MARK: - Supabase Sync (Optional)
+
+    /// Sync search history item to Supabase if authenticated
+    private func syncHistoryToSupabase(_ item: SearchHistoryItem) async {
+        // Only sync if authenticated (check on main actor)
+        let isAuth = await MainActor.run { AuthManager.shared.isAuthenticated }
+        guard isAuth else { return }
+
+        do {
+            let session = try await supabase.auth.session
+            let userId = session.user.id
+
+            try await supabase.from("search_history")
+                .insert([
+                    "user_id": userId.uuidString,
+                    "query": item.query,
+                    "results_count": String(item.resultsCount),
+                    "created_at": ISO8601DateFormatter().string(from: item.timestamp)
+                ])
+                .execute()
+            print("☁️ [POPUP] Synced to Supabase: '\(item.query)'")
+        } catch {
+            // Silently fail - local storage is primary
+            print("⚠️ [POPUP] Supabase sync failed: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Toast Notification
@@ -80,6 +197,9 @@ class FloatingPopupManager: ObservableObject {
     /// Show the floating popup with search results
     func showPopup(results: [SearchResultItem], query: String, latency: Double, isRecording: Bool) {
         print("🎯 [POPUP] showPopup called with \(results.count) results, query: '\(query)'")
+
+        // Add to search history
+        addToSearchHistory(query: query, resultsCount: results.count)
         DispatchQueue.main.async { [weak self] in
             guard let self = self else {
                 print("❌ [POPUP] self is nil, aborting")
@@ -452,6 +572,53 @@ class FloatingPopupManager: ObservableObject {
     func togglePopup() {
         if self.isVisible {
             hidePopup()
+        }
+    }
+
+    // MARK: - Typed Search
+
+    /// Trigger a search from typed input (not voice)
+    func triggerTypedSearch(query: String) {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return }
+
+        print("⌨️ [POPUP] Typed search triggered: '\(trimmedQuery)'")
+
+        Task {
+            // Show loading state
+            await MainActor.run {
+                showLoadingPopup(query: trimmedQuery, isRecording: false)
+            }
+
+            do {
+                // Check backend connectivity first
+                await APIClient.shared.checkHealth()
+                let isConnected = await MainActor.run { APIClient.shared.isConnected }
+                guard isConnected else {
+                    await MainActor.run {
+                        showErrorToast("Backend offline - check localhost:8000")
+                        hidePopup()
+                    }
+                    return
+                }
+
+                // Perform search
+                let response = try await APIClient.shared.search(query: trimmedQuery)
+
+                await MainActor.run {
+                    showPopup(
+                        results: response.results,
+                        query: trimmedQuery,
+                        latency: response.latencyMs,
+                        isRecording: false
+                    )
+                }
+            } catch {
+                await MainActor.run {
+                    showErrorToast("Search failed: \(error.localizedDescription)")
+                    hidePopup()
+                }
+            }
         }
     }
 }
