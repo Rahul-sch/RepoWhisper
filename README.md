@@ -9,6 +9,32 @@ A Mac menu bar app that listens to your voice, transcribes it in real-time, and 
 ![Swift](https://img.shields.io/badge/swift-5.9+-orange)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
+## Screenshots
+
+### Main Interface - Voice Search Results
+![Voice Search Results](assets/screenshots/main-results.png)
+*Glass morphism overlay showing semantic search results with code previews*
+
+### Ask Bar - Typed & Voice Input
+![Ask Bar](assets/screenshots/ask-bar.png)
+*Combined text input and voice recording with hotkey hints*
+
+### Search History
+![Search History](assets/screenshots/search-history.png)
+*Collapsible recent searches for quick re-runs*
+
+### Stealth Mode
+![Stealth Mode](assets/screenshots/stealth-mode.png)
+*Invisible to screen sharing - perfect for interviews*
+
+### Menu Bar
+![Menu Bar](assets/screenshots/menu-bar.png)
+*Compact menu bar interface with quick actions*
+
+### Repository Indexing
+![Indexing](assets/screenshots/indexing.png)
+*Smart indexing with progress indicator*
+
 ## Features
 
 - **Real-time Voice Transcription** - Speak naturally, get instant results
