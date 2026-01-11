@@ -11,10 +11,13 @@ import AppKit
 /// Manages floating popup windows that appear on screen
 class FloatingPopupManager: ObservableObject {
     static let shared = FloatingPopupManager()
-    
+
     @Published var isVisible = false
+    @Published var isStealthMode = false
     private var popupWindow: NSPanel?
-    
+    private var savedPosition: NSPoint?
+    private var autoDismissTask: DispatchWorkItem?
+
     private init() {}
     
     /// Show the floating popup with search results
@@ -71,67 +74,81 @@ class FloatingPopupManager: ObservableObject {
         }
         print("✅ [POPUP] Got main screen: \(screen.frame)")
         let screenFrame = screen.visibleFrame
-        
+
         // Window size (premium glassmorphism)
         let windowWidth: CGFloat = 580
-        let windowHeight: CGFloat = 520
+        let windowHeight: CGFloat = isStealthMode ? 420 : 520
         let padding: CGFloat = 20
-        
-        // Position at top-right
+
+        // Position at top-right (or bottom-right in stealth)
         let xPos = screenFrame.maxX - windowWidth - padding
-        let yPos = screenFrame.maxY - windowHeight - padding
-        
+        let yPos = isStealthMode
+            ? screenFrame.minY + padding
+            : screenFrame.maxY - windowHeight - padding
+
         let windowFrame = NSRect(
             x: xPos,
             y: yPos,
             width: windowWidth,
             height: windowHeight
         )
-        
-        // Create the popup panel
+
+        // Create the popup panel with stealth support
         let panel = NSPanel(
             contentRect: windowFrame,
-            styleMask: [.nonactivatingPanel, .fullSizeContentView],
+            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        
+
         // Configure panel appearance
         panel.contentView = hostingView
         panel.isFloatingPanel = true
-        panel.level = .floating
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.statusWindow)) + 1)
+        panel.collectionBehavior = [
+            .canJoinAllSpaces,
+            .fullScreenAuxiliary,
+            .stationary,       // Hidden from Mission Control
+            .ignoresCycle      // Skip Cmd+Tab
+        ]
         panel.backgroundColor = .clear
         panel.isOpaque = false
-        panel.hasShadow = true
+        panel.hasShadow = !isStealthMode
         panel.titlebarAppearsTransparent = true
         panel.titleVisibility = .hidden
         panel.isMovableByWindowBackground = true
         panel.animationBehavior = .documentWindow
-        
+        // Screen-share invisibility ONLY in stealth mode
+        panel.sharingType = isStealthMode ? .none : .readOnly
+
         // Store and show
         self.popupWindow = panel
         self.isVisible = true
-        
-        print("📺 [POPUP] Window created at position: x=\(xPos), y=\(yPos), size=\(windowWidth)x\(windowHeight)")
+
+        print("📺 [POPUP] Window created at position: x=\(xPos), y=\(yPos), size=\(windowWidth)x\(windowHeight), stealth=\(isStealthMode)")
         
         // Animate in
         panel.alphaValue = 0
         panel.makeKeyAndOrderFront(nil)
         print("✅ [POPUP] Window ordered front - should be visible now!")
-        
+
+        let targetAlpha: CGFloat = isStealthMode ? 0.7 : 1.0
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().alphaValue = 1.0
+            panel.animator().alphaValue = targetAlpha
         }, completionHandler: {
             print("✨ [POPUP] Animation complete - window fully visible")
         })
-        
-        // Auto-dismiss after 15 seconds (like Cluely)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
+
+        // Auto-dismiss (15s normal, 30s stealth)
+        autoDismissTask?.cancel()
+        let dismissDelay: Double = isStealthMode ? 30 : 15
+        let task = DispatchWorkItem { [weak self] in
             self?.hidePopup()
         }
+        autoDismissTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + dismissDelay, execute: task)
     }
     
     /// Show the popup in loading state
@@ -169,71 +186,166 @@ class FloatingPopupManager: ObservableObject {
             isLoading: true,
             isRecording: isRecording
         )
-        
+
         // Create hosting view
         let hostingView = NSHostingView(rootView: contentView)
-        
+
         // Calculate position (top-right corner of screen with padding)
         guard let screen = NSScreen.main else { return }
         let screenFrame = screen.visibleFrame
-        
-        // Window size (premium glassmorphism)
+
+        // Window size
         let windowWidth: CGFloat = 580
-        let windowHeight: CGFloat = 520
+        let windowHeight: CGFloat = isStealthMode ? 420 : 520
         let padding: CGFloat = 20
-        
-        // Position at top-right
+
+        // Position at top-right (or bottom-right in stealth)
         let xPos = screenFrame.maxX - windowWidth - padding
-        let yPos = screenFrame.maxY - windowHeight - padding
-        
+        let yPos = isStealthMode
+            ? screenFrame.minY + padding
+            : screenFrame.maxY - windowHeight - padding
+
         let windowFrame = NSRect(
             x: xPos,
             y: yPos,
             width: windowWidth,
             height: windowHeight
         )
-        
-        // Create the popup panel
+
+        // Create the popup panel with stealth support
         let panel = NSPanel(
             contentRect: windowFrame,
-            styleMask: [.nonactivatingPanel, .fullSizeContentView],
+            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        
+
         // Configure panel appearance
         panel.contentView = hostingView
         panel.isFloatingPanel = true
-        panel.level = .floating
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.statusWindow)) + 1)
+        panel.collectionBehavior = [
+            .canJoinAllSpaces,
+            .fullScreenAuxiliary,
+            .stationary,
+            .ignoresCycle
+        ]
         panel.backgroundColor = .clear
         panel.isOpaque = false
-        panel.hasShadow = true
+        panel.hasShadow = !isStealthMode
         panel.titlebarAppearsTransparent = true
         panel.titleVisibility = .hidden
         panel.isMovableByWindowBackground = true
         panel.animationBehavior = .documentWindow
-        
+        panel.sharingType = isStealthMode ? .none : .readOnly
+
         // Store and show
         self.popupWindow = panel
         self.isVisible = true
-        
+
         // Animate in
+        let targetAlpha: CGFloat = isStealthMode ? 0.7 : 1.0
         panel.alphaValue = 0
         panel.makeKeyAndOrderFront(nil)
-        
+
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().alphaValue = 1.0
+            panel.animator().alphaValue = targetAlpha
         }, completionHandler: nil)
-        
-        // Auto-dismiss after 15 seconds (like Cluely)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
+
+        // Auto-dismiss (15s normal, 30s stealth)
+        autoDismissTask?.cancel()
+        let dismissDelay: Double = isStealthMode ? 30 : 15
+        let task = DispatchWorkItem { [weak self] in
             self?.hidePopup()
         }
+        autoDismissTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + dismissDelay, execute: task)
     }
-    
+
+    // MARK: - Stealth Mode Controls
+
+    /// Toggle stealth mode on/off
+    func toggleStealthMode() {
+        isStealthMode.toggle()
+        print("🥷 [POPUP] Stealth mode: \(isStealthMode ? "ON" : "OFF")")
+
+        guard let panel = popupWindow else { return }
+
+        // Update panel properties
+        panel.hasShadow = !isStealthMode
+        panel.sharingType = isStealthMode ? .none : .readOnly
+
+        // Animate opacity change
+        let targetAlpha: CGFloat = isStealthMode ? 0.7 : 1.0
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            panel.animator().alphaValue = targetAlpha
+        }
+
+        // Reset auto-dismiss with new timing
+        autoDismissTask?.cancel()
+        let dismissDelay: Double = isStealthMode ? 30 : 15
+        let task = DispatchWorkItem { [weak self] in
+            self?.hidePopup()
+        }
+        autoDismissTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + dismissDelay, execute: task)
+    }
+
+    /// Show and center the popup window
+    func centerAndShow() {
+        guard let panel = popupWindow, let screen = NSScreen.main else { return }
+        let screenFrame = screen.visibleFrame
+        let x = screenFrame.midX - panel.frame.width / 2
+        let y = screenFrame.midY - panel.frame.height / 2
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
+
+        if !isVisible {
+            let targetAlpha: CGFloat = isStealthMode ? 0.7 : 1.0
+            panel.alphaValue = 0
+            panel.orderFront(nil)
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.2
+                panel.animator().alphaValue = targetAlpha
+            }
+            isVisible = true
+        }
+    }
+
+    /// Toggle popup visibility (show/hide with position memory)
+    func toggleVisibility() {
+        guard let panel = popupWindow else { return }
+
+        if isVisible {
+            savedPosition = panel.frame.origin
+            hidePopup()
+        } else {
+            if let pos = savedPosition {
+                panel.setFrameOrigin(pos)
+            }
+            let targetAlpha: CGFloat = isStealthMode ? 0.7 : 1.0
+            panel.alphaValue = 0
+            panel.orderFront(nil)
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.2
+                panel.animator().alphaValue = targetAlpha
+            }
+            isVisible = true
+        }
+    }
+
+    /// Move window by offset
+    func moveWindow(direction: NSPoint) {
+        guard let panel = popupWindow else { return }
+        let newOrigin = NSPoint(
+            x: panel.frame.origin.x + direction.x,
+            y: panel.frame.origin.y + direction.y
+        )
+        panel.setFrameOrigin(newOrigin)
+    }
+
     /// Hide the floating popup
     func hidePopup() {
         DispatchQueue.main.async { [weak self] in

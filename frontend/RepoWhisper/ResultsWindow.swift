@@ -15,10 +15,21 @@ struct ResultsWindow: View {
     let latencyMs: Double
     let isLoading: Bool
     let isRecording: Bool
-    
+    let isStealthMode: Bool
+
     @State private var selectedResult: SearchResultItem?
     @State private var hoveredResult: SearchResultItem?
     @State private var isDragging = false
+
+    init(results: [SearchResultItem], query: String, latencyMs: Double,
+         isLoading: Bool, isRecording: Bool, isStealthMode: Bool = false) {
+        self.results = results
+        self.query = query
+        self.latencyMs = latencyMs
+        self.isLoading = isLoading
+        self.isRecording = isRecording
+        self.isStealthMode = isStealthMode
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -37,11 +48,11 @@ struct ResultsWindow: View {
                 resultsListView
             }
         }
-        .frame(width: 580, height: 520)
+        .frame(width: 580, height: isStealthMode ? 420 : 520)
         .background(
-            // Premium glassmorphism background
+            // Premium glassmorphism background (more subtle in stealth)
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(isStealthMode ? .regularMaterial.opacity(0.6) : .ultraThinMaterial)
         )
         .overlay(
             // Hairline border (0.5px, 20% opacity white)
@@ -76,10 +87,10 @@ struct ResultsWindow: View {
             }
         )
         .shadow(
-            color: .black.opacity(0.4),
-            radius: 50,
+            color: .black.opacity(isStealthMode ? 0 : 0.4),
+            radius: isStealthMode ? 0 : 50,
             x: 0,
-            y: 25
+            y: isStealthMode ? 0 : 25
         )
         .onAppear {
             if isRecording {
