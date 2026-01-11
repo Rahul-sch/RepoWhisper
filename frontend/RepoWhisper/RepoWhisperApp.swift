@@ -7,11 +7,13 @@
 
 import SwiftUI
 import AppKit
+import ServiceManagement
 
 @main
 struct RepoWhisperApp: App {
     @StateObject private var authManager = AuthManager.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @AppStorage("launchAtLogin") private var launchAtLogin = false
     
     init() {
         // Print to console so we know app launched
@@ -87,11 +89,27 @@ struct RepoWhisperApp: App {
                         window.makeKeyAndOrderFront(nil)
                     }
                 }
+
+                Divider()
+
+                // Launch at Login toggle
+                Toggle("Launch at Login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { _, newValue in
+                        setLaunchAtLogin(enabled: newValue)
+                    }
+
                 if authManager.devMode {
                     Button("Disable Dev Mode") {
                         authManager.disableDevMode()
                     }
                 }
+
+                Divider()
+
+                Button("Quit RepoWhisper") {
+                    NSApplication.shared.terminate(nil)
+                }
+                .keyboardShortcut("q")
             }
             .padding()
             .frame(width: 200)
@@ -105,6 +123,27 @@ struct RepoWhisperApp: App {
             SettingsView()
                 .environmentObject(authManager)
         }
+    }
+}
+
+// MARK: - Launch at Login Helper
+
+func setLaunchAtLogin(enabled: Bool) {
+    if #available(macOS 13.0, *) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+                print("✅ [APP] Registered for Launch at Login")
+            } else {
+                try SMAppService.mainApp.unregister()
+                print("✅ [APP] Unregistered from Launch at Login")
+            }
+        } catch {
+            print("❌ [APP] Failed to set Launch at Login: \(error)")
+        }
+    } else {
+        // Fallback for older macOS
+        print("⚠️ [APP] Launch at Login requires macOS 13+")
     }
 }
 
@@ -201,6 +240,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationWillTerminate(_ notification: Notification) {
         print("🛑 [APP] Application will terminate")
+    }
+
+    // MARK: - Silent Background Mode
+    // Keep app alive in menu bar when window is closed
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        print("📍 [APP] Last window closed - staying alive in menu bar")
+        return false // Don't quit - stay in menu bar
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        // Show popup when dock icon is clicked (if no windows visible)
+        if !flag {
+            FloatingPopupManager.shared.centerAndShow()
+        }
+        return true
     }
     
     // Handle OAuth callback URLs

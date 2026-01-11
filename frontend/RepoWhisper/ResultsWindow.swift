@@ -325,6 +325,28 @@ struct ResultsWindow: View {
                         .fill(Color.green.opacity(0.12))
                 )
             }
+
+            // Clear All button (shows when results > 3)
+            if results.count > 3 {
+                Button(action: {
+                    FloatingPopupManager.shared.hidePopup()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 9, weight: .semibold))
+                        Text("Clear")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                    }
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Color.white.opacity(0.08))
+                    )
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
