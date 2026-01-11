@@ -78,7 +78,7 @@ class FloatingPopupManager: ObservableObject {
 
         // Window size (premium glassmorphism)
         let windowWidth: CGFloat = 580
-        let windowHeight: CGFloat = isStealthMode ? 420 : 520
+        let windowHeight: CGFloat = isStealthMode ? 460 : 560
         let padding: CGFloat = 20
 
         // Position at top-right (or bottom-right in stealth)
@@ -198,7 +198,7 @@ class FloatingPopupManager: ObservableObject {
 
         // Window size
         let windowWidth: CGFloat = 580
-        let windowHeight: CGFloat = isStealthMode ? 420 : 520
+        let windowHeight: CGFloat = isStealthMode ? 460 : 560
         let padding: CGFloat = 20
 
         // Position at top-right (or bottom-right in stealth)

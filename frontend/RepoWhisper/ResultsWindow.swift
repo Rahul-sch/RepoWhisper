@@ -35,10 +35,10 @@ struct ResultsWindow: View {
         VStack(spacing: 0) {
             // Drag area (top 44px)
             dragArea
-            
+
             // Header with query
             headerView
-            
+
             // Content
             if isLoading {
                 loadingView
@@ -47,8 +47,11 @@ struct ResultsWindow: View {
             } else {
                 resultsListView
             }
+
+            // Bottom control bar
+            controlBar
         }
-        .frame(width: 580, height: isStealthMode ? 420 : 520)
+        .frame(width: 580, height: isStealthMode ? 460 : 560)
         .background(
             // Premium glassmorphism background (more subtle in stealth)
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -143,7 +146,90 @@ struct ResultsWindow: View {
         }
         .onTapGesture { }
     }
-    
+
+    // MARK: - Control Bar (Bottom Toolbar)
+
+    @State private var isHoveringRecordBtn = false
+    @State private var isHoveringStealthBtn = false
+    @State private var isHoveringCenterBtn = false
+    @State private var isHoveringClearBtn = false
+
+    private var controlBar: some View {
+        HStack(spacing: 20) {
+            Spacer()
+
+            // Record button
+            ControlBarButton(
+                icon: "record.circle",
+                label: "Record",
+                isActive: isRecording,
+                activeColor: .red,
+                isHovering: isHoveringRecordBtn
+            ) {
+                if AudioCapture.shared.isRecording {
+                    AudioCapture.shared.stopRecording()
+                } else {
+                    Task {
+                        let granted = await AudioCapture.shared.requestPermission()
+                        if granted {
+                            AudioCapture.shared.startRecording()
+                        }
+                    }
+                }
+            }
+            .onHover { isHoveringRecordBtn = $0 }
+
+            // Stealth button
+            ControlBarButton(
+                icon: "eye.slash",
+                label: "Stealth",
+                isActive: isStealthMode,
+                activeColor: .purple,
+                isHovering: isHoveringStealthBtn
+            ) {
+                FloatingPopupManager.shared.toggleStealthMode()
+            }
+            .onHover { isHoveringStealthBtn = $0 }
+
+            // Center button
+            ControlBarButton(
+                icon: "arrow.up.and.down.and.arrow.left.and.right",
+                label: "Center",
+                isActive: false,
+                activeColor: .blue,
+                isHovering: isHoveringCenterBtn
+            ) {
+                FloatingPopupManager.shared.centerAndShow()
+            }
+            .onHover { isHoveringCenterBtn = $0 }
+
+            // Clear/Hide button
+            ControlBarButton(
+                icon: "xmark.circle",
+                label: "Hide",
+                isActive: false,
+                activeColor: .gray,
+                isHovering: isHoveringClearBtn
+            ) {
+                FloatingPopupManager.shared.hidePopup()
+            }
+            .onHover { isHoveringClearBtn = $0 }
+
+            Spacer()
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(
+            // Glassmorphism separator
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(height: 0.5)
+                Spacer()
+            }
+        )
+    }
+
     // MARK: - Header
     
     private var headerView: some View {
@@ -490,6 +576,56 @@ struct WaveformAnimation: View {
     }
 }
 
+// MARK: - Control Bar Button (Glassmorphism Style)
+
+struct ControlBarButton: View {
+    let icon: String
+    let label: String
+    let isActive: Bool
+    let activeColor: Color
+    let isHovering: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                ZStack {
+                    // Glassmorphism circle background
+                    Circle()
+                        .fill(
+                            isActive
+                                ? activeColor.opacity(0.25)
+                                : (isHovering ? Color.white.opacity(0.15) : Color.white.opacity(0.08))
+                        )
+                        .frame(width: 40, height: 40)
+
+                    // Icon
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(
+                            isActive
+                                ? activeColor
+                                : (isHovering ? .primary : .primary.opacity(0.6))
+                        )
+                }
+
+                // Label
+                Text(label)
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .foregroundColor(
+                        isActive
+                            ? activeColor
+                            : .secondary.opacity(0.8)
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(isHovering ? 1.05 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isHovering)
+        .animation(.easeOut(duration: 0.15), value: isActive)
+    }
+}
+
 #Preview {
     ResultsWindow(
         results: [
@@ -507,5 +643,5 @@ struct WaveformAnimation: View {
         isRecording: false
     )
     .preferredColorScheme(.dark)
-    .frame(width: 600, height: 500)
+    .frame(width: 600, height: 580)
 }
