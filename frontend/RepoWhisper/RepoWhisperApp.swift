@@ -88,27 +88,66 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         print("✅ RepoWhisper app finished launching")
         print("📌 Look for the menu bar icon (waveform.circle.fill) in the top menu bar")
         print("🔍 [APP] Auth state: authenticated=\(AuthManager.shared.isAuthenticated), devMode=\(AuthManager.shared.devMode)")
-        
-        // Register global keyboard shortcut ⌘⇧R (with error handling)
-        do {
-            NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                guard let self = self else { return }
-                if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 15 { // R key
-                    if AudioCapture.shared.isRecording {
-                        AudioCapture.shared.stopRecording()
-                    } else {
-                        Task {
-                            let granted = await AudioCapture.shared.requestPermission()
-                            if granted {
-                                AudioCapture.shared.startRecording()
-                            }
+
+        // Register global keyboard shortcuts
+        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let _ = self else { return }
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
+            // ⌘⇧R - Toggle recording
+            if flags == [.command, .shift] && event.keyCode == 15 { // R key
+                if AudioCapture.shared.isRecording {
+                    AudioCapture.shared.stopRecording()
+                } else {
+                    Task {
+                        let granted = await AudioCapture.shared.requestPermission()
+                        if granted {
+                            AudioCapture.shared.startRecording()
                         }
                     }
                 }
             }
-        } catch {
-            print("⚠️ [APP] Failed to register global keyboard shortcut: \(error)")
+
+            // ⌘⇧Space - Show/center overlay
+            if flags == [.command, .shift] && event.keyCode == 49 { // Space key
+                print("🎯 [HOTKEY] ⌘⇧Space - Center and show overlay")
+                FloatingPopupManager.shared.centerAndShow()
+            }
+
+            // ⌘B - Toggle visibility
+            if flags == [.command] && event.keyCode == 11 { // B key
+                print("🎯 [HOTKEY] ⌘B - Toggle visibility")
+                FloatingPopupManager.shared.toggleVisibility()
+            }
+
+            // ⌘⇧H - Toggle stealth mode
+            if flags == [.command, .shift] && event.keyCode == 4 { // H key
+                print("🎯 [HOTKEY] ⌘⇧H - Toggle stealth mode")
+                FloatingPopupManager.shared.toggleStealthMode()
+            }
+
+            // ⌘← - Move window left
+            if flags == [.command] && event.keyCode == 123 { // Left arrow
+                FloatingPopupManager.shared.moveWindow(direction: NSPoint(x: -50, y: 0))
+            }
+
+            // ⌘→ - Move window right
+            if flags == [.command] && event.keyCode == 124 { // Right arrow
+                FloatingPopupManager.shared.moveWindow(direction: NSPoint(x: 50, y: 0))
+            }
+
+            // ⌘↑ - Move window up
+            if flags == [.command] && event.keyCode == 126 { // Up arrow
+                FloatingPopupManager.shared.moveWindow(direction: NSPoint(x: 0, y: 50))
+            }
+
+            // ⌘↓ - Move window down
+            if flags == [.command] && event.keyCode == 125 { // Down arrow
+                FloatingPopupManager.shared.moveWindow(direction: NSPoint(x: 0, y: -50))
+            }
         }
+
+        print("⌨️ [APP] Global hotkeys registered: ⌘⇧R (record), ⌘⇧Space (center), ⌘B (visibility), ⌘⇧H (stealth), ⌘+Arrows (move)")
     }
     
     func applicationWillTerminate(_ notification: Notification) {

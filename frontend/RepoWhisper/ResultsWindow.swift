@@ -52,7 +52,8 @@ struct ResultsWindow: View {
         .background(
             // Premium glassmorphism background (more subtle in stealth)
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(isStealthMode ? .regularMaterial.opacity(0.6) : .ultraThinMaterial)
+                .fill(.ultraThinMaterial)
+                .opacity(isStealthMode ? 0.6 : 1.0)
         )
         .overlay(
             // Hairline border (0.5px, 20% opacity white)
@@ -102,13 +103,44 @@ struct ResultsWindow: View {
     }
     
     // MARK: - Drag Area
-    
+
+    @State private var isHoveringCloseButton = false
+    @State private var isHoveringDragArea = false
+
     private var dragArea: some View {
         HStack {
             Spacer()
+
+            // Hover-reveal close button
+            if isHoveringDragArea || isHoveringCloseButton {
+                Button(action: {
+                    FloatingPopupManager.shared.hidePopup()
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(isHoveringCloseButton ? Color.red.opacity(0.8) : Color.white.opacity(0.15))
+                            .frame(width: 20, height: 20)
+
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(isHoveringCloseButton ? .white : .primary.opacity(0.6))
+                    }
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    isHoveringCloseButton = hovering
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                .padding(.trailing, 16)
+            }
         }
         .frame(height: 44)
         .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHoveringDragArea = hovering
+            }
+        }
         .onTapGesture { }
     }
     
@@ -141,6 +173,23 @@ struct ResultsWindow: View {
             
             Spacer()
             
+            // Stealth mode indicator
+            if isStealthMode {
+                HStack(spacing: 4) {
+                    Image(systemName: "eye.slash.fill")
+                        .font(.system(size: 9, weight: .semibold))
+                    Text("STEALTH")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                }
+                .foregroundColor(Color.purple.opacity(0.9))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color.purple.opacity(0.15))
+                )
+            }
+
             // Latency badge
             if latencyMs > 0 {
                 HStack(spacing: 4) {

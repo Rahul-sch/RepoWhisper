@@ -60,7 +60,8 @@ class FloatingPopupManager: ObservableObject {
             query: query,
             latencyMs: latency,
             isLoading: false,
-            isRecording: isRecording
+            isRecording: isRecording,
+            isStealthMode: isStealthMode
         )
         
         // Create hosting view
@@ -184,7 +185,8 @@ class FloatingPopupManager: ObservableObject {
             query: query,
             latencyMs: 0,
             isLoading: true,
-            isRecording: isRecording
+            isRecording: isRecording,
+            isStealthMode: isStealthMode
         )
 
         // Create hosting view
