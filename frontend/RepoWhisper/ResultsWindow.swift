@@ -1036,8 +1036,8 @@ struct AskBar: View {
                             onSubmit(query)
                         }
                     }
-                    .onChange(of: textFieldFocused) { focused in
-                        isFocused = focused
+                    .onChange(of: textFieldFocused) { _, newValue in
+                        isFocused = newValue
                     }
 
                 if !query.isEmpty {
