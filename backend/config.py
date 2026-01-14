@@ -18,12 +18,10 @@ class IndexMode(str, Enum):
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
-    
-    # Supabase Configuration
-    supabase_url: str = "https://kjpxpppaeydireznlzwe.supabase.co"
-    supabase_anon_key: str = ""
-    supabase_jwt_secret: str = ""
-    
+
+    # JWT Configuration
+    jwt_secret: str = ""
+
     # Server Configuration
     host: str = "127.0.0.1"
     port: int = 8000

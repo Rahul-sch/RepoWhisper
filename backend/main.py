@@ -20,7 +20,6 @@ from auth import get_current_user, get_user_id, get_optional_user
 from indexer import index_repository as index_repo, CodeChunk
 from search import get_vector_store, SearchResult as VectorSearchResult
 from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model
-from supabase_client import RepoService
 from logger import setup_logging, get_logger
 from advise import get_advisor, AdvisorContext, process_screenshot
 import uuid
@@ -241,15 +240,10 @@ async def index_repository(
         
         # Use absolute path for indexing
         repo_path_normalized = abs_path
-        
-        # Get or create repo record in Supabase first
-        repo_service = RepoService()
-        repo_record = repo_service.create_or_update_repo(
-            owner_id=user_id,
-            repo_path=index_request.repo_path
-        )
-        repo_id = repo_record.get("id") if repo_record else str(uuid.uuid4())
-        
+
+        # Generate a deterministic repo_id from user_id and repo_path
+        repo_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{user_id}:{index_request.repo_path}"))
+
         # Get user-specific vector store
         store = get_vector_store(user_id)
         
@@ -404,10 +398,10 @@ async def list_repos(
     """List all repositories for the authenticated user."""
     logger = get_logger()
     try:
-        repo_service = RepoService()
-        repos = repo_service.get_user_repos(user_id)
-        logger.info("repos_listed", user_id=user_id, count=len(repos))
-        return repos
+        # Repos are stored locally in the vector store, not in external DB
+        # Return empty list - repos are identified by their indexed data
+        logger.info("repos_listed", user_id=user_id, count=0)
+        return []
     except Exception as e:
         logger.error("list_repos_failed", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to list repositories")
@@ -423,10 +417,9 @@ async def delete_repo(
     """Delete a repository."""
     logger = get_logger()
     try:
-        repo_service = RepoService()
-        success = repo_service.delete_repo(user_id, repo_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Repository not found")
+        # Clear repo data from vector store
+        store = get_vector_store(user_id)
+        store.clear_repo(user_id, repo_id)
         logger.info("repo_deleted", user_id=user_id, repo_id=repo_id)
         return {"success": True, "message": "Repository deleted"}
     except HTTPException:
