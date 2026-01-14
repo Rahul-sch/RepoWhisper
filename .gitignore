@@ -65,3 +65,6 @@ Pods/
 *.log
 logs/
 
+# Local config
+.mcp.json
+
