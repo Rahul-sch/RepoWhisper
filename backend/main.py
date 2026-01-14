@@ -22,6 +22,7 @@ from search import get_vector_store, SearchResult as VectorSearchResult
 from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model
 from logger import setup_logging, get_logger
 from advise import get_advisor, AdvisorContext, process_screenshot
+from path_validator import init_path_validator, get_path_validator
 import uuid
 
 
@@ -29,21 +30,36 @@ import uuid
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage application lifespan - preload models."""
+    """Manage application lifespan - preload models and init security."""
     settings = get_settings()
     setup_logging(settings.debug)
     logger = get_logger()
-    
+
     logger.info("starting_backend", version="0.1.0")
-    
+
+    # Initialize path validator (FAIL-CLOSED)
+    allowlist_file = os.getenv("REPOWHISPER_ALLOWLIST_FILE")
+    if not allowlist_file:
+        raise RuntimeError(
+            "REPOWHISPER_ALLOWLIST_FILE environment variable not set. "
+            "Cannot start without allowlist."
+        )
+
+    try:
+        init_path_validator(allowlist_file)
+        logger.info("path_validator_initialized", allowlist_file=allowlist_file)
+    except (FileNotFoundError, ValueError) as e:
+        logger.error("path_validator_init_failed", error=str(e))
+        raise RuntimeError(f"Failed to initialize path validator: {e}")
+
     # Preload models for faster first request
     if settings.debug:
         logger.info("preloading_models")
         get_whisper_model()
         logger.info("models_loaded")
-    
+
     yield
-    
+
     logger.info("shutting_down_backend")
 
 
@@ -208,28 +224,17 @@ async def index_repository(
     logger.info("indexing_repository", user_id=user_id, mode=index_request.mode.value, repo_path=index_request.repo_path)
     
     try:
-        # Validate repo path (prevent directory traversal and absolute paths)
+        # Validate repo path
         repo_path_normalized = index_request.repo_path.strip()
         if not repo_path_normalized:
             raise HTTPException(status_code=400, detail="Repository path cannot be empty")
-        
-        if ".." in repo_path_normalized:
-            raise HTTPException(status_code=400, detail="Invalid repository path (directory traversal not allowed)")
-        
-        # Sandbox: Restrict to user's home directory or allowed paths
-        # In production, use a sandbox directory per user
-        home_dir = os.path.expanduser("~")
-        sandbox_base = os.getenv("REPO_SANDBOX_BASE", home_dir)
-        
-        # Resolve absolute path
-        abs_path = os.path.abspath(repo_path_normalized)
-        
-        # Ensure path is within sandbox (prevent directory traversal)
-        if not abs_path.startswith(os.path.abspath(sandbox_base)):
-            raise HTTPException(
-                status_code=403, 
-                detail=f"Repository path must be within allowed directory: {sandbox_base}"
-            )
+
+        # Validate against allowlist (FAIL-CLOSED)
+        validator = get_path_validator()
+        try:
+            abs_path = validator.validate_path(repo_path_normalized)
+        except PermissionError as e:
+            raise HTTPException(status_code=403, detail=str(e))
         
         # Validate path exists and is a directory
         if not os.path.exists(abs_path):
@@ -240,6 +245,16 @@ async def index_repository(
         
         # Use absolute path for indexing
         repo_path_normalized = abs_path
+
+        # Validate file_paths if in manual mode
+        if index_request.file_paths:
+            try:
+                # Validate each file path against allowlist
+                validated_file_paths = validator.validate_paths(index_request.file_paths)
+                # Replace with validated paths
+                index_request.file_paths = validated_file_paths
+            except PermissionError as e:
+                raise HTTPException(status_code=403, detail=str(e))
 
         # Generate a deterministic repo_id from user_id and repo_path
         repo_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{user_id}:{index_request.repo_path}"))

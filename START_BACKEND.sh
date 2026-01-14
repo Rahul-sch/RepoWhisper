@@ -14,11 +14,24 @@ fi
 # Activate virtual environment
 source venv/bin/activate
 
+# Set allowlist file path
+export REPOWHISPER_ALLOWLIST_FILE="$HOME/Library/Application Support/RepoWhisper/allowlist.json"
+
+# Check if allowlist exists
+if [ ! -f "$REPOWHISPER_ALLOWLIST_FILE" ]; then
+    echo "❌ ERROR: Allowlist file not found at:"
+    echo "   $REPOWHISPER_ALLOWLIST_FILE"
+    echo ""
+    echo "Please open the RepoWhisper app and approve at least one repository folder."
+    exit 1
+fi
+
 # Start the server
 echo "🚀 Starting RepoWhisper backend..."
 echo "📍 Server will run at: http://127.0.0.1:8000"
 echo "📖 API docs at: http://127.0.0.1:8000/docs"
 echo "🏥 Health check: http://127.0.0.1:8000/health"
+echo "🔒 Allowlist: $REPOWHISPER_ALLOWLIST_FILE"
 echo ""
 echo "Press CTRL+C to stop"
 echo ""
