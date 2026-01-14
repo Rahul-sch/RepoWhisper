@@ -27,8 +27,8 @@ class APIClient: ObservableObject {
     private let session: URLSession
     
     private init() {
-        self.baseURL = SupabaseConfig.backendURL
-        
+        self.baseURL = URL(string: "http://127.0.0.1:8000")!
+
         // Configure session for low latency with short timeout
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 5  // Reduced from 30 to prevent hanging
@@ -72,14 +72,12 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token (skip in dev mode)
-        if !AuthManager.shared.devMode {
-            guard let token = AuthManager.shared.accessToken else {
-                throw APIError.notAuthenticated
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        // Add auth token
+        guard let token = AuthManager.shared.accessToken else {
+            throw APIError.notAuthenticated
         }
-        
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
         request.httpBody = audioData
         
         let (data, response) = try await session.data(for: request)
@@ -106,14 +104,12 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token (skip in dev mode)
-        if !AuthManager.shared.devMode {
-            guard let token = AuthManager.shared.accessToken else {
-                throw APIError.notAuthenticated
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        // Add auth token
+        guard let token = AuthManager.shared.accessToken else {
+            throw APIError.notAuthenticated
         }
-        
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
         let body = SearchRequest(query: query, topK: topK)
         request.httpBody = try JSONEncoder().encode(body)
         
@@ -153,18 +149,14 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token (skip in dev mode)
-        if !AuthManager.shared.devMode {
-            guard let token = AuthManager.shared.accessToken else {
-                print("❌ [INDEX] No auth token available")
-                throw APIError.notAuthenticated
-            }
-            print("✅ [INDEX] Auth token found")
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        } else {
-            print("🧪 [INDEX] Dev mode - skipping auth token")
+        // Add auth token
+        guard let token = AuthManager.shared.accessToken else {
+            print("❌ [INDEX] No auth token available")
+            throw APIError.notAuthenticated
         }
-        
+        print("✅ [INDEX] Auth token found")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
         let body = IndexRequest(
             mode: mode,
             repoPath: repoPath,
@@ -211,14 +203,12 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token (skip in dev mode)
-        if !AuthManager.shared.devMode {
-            guard let token = AuthManager.shared.accessToken else {
-                throw APIError.notAuthenticated
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        // Add auth token
+        guard let token = AuthManager.shared.accessToken else {
+            throw APIError.notAuthenticated
         }
-        
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
         let body = AdviseRequest(
             transcript: transcript,
             screenshotBase64: screenshotBase64,
@@ -245,14 +235,12 @@ class APIClient: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
         
-        // Add auth token (skip in dev mode)
-        if !AuthManager.shared.devMode {
-            guard let token = AuthManager.shared.accessToken else {
-                throw APIError.notAuthenticated
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        // Add auth token
+        guard let token = AuthManager.shared.accessToken else {
+            throw APIError.notAuthenticated
         }
-        
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
         request.httpBody = screenshotData
         
         let (data, response) = try await session.data(for: request)

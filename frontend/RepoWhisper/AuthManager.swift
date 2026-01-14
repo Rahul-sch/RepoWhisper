@@ -2,11 +2,10 @@
 //  AuthManager.swift
 //  RepoWhisper
 //
-//  Manages authentication state with Supabase Auth.
+//  Manages authentication state with JWT tokens.
 //
 
 import Foundation
-import Supabase
 import Combine
 
 /// Manages user authentication state throughout the app
@@ -14,313 +13,143 @@ import Combine
 class AuthManager: ObservableObject {
     /// Shared singleton instance
     static let shared = AuthManager()
-    
-    /// Current authenticated user
-    @Published var currentUser: User?
-    
-    /// Current session (contains access token)
-    @Published var session: Session?
-    
+
     /// Whether user is authenticated
     @Published var isAuthenticated: Bool = false
-    
+
     /// Loading state for auth operations
     @Published var isLoading: Bool = false
-    
+
     /// Error message from last auth operation
     @Published var errorMessage: String?
-    
-    /// Dev mode flag (bypasses authentication for testing)
-    @Published var devMode: Bool {
-        didSet {
-            UserDefaults.standard.set(devMode, forKey: "RepoWhisper.DevMode")
-            if devMode {
-                // Auto-authenticate in dev mode
-                isAuthenticated = true
-            }
-        }
-    }
-    
+
     /// Access token for API requests
-    var accessToken: String? {
-        if devMode {
-            return "dev-mode-token" // Dummy token for dev mode
-        }
-        return session?.accessToken
-    }
-    
-    private var authStateTask: Task<Void, Never>?
-    
+    @Published var accessToken: String?
+
+    private let tokenKey = "RepoWhisper.AccessToken"
+
     private init() {
-        // Load dev mode from UserDefaults
-        self.devMode = UserDefaults.standard.bool(forKey: "RepoWhisper.DevMode")
-        
-        setupAuthStateListener()
-        
-        // If dev mode is enabled, skip auth check (set on main thread)
-        if devMode {
-            Task { @MainActor in
-                self.isAuthenticated = true
-                print("🧪 [DEV] Dev mode enabled - authentication bypassed")
-            }
-        } else {
-            // Check session asynchronously without blocking
-            Task { @MainActor in
-                await checkExistingSession()
-            }
+        // Load saved token
+        if let savedToken = UserDefaults.standard.string(forKey: tokenKey), !savedToken.isEmpty {
+            self.accessToken = savedToken
+            self.isAuthenticated = true
         }
     }
-    
-    /// Enable dev mode (bypasses authentication)
-    func enableDevMode() {
-        devMode = true
-        isAuthenticated = true
-        print("🧪 [DEV] Dev mode enabled - you can now test without logging in")
-    }
-    
-    /// Disable dev mode (requires real authentication)
-    func disableDevMode() {
-        devMode = false
-        isAuthenticated = false
-        print("🧪 [DEV] Dev mode disabled - authentication required")
-    }
-    
-    /// Set up listener for auth state changes
-    private func setupAuthStateListener() {
-        authStateTask = Task {
-            for await (event, session) in supabase.auth.authStateChanges {
-                await MainActor.run {
-                    self.session = session
-                    self.currentUser = session?.user
-                    self.isAuthenticated = session != nil
-                    
-                    switch event {
-                    case .signedIn:
-                        print("User signed in: \(session?.user.email ?? "unknown")")
-                    case .signedOut:
-                        print("User signed out")
-                    case .tokenRefreshed:
-                        print("Token refreshed")
-                    default:
-                        break
-                    }
-                }
-            }
-        }
-    }
-    
-    /// Check for existing session on app launch
-    private func checkExistingSession() async {
-        do {
-            // Add timeout to prevent hanging if Supabase is unreachable
-            let session = try await withTimeout(seconds: 3) {
-                try await supabase.auth.session
-            }
-            await MainActor.run {
-                self.session = session
-                self.currentUser = session.user
-                self.isAuthenticated = true
-            }
-        } catch {
-            // No existing session or timeout
-            await MainActor.run {
-                self.isAuthenticated = false
-            }
-        }
-    }
-    
-    /// Helper to add timeout to async operations
-    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
-        try await withThrowingTaskGroup(of: T.self) { group in
-            group.addTask {
-                try await operation()
-            }
-            group.addTask {
-                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-                throw TimeoutError()
-            }
-            guard let result = try await group.next() else {
-                throw TimeoutError()
-            }
-            group.cancelAll()
-            return result
-        }
-    }
-    
-    private struct TimeoutError: Error {}
-    
+
     /// Sign in with email and password
     func signIn(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
-        
+
         do {
-            let session = try await supabase.auth.signIn(
-                email: email,
-                password: password
-            )
-            self.session = session
-            self.currentUser = session.user
-            self.isAuthenticated = true
+            // Call backend auth endpoint
+            let url = URL(string: "http://127.0.0.1:8000/auth/login")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+            let body = ["email": email, "password": password]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AuthError.invalidResponse
+            }
+
+            if httpResponse.statusCode == 200 {
+                let result = try JSONDecoder().decode(AuthResponse.self, from: data)
+                self.accessToken = result.accessToken
+                self.isAuthenticated = true
+                UserDefaults.standard.set(result.accessToken, forKey: tokenKey)
+            } else {
+                let errorResult = try? JSONDecoder().decode(ErrorResponse.self, from: data)
+                throw AuthError.serverError(errorResult?.detail ?? "Login failed")
+            }
+        } catch let error as AuthError {
+            errorMessage = error.localizedDescription
         } catch {
             errorMessage = error.localizedDescription
         }
-        
+
         isLoading = false
     }
-    
+
     /// Sign up with email and password
     func signUp(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
-        
+
         do {
-            // Sign up (emailRedirectTo is configured in Supabase dashboard)
-            let response = try await supabase.auth.signUp(
-                email: email,
-                password: password
-            )
-            
-            if let session = response.session {
-                // User is immediately signed in (if email confirmation is disabled)
-                await MainActor.run {
-                    self.session = session
-                    self.currentUser = session.user
-                    self.isAuthenticated = true
-                }
+            // Call backend auth endpoint
+            let url = URL(string: "http://127.0.0.1:8000/auth/register")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+            let body = ["email": email, "password": password]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AuthError.invalidResponse
+            }
+
+            if httpResponse.statusCode == 200 || httpResponse.statusCode == 201 {
+                let result = try JSONDecoder().decode(AuthResponse.self, from: data)
+                self.accessToken = result.accessToken
+                self.isAuthenticated = true
+                UserDefaults.standard.set(result.accessToken, forKey: tokenKey)
             } else {
-                // Email confirmation required
-                await MainActor.run {
-                    self.errorMessage = "Please check your email and click the confirmation link. The link will open in this app."
-                }
+                let errorResult = try? JSONDecoder().decode(ErrorResponse.self, from: data)
+                throw AuthError.serverError(errorResult?.detail ?? "Registration failed")
             }
-        } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-            }
-        }
-        
-        await MainActor.run {
-            self.isLoading = false
-        }
-    }
-    
-    /// Sign in with OAuth provider (GitHub, Google, etc.)
-    func signInWithOAuth(provider: Provider) async {
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            // Use a proper redirect URL that the app can handle
-            let redirectURL = URL(string: "repowhisper://auth-callback")!
-            try await supabase.auth.signInWithOAuth(
-                provider: provider,
-                redirectTo: redirectURL
-            )
-        } catch {
-            // Provide user-friendly error message
-            let errorDescription = error.localizedDescription.lowercased()
-            if errorDescription.contains("not enabled") || errorDescription.contains("unsupported provider") {
-                errorMessage = "GitHub OAuth is not enabled in your Supabase project. Please use email/password sign up instead, or enable GitHub OAuth in your Supabase dashboard."
-            } else {
-                errorMessage = "OAuth sign in failed: \(error.localizedDescription)"
-            }
-            print("OAuth error: \(error)")
-        }
-        
-        isLoading = false
-    }
-    
-    /// Handle OAuth callback URL (also handles email confirmation links)
-    func handleOAuthCallback(url: URL) async {
-        print("🔐 Handling callback URL: \(url)")
-        
-        // Check if this is an email confirmation link or OAuth callback
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
-            await MainActor.run {
-                self.errorMessage = "Invalid callback URL"
-            }
-            return
-        }
-        
-        // Handle email confirmation tokens
-        if let token = components.queryItems?.first(where: { $0.name == "token" })?.value,
-           let type = components.queryItems?.first(where: { $0.name == "type" })?.value,
-           type == "email",
-           let email = components.queryItems?.first(where: { $0.name == "email" })?.value {
-            // This is an email confirmation link
-            print("📧 Handling email confirmation")
-            do {
-                let response = try await supabase.auth.verifyOTP(
-                    email: email,
-                    token: token,
-                    type: .email
-                )
-                if let session = response.session {
-                    await MainActor.run {
-                        self.session = session
-                        self.currentUser = session.user
-                        self.isAuthenticated = true
-                        self.errorMessage = nil
-                    }
-                    print("✅ Email confirmation successful")
-                } else {
-                    await MainActor.run {
-                        self.errorMessage = "Email confirmation completed but no session returned"
-                    }
-                }
-                return
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = "Email confirmation failed: \(error.localizedDescription)"
-                }
-                print("❌ Email confirmation error: \(error)")
-                return
-            }
-        }
-        
-        // Handle OAuth callback
-        if components.queryItems?.first(where: { $0.name == "code" }) != nil {
-            do {
-                let session = try await supabase.auth.session(from: url)
-                await MainActor.run {
-                    self.session = session
-                    self.currentUser = session.user
-                    self.isAuthenticated = true
-                    self.errorMessage = nil
-                }
-                print("✅ OAuth authentication successful")
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = "Failed to complete OAuth sign in: \(error.localizedDescription)"
-                }
-                print("❌ OAuth callback error: \(error)")
-            }
-        } else {
-            await MainActor.run {
-                self.errorMessage = "Invalid callback URL format"
-            }
-        }
-    }
-    
-    /// Sign out current user
-    func signOut() async {
-        isLoading = true
-        
-        do {
-            try await supabase.auth.signOut()
-            self.session = nil
-            self.currentUser = nil
-            self.isAuthenticated = false
+        } catch let error as AuthError {
+            errorMessage = error.localizedDescription
         } catch {
             errorMessage = error.localizedDescription
         }
-        
+
         isLoading = false
     }
-    
-    deinit {
-        authStateTask?.cancel()
+
+    /// Sign out current user
+    func signOut() async {
+        isLoading = true
+
+        self.accessToken = nil
+        self.isAuthenticated = false
+        UserDefaults.standard.removeObject(forKey: tokenKey)
+
+        isLoading = false
     }
 }
 
+// MARK: - Auth Models
+
+struct AuthResponse: Codable {
+    let accessToken: String
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+    }
+}
+
+struct ErrorResponse: Codable {
+    let detail: String
+}
+
+enum AuthError: Error, LocalizedError {
+    case invalidResponse
+    case serverError(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidResponse:
+            return "Invalid response from server"
+        case .serverError(let message):
+            return message
+        }
+    }
+}

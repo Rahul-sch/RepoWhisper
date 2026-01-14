@@ -137,11 +137,6 @@ class FloatingPopupManager: ObservableObject {
 
         saveSearchHistoryLocal()
         print("📝 [POPUP] Added to history: '\(query)' (\(resultsCount) results)")
-
-        // Optional: Sync to Supabase if authenticated
-        Task {
-            await syncHistoryToSupabase(item)
-        }
     }
 
     /// Clear all search history
@@ -149,33 +144,6 @@ class FloatingPopupManager: ObservableObject {
         searchHistory.removeAll()
         UserDefaults.standard.removeObject(forKey: Keys.searchHistory)
         print("🗑️ [POPUP] Cleared search history")
-    }
-
-    // MARK: - Supabase Sync (Optional)
-
-    /// Sync search history item to Supabase if authenticated
-    private func syncHistoryToSupabase(_ item: SearchHistoryItem) async {
-        // Only sync if authenticated (check on main actor)
-        let isAuth = await MainActor.run { AuthManager.shared.isAuthenticated }
-        guard isAuth else { return }
-
-        do {
-            let session = try await supabase.auth.session
-            let userId = session.user.id
-
-            try await supabase.from("search_history")
-                .insert([
-                    "user_id": userId.uuidString,
-                    "query": item.query,
-                    "results_count": String(item.resultsCount),
-                    "created_at": ISO8601DateFormatter().string(from: item.timestamp)
-                ])
-                .execute()
-            print("☁️ [POPUP] Synced to Supabase: '\(item.query)'")
-        } catch {
-            // Silently fail - local storage is primary
-            print("⚠️ [POPUP] Supabase sync failed: \(error.localizedDescription)")
-        }
     }
 
     // MARK: - Toast Notification

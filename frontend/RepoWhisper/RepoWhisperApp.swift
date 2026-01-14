@@ -31,7 +31,7 @@ struct RepoWhisperApp: App {
         // Main Window - Full app interface
         WindowGroup("RepoWhisper", id: "main") {
             Group {
-                if authManager.isAuthenticated || authManager.devMode {
+                if authManager.isAuthenticated {
                     MainWindowView()
                         .environmentObject(authManager)
                         .frame(minWidth: 800, minHeight: 600)
@@ -98,12 +98,6 @@ struct RepoWhisperApp: App {
                         setLaunchAtLogin(enabled: newValue)
                     }
 
-                if authManager.devMode {
-                    Button("Disable Dev Mode") {
-                        authManager.disableDevMode()
-                    }
-                }
-
                 Divider()
 
                 Button("Quit RepoWhisper") {
@@ -152,7 +146,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("✅ RepoWhisper app finished launching")
         print("📌 Look for the menu bar icon (waveform.circle.fill) in the top menu bar")
-        print("🔍 [APP] Auth state: authenticated=\(AuthManager.shared.isAuthenticated), devMode=\(AuthManager.shared.devMode)")
+        print("🔍 [APP] Auth state: authenticated=\(AuthManager.shared.isAuthenticated)")
 
         // Auto-launch: Show centered welcome popup on first launch
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
