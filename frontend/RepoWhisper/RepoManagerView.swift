@@ -9,12 +9,15 @@ import SwiftUI
 import AppKit
 
 struct RepoManagerView: View {
+    @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
     @State private var selectedRepoPath: String = ""
     @State private var indexedRepos: [IndexedRepo] = []
     @State private var isIndexing = false
     @State private var indexProgress: Double = 0
     @State private var statusMessage: String = ""
     @State private var selectedIndexMode: IndexMode = .smart
+    @State private var showError: Bool = false
+    @State private var errorMessage: String = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -211,20 +214,29 @@ struct RepoManagerView: View {
         .onAppear {
             loadIndexedRepos()
         }
+        .alert("Error", isPresented: $showError) {
+            Button("OK") {
+                showError = false
+            }
+        } message: {
+            Text(errorMessage)
+        }
     }
     
     // MARK: - Actions
     
     private func selectFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.message = "Select a repository folder to index"
-        panel.prompt = "Select"
-        
-        if panel.runModal() == .OK, let url = panel.url {
-            selectedRepoPath = url.path
+        Task { @MainActor in
+            do {
+                if let path = try bookmarkManager.addFolder() {
+                    selectedRepoPath = path
+                    // Write allowlist after adding
+                    try bookmarkManager.writeAllowlistFile()
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                showError = true
+            }
         }
     }
     

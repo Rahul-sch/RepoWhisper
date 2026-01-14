@@ -12,18 +12,24 @@ import ServiceManagement
 @main
 struct RepoWhisperApp: App {
     @StateObject private var authManager = AuthManager.shared
+    @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("launchAtLogin") private var launchAtLogin = false
-    
+
     init() {
         // Print to console so we know app launched
         print("🚀 RepoWhisper app launching...")
-        
+
         // Add crash protection
         NSSetUncaughtExceptionHandler { exception in
             print("💥 [CRASH] Uncaught exception: \(exception)")
             print("💥 [CRASH] Reason: \(exception.reason ?? "Unknown")")
             print("💥 [CRASH] Call stack: \(exception.callStackSymbols.joined(separator: "\n"))")
+        }
+
+        // Start accessing security-scoped bookmarks
+        Task { @MainActor in
+            SecurityScopedBookmarkManager.shared.startAccessingAll()
         }
     }
     
