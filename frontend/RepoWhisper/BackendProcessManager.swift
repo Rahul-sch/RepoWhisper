@@ -369,6 +369,7 @@ class BackendProcessManager: ObservableObject {
         // Step 7: Perform health check
         do {
             let healthResponse = try performHealthCheck()
+            isRunning = true
             isHealthy = true
             status = .healthy
             statusMessage = "Backend running"
@@ -444,9 +445,23 @@ class BackendProcessManager: ObservableObject {
         print("✅ [BACKEND] Backend process stopped")
     }
 
+    /// Manually restart the backend (resets failure counters)
     func restart() {
+        print("🔄 [BACKEND] Manual restart requested")
+
+        // Reset counters for fresh start
+        consecutiveFailures = 0
+        restartAttempts = 0
+
         stop()
-        try? start()
+
+        do {
+            try start()
+        } catch {
+            print("❌ [BACKEND] Manual restart failed: \(error.localizedDescription)")
+            statusMessage = "Restart failed: \(error.localizedDescription)"
+            status = .error(error.localizedDescription)
+        }
     }
 
     // MARK: - Health Monitoring
