@@ -76,6 +76,26 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# Auth Token Middleware (validates X-Auth-Token on every request)
+@app.middleware("http")
+async def auth_token_middleware(request: Request, call_next):
+    """Validate X-Auth-Token header on all requests (except /health)."""
+    # Allow /health without auth for monitoring
+    if request.url.path == "/health":
+        return await call_next(request)
+
+    # Check X-Auth-Token header
+    token = request.headers.get("X-Auth-Token")
+    expected_token = getattr(app.state, "auth_token", None)
+
+    if not token or not expected_token or token != expected_token:
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Unauthorized: Invalid or missing X-Auth-Token"}
+        )
+
+    return await call_next(request)
+
 # Configure CORS - restrict to specific origins only
 settings = get_settings()
 allowed_origins = [
