@@ -2,352 +2,348 @@
 //  SettingsView.swift
 //  RepoWhisper
 //
-//  Settings window for configuring the app.
-//  Includes index mode selection, file patterns, and account settings.
+//  Settings and diagnostics - Phase C.5
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
+import AppKit
 
-/// Settings window view
 struct SettingsView: View {
-    @EnvironmentObject var authManager: AuthManager
-    @StateObject private var apiClient = APIClient.shared
-    
-    @AppStorage("indexMode") private var indexMode: String = "smart"
-    @AppStorage("repoPath") private var repoPath: String = ""
-    @AppStorage("smartPatterns") private var smartPatterns: String = "*.py, *.swift, *.ts"
-    @AppStorage("manualFiles") private var manualFiles: String = ""
-    
-    @State private var isIndexing = false
-    @State private var indexMessage = ""
-    @State private var showFilePicker = false
-    @State private var showFolderPicker = false
-    
+    @StateObject private var backendManager = BackendProcessManager.shared
+    @AppStorage("startBackendOnLaunch") private var startBackendOnLaunch = true
+
+    @State private var showAuditOutput = false
+    @State private var auditOutput = ""
+    @State private var isRunningAudit = false
+
     var body: some View {
-        TabView {
-            // Index Settings Tab
-            indexSettingsTab
-                .tabItem {
-                    Label("Indexing", systemImage: "doc.text.magnifyingglass")
-                }
-            
-            // Account Tab
-            accountTab
-                .tabItem {
-                    Label("Account", systemImage: "person.circle")
-                }
-            
-            // About Tab
-            aboutTab
-                .tabItem {
-                    Label("About", systemImage: "info.circle")
-                }
-        }
-        .frame(width: 500, height: 400)
-    }
-    
-    // MARK: - Index Settings Tab
-    
-    private var indexSettingsTab: some View {
-        Form {
-            // Repository Path
-            Section("Repository") {
-                HStack {
-                    TextField("Repository Path", text: $repoPath)
-                        .textFieldStyle(.roundedBorder)
-                    
-                    Button("Browse") {
-                        showFolderPicker = true
-                    }
-                }
-                .fileImporter(
-                    isPresented: $showFolderPicker,
-                    allowedContentTypes: [.folder],
-                    allowsMultipleSelection: false
-                ) { result in
-                    if case .success(let urls) = result, let url = urls.first {
-                        repoPath = url.path
-                    }
-                }
-            }
-            
-            // Index Mode Selection
-            Section("Index Mode") {
-                Picker("Mode", selection: $indexMode) {
-                    Label("Manual - Select specific files", systemImage: "hand.tap")
-                        .tag("manual")
-                    Label("Smart - File patterns", systemImage: "sparkles")
-                        .tag("smart")
-                    Label("Full - Entire repository", systemImage: "folder")
-                        .tag("full")
-                }
-                .pickerStyle(.radioGroup)
-                
-                // Mode-specific options
-                switch indexMode {
-                case "manual":
-                    manualModeOptions
-                case "smart":
-                    smartModeOptions
-                case "full":
-                    fullModeOptions
-                default:
-                    EmptyView()
-                }
-            }
-            
-            // Index Action
-            Section {
-                HStack {
-                    Button(action: startIndexing) {
-                        HStack {
-                            if isIndexing {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            }
-                            Text(isIndexing ? "Indexing..." : "Start Indexing")
-                        }
-                    }
-                    .disabled(repoPath.isEmpty || isIndexing)
-                    
-                    Spacer()
-                    
-                    if !indexMessage.isEmpty {
-                        Text(indexMessage)
-                            .font(.caption)
-                            .foregroundColor(indexMessage.contains("Error") ? .red : .green)
-                    }
-                    
-                    Text("\(apiClient.indexCount) chunks indexed")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .padding()
-    }
-    
-    private var manualModeOptions: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Selected Files:")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            TextEditor(text: $manualFiles)
-                .font(.system(.caption, design: .monospaced))
-                .frame(height: 60)
-                .border(Color.secondary.opacity(0.3))
-            
+        VStack(spacing: 0) {
+            // Header
             HStack {
-                Button("Add Files...") {
-                    showFilePicker = true
-                }
-                .fileImporter(
-                    isPresented: $showFilePicker,
-                    allowedContentTypes: [.sourceCode, .plainText],
-                    allowsMultipleSelection: true
-                ) { result in
-                    if case .success(let urls) = result {
-                        let paths = urls.map { $0.path }
-                        manualFiles = (manualFiles.isEmpty ? "" : manualFiles + "\n") + paths.joined(separator: "\n")
-                    }
-                }
-                
-                Button("Clear") {
-                    manualFiles = ""
-                }
-            }
-            
-            Text("One file path per line")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-    }
-    
-    private var smartModeOptions: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("File Patterns (comma-separated):")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            TextField("*.py, *.swift, *.ts", text: $smartPatterns)
-                .textFieldStyle(.roundedBorder)
-            
-            Text("Examples: *.py, src/**/*.ts, tests/*.swift")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-    }
-    
-    private var fullModeOptions: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Will index all supported file types:")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Text(".py, .swift, .js, .ts, .tsx, .jsx, .go, .rs, .java, .kt, .cpp, .c, .h, .md")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .padding(8)
-                .background(Color.secondary.opacity(0.1))
-                .cornerRadius(6)
-            
-            Text("⚠️ Large repositories may take longer to index")
-                .font(.caption2)
-                .foregroundColor(.orange)
-        }
-    }
-    
-    // MARK: - Account Tab
-    
-    private var accountTab: some View {
-        Form {
-            if authManager.isAuthenticated {
-                Section("Signed In") {
-                    HStack {
-                        Image(systemName: "person.circle.fill")
-                            .font(.largeTitle)
-                            .foregroundColor(.accentColor)
-                        
-                        VStack(alignment: .leading) {
-                            Text("Local User")
-                                .fontWeight(.medium)
-                            Text("No authentication required")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                        }
-                    }
-                    
-                    Button("Sign Out", role: .destructive) {
-                        Task {
-                            await authManager.signOut()
-                        }
-                    }
-                }
-            } else {
-                Section("Not Signed In") {
-                    Text("Sign in to sync your settings and indexed repositories.")
-                        .foregroundColor(.secondary)
-                    
-                    Button("Open Login Window") {
-                        // Open login window via window group
-                        if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "login" }) {
-                            window.makeKeyAndOrderFront(nil)
-                        }
-                    }
-                }
-            }
-            
-            Section("Backend Status") {
-                HStack {
-                    Circle()
-                        .fill(apiClient.isConnected ? Color.green : Color.red)
-                        .frame(width: 8, height: 8)
-                    
-                    Text(apiClient.isConnected ? "Connected" : "Disconnected")
-                    
-                    Spacer()
-                    
-                    Button("Check") {
-                        Task {
-                            await apiClient.checkHealth()
-                        }
-                    }
-                }
-            }
-        }
-        .padding()
-    }
-    
-    // MARK: - About Tab
-    
-    private var aboutTab: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "waveform.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.purple, .blue],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                Image(systemName: "gearshape.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.gray, .blue],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-            
-            Text("RepoWhisper")
-                .font(.title)
-                .fontWeight(.bold)
-            
-            Text("Voice-powered code search")
-                .foregroundColor(.secondary)
-            
-            Text("Version 0.1.0")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Divider()
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Label("FastAPI + Faster-Whisper backend", systemImage: "server.rack")
-                Label("LanceDB vector search", systemImage: "magnifyingglass")
-                Label("MiniLM embeddings", systemImage: "brain")
-                Label("< 500ms latency target", systemImage: "bolt.fill")
+                Text("Settings")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                Spacer()
             }
-            .font(.caption)
-            .foregroundColor(.secondary)
-            
-            Spacer()
-            
-            Link("View on GitHub", destination: URL(string: "https://github.com/Rahul-sch/RepoWhisper")!)
-                .font(.caption)
+            .padding()
+            .background(
+                LinearGradient(
+                    colors: [Color.gray.opacity(0.1), Color.blue.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // General Settings
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("General", systemImage: "slider.horizontal.3")
+                            .font(.headline)
+
+                        Toggle(isOn: $startBackendOnLaunch) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Start backend on launch")
+                                    .font(.body)
+                                Text("Automatically start the search backend when app opens")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .toggleStyle(.switch)
+                        .padding(.vertical, 8)
+                    }
+                    .padding()
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+
+                    // Backend Status
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Backend Status", systemImage: "server.rack")
+                            .font(.headline)
+
+                        VStack(spacing: 12) {
+                            statusRow(
+                                icon: "circle.fill",
+                                iconColor: statusColor,
+                                title: "Status",
+                                value: backendManager.statusMessage
+                            )
+
+                            if backendManager.isHealthy {
+                                statusRow(
+                                    icon: "doc.text.fill",
+                                    iconColor: .blue,
+                                    title: "Indexed Chunks",
+                                    value: "\(backendManager.indexCount)"
+                                )
+                            }
+
+                            statusRow(
+                                icon: "bolt.fill",
+                                iconColor: .orange,
+                                title: "Process",
+                                value: backendManager.isRunning ? "Running" : "Stopped"
+                            )
+                        }
+                    }
+                    .padding()
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+
+                    // Diagnostics
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Diagnostics", systemImage: "wrench.and.screwdriver.fill")
+                            .font(.headline)
+
+                        Button(action: openLogs) {
+                            HStack {
+                                Image(systemName: "doc.text.fill")
+                                    .foregroundColor(.blue)
+                                Text("Open Logs Directory")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(Color.primary.opacity(0.03))
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: runAuditScript) {
+                            HStack {
+                                if isRunningAudit {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                        .frame(width: 20, height: 20)
+                                } else {
+                                    Image(systemName: "checkmark.shield.fill")
+                                        .foregroundColor(.green)
+                                }
+                                Text(isRunningAudit ? "Running Audit..." : "Run Security Audit")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Image(systemName: "play.circle")
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(Color.primary.opacity(0.03))
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isRunningAudit)
+                    }
+                    .padding()
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+
+                    // App Info
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("About RepoWhisper", systemImage: "info.circle.fill")
+                            .font(.headline)
+
+                        VStack(spacing: 8) {
+                            infoRow(label: "Version", value: appVersion)
+                            infoRow(label: "Build", value: appBuild)
+                            infoRow(label: "Bundle ID", value: bundleIdentifier)
+                        }
+                    }
+                    .padding()
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                }
+                .padding()
+            }
         }
-        .padding()
+        .frame(minWidth: 500, minHeight: 600)
+        .sheet(isPresented: $showAuditOutput) {
+            auditOutputView
+        }
     }
-    
+
+    // MARK: - Status Row
+
+    @ViewBuilder
+    private func statusRow(icon: String, iconColor: Color, title: String, value: String) -> some View {
+        HStack {
+            Image(systemName: icon)
+                .foregroundColor(iconColor)
+                .frame(width: 20)
+
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.medium)
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Info Row
+
+    @ViewBuilder
+    private func infoRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Text(value)
+                .font(.system(.subheadline, design: .monospaced))
+                .foregroundColor(.primary)
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Audit Output View
+
+    private var auditOutputView: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Security Audit Results")
+                    .font(.headline)
+                Spacer()
+                Button("Close") {
+                    showAuditOutput = false
+                }
+            }
+            .padding()
+            .background(Color(nsColor: .controlBackgroundColor))
+
+            // Output
+            ScrollView {
+                Text(auditOutput)
+                    .font(.system(.caption, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+            }
+            .background(Color.primary.opacity(0.03))
+        }
+        .frame(width: 600, height: 400)
+    }
+
+    // MARK: - Computed Properties
+
+    private var statusColor: Color {
+        switch backendManager.status {
+        case .healthy:
+            return .green
+        case .starting:
+            return .yellow
+        case .stopped:
+            return .gray
+        case .error:
+            return .red
+        }
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+    }
+
+    private var appBuild: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+    }
+
+    private var bundleIdentifier: String {
+        Bundle.main.bundleIdentifier ?? "Unknown"
+    }
+
     // MARK: - Actions
-    
-    private func startIndexing() {
-        guard !repoPath.isEmpty else { return }
-        
-        isIndexing = true
-        indexMessage = ""
-        
+
+    private func openLogs() {
+        let logsPath = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first?
+            .appendingPathComponent("RepoWhisper")
+            .appendingPathComponent("logs")
+
+        if let logsPath = logsPath {
+            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: logsPath.path)
+        }
+    }
+
+    private func runAuditScript() {
+        isRunningAudit = true
+        auditOutput = "Running security audit...\n\n"
+
         Task {
             do {
-                let mode: IndexMode
-                var filePaths: [String]? = nil
-                var patterns: [String]? = nil
-                
-                switch indexMode {
-                case "manual":
-                    mode = .manual
-                    filePaths = manualFiles.split(separator: "\n").map(String.init)
-                case "smart":
-                    mode = .smart
-                    patterns = smartPatterns.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                default:
-                    mode = .full
+                // Find project root (go up from app bundle)
+                let bundlePath = Bundle.main.bundlePath
+                let projectRoot = (bundlePath as NSString).deletingLastPathComponent
+                let parentRoot = (projectRoot as NSString).deletingLastPathComponent
+                let auditScript = (parentRoot as NSString).appendingPathComponent("scripts/audit_secrets.sh")
+
+                // Check if script exists
+                guard FileManager.default.fileExists(atPath: auditScript) else {
+                    await MainActor.run {
+                        auditOutput = "❌ Audit script not found at: \(auditScript)\n\nMake sure you're running from the development environment."
+                        isRunningAudit = false
+                        showAuditOutput = true
+                    }
+                    return
                 }
-                
-                let response = try await apiClient.indexRepository(
-                    repoPath: repoPath,
-                    mode: mode,
-                    filePaths: filePaths,
-                    patterns: patterns
-                )
-                
-                indexMessage = "✓ \(response.filesIndexed) files, \(response.chunksCreated) chunks"
+
+                // Run the audit script
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/bin/bash")
+                process.arguments = [auditScript]
+                process.currentDirectoryURL = URL(fileURLWithPath: parentRoot)
+
+                let pipe = Pipe()
+                process.standardOutput = pipe
+                process.standardError = pipe
+
+                try process.run()
+                process.waitUntilExit()
+
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let output = String(data: data, encoding: .utf8) ?? "No output"
+
+                await MainActor.run {
+                    if process.terminationStatus == 0 {
+                        auditOutput = "✅ Security Audit Passed\n\n" + output
+                    } else {
+                        auditOutput = "❌ Security Audit Failed\n\n" + output
+                    }
+                    isRunningAudit = false
+                    showAuditOutput = true
+                }
             } catch {
-                indexMessage = "Error: \(error.localizedDescription)"
+                await MainActor.run {
+                    auditOutput = "❌ Failed to run audit: \(error.localizedDescription)"
+                    isRunningAudit = false
+                    showAuditOutput = true
+                }
             }
-            
-            isIndexing = false
         }
     }
 }
 
 #Preview {
     SettingsView()
-        .environmentObject(AuthManager.shared)
 }
-
