@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		PC8JND62EXGEP88TBC673GQX /* UnixSocketHTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = UETYLVAY7O0PU1OQKT65LLNG /* UnixSocketHTTPClient.swift */; };
 		QU50IXTUKBQSNRW85TZD1JV5 /* BackendProcessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2LQ2PTKMLFB7HEILYPULC5RD /* BackendProcessManager.swift */; };
 		EL9TTU4L5LJI9J1ZQCPP1PE5 /* SecurityScopedBookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED80T92YRYZV6HT4M4GDGKX /* SecurityScopedBookmarkManager.swift */; };
 		0352452F9BFF1A264CF67600 /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60D43AE79B98DA99C46DE86 /* ScreenCaptureManager.swift */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		UETYLVAY7O0PU1OQKT65LLNG /* UnixSocketHTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnixSocketHTTPClient.swift; sourceTree = "<group>"; };
 		2LQ2PTKMLFB7HEILYPULC5RD /* BackendProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendProcessManager.swift; sourceTree = "<group>"; };
 		3ED80T92YRYZV6HT4M4GDGKX /* SecurityScopedBookmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedBookmarkManager.swift; sourceTree = "<group>"; };
 		0693029548C0A143A970956E /* ResultsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsWindow.swift; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 				AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */,
 				3ED80T92YRYZV6HT4M4GDGKX /* SecurityScopedBookmarkManager.swift */,
 				9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */,
+				UETYLVAY7O0PU1OQKT65LLNG /* UnixSocketHTTPClient.swift */,
 			);
 			path = RepoWhisper;
 			sourceTree = "<group>";
@@ -175,6 +178,7 @@
 				98506C5BBE0C2D8B3FE12007 /* ScreenshotCapture.swift in Sources */,
 				EL9TTU4L5LJI9J1ZQCPP1PE5 /* SecurityScopedBookmarkManager.swift in Sources */,
 				AD6A12BFB2DD979D64A395FC /* SettingsView.swift in Sources */,
+				PC8JND62EXGEP88TBC673GQX /* UnixSocketHTTPClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

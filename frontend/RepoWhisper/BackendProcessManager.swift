@@ -360,9 +360,27 @@ class BackendProcessManager: ObservableObject {
             )
         }
 
-        // Step 7: Health check will be done by performHealthCheck() in next commit
-        isRunning = true
-        statusMessage = "Backend started, awaiting health check"
+        // Step 7: Perform health check
+        do {
+            let healthResponse = try performHealthCheck()
+            isHealthy = true
+            status = .healthy
+            statusMessage = "Backend running"
+            indexCount = healthResponse.indexCount
+            print("✅ [BACKEND] Health check passed, index_count=\(healthResponse.indexCount)")
+        } catch {
+            let errorMsg = "Health check failed: \(error.localizedDescription)"
+            print("❌ [BACKEND] \(errorMsg)")
+            stop()
+            status = .error(errorMsg)
+            statusMessage = errorMsg
+            throw NSError(
+                domain: "BackendProcessManager",
+                code: 6,
+                userInfo: [NSLocalizedDescriptionKey: errorMsg]
+            )
+        }
+
         print("✅ [BACKEND] Backend process started successfully")
     }
 
@@ -420,7 +438,59 @@ class BackendProcessManager: ObservableObject {
         try? start()
     }
 
-    // MARK: - Health Monitoring (Stub for B3)
+    // MARK: - Health Monitoring
+
+    /// Response from /health endpoint
+    struct HealthCheckResponse: Codable {
+        let status: String
+        let model_loaded: Bool
+        let index_count: Int
+        let version: String
+
+        var indexCount: Int { return index_count }
+    }
+
+    /// Perform a health check via Unix socket
+    func performHealthCheck() throws -> HealthCheckResponse {
+        let client = UnixSocketHTTPClient(socketPath: socketPath, timeout: 5.0)
+
+        // Get auth token
+        let token = try authToken
+
+        // Make request with X-Auth-Token header
+        let response = try client.get(path: "/health", headers: ["X-Auth-Token": token])
+
+        guard response.statusCode == 200 else {
+            throw NSError(
+                domain: "BackendProcessManager",
+                code: 100,
+                userInfo: [NSLocalizedDescriptionKey: "Health check returned status \(response.statusCode)"]
+            )
+        }
+
+        // Parse JSON response
+        guard let bodyString = response.bodyString,
+              let bodyData = bodyString.data(using: .utf8) else {
+            throw NSError(
+                domain: "BackendProcessManager",
+                code: 101,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid response body"]
+            )
+        }
+
+        let decoder = JSONDecoder()
+        let healthResponse = try decoder.decode(HealthCheckResponse.self, from: bodyData)
+
+        guard healthResponse.status == "healthy" else {
+            throw NSError(
+                domain: "BackendProcessManager",
+                code: 102,
+                userInfo: [NSLocalizedDescriptionKey: "Backend reported unhealthy status"]
+            )
+        }
+
+        return healthResponse
+    }
 
     func startHealthMonitoring() {
         // TODO: B3 - Implement health polling
