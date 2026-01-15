@@ -161,6 +161,12 @@ class BackendProcessManager: ObservableObject {
     // MARK: - Process Management
 
     private var process: Process?
+    private var healthTimer: Timer?
+    private var consecutiveFailures: Int = 0
+    private var restartAttempts: Int = 0
+    private let maxRestartAttempts: Int = 3
+    private let healthCheckInterval: TimeInterval = 10.0
+    private let maxConsecutiveFailures: Int = 3
 
     private init() {
         print("🏗️ [BACKEND] BackendProcessManager initialized")
@@ -381,11 +387,16 @@ class BackendProcessManager: ObservableObject {
             )
         }
 
+        // Start health monitoring
+        startHealthMonitoring()
+
         print("✅ [BACKEND] Backend process started successfully")
     }
 
     /// Stop the backend process
     func stop() {
+        // Stop health monitoring first
+        stopHealthMonitoring()
         guard let proc = process else {
             print("ℹ️ [BACKEND] No process to stop")
             isRunning = false
@@ -492,8 +503,68 @@ class BackendProcessManager: ObservableObject {
         return healthResponse
     }
 
+    /// Start periodic health monitoring
     func startHealthMonitoring() {
-        // TODO: B3 - Implement health polling
-        print("⏳ [BACKEND] startHealthMonitoring() called - not implemented yet")
+        stopHealthMonitoring() // Stop any existing timer
+
+        print("💓 [BACKEND] Starting health monitoring (interval: \(healthCheckInterval)s)")
+
+        // Create timer on main run loop
+        healthTimer = Timer.scheduledTimer(withTimeInterval: healthCheckInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.performPeriodicHealthCheck()
+            }
+        }
+
+        // Ensure timer runs
+        RunLoop.main.add(healthTimer!, forMode: .common)
+    }
+
+    /// Stop health monitoring
+    func stopHealthMonitoring() {
+        healthTimer?.invalidate()
+        healthTimer = nil
+        consecutiveFailures = 0
+        print("💓 [BACKEND] Health monitoring stopped")
+    }
+
+    /// Perform a periodic health check
+    private func performPeriodicHealthCheck() async {
+        guard isRunning else {
+            return
+        }
+
+        do {
+            let response = try performHealthCheck()
+
+            // Health check succeeded
+            consecutiveFailures = 0
+            restartAttempts = 0
+            isHealthy = true
+            status = .healthy
+            indexCount = response.indexCount
+
+            // Only log occasionally to reduce noise
+            if indexCount != response.indexCount {
+                print("💓 [BACKEND] Health check passed, index_count=\(response.indexCount)")
+            }
+        } catch {
+            consecutiveFailures += 1
+            isHealthy = false
+
+            print("⚠️ [BACKEND] Health check failed (\(consecutiveFailures)/\(maxConsecutiveFailures)): \(error.localizedDescription)")
+
+            if consecutiveFailures >= maxConsecutiveFailures {
+                print("❌ [BACKEND] Max consecutive failures reached, will attempt restart")
+                await handleHealthFailure()
+            }
+        }
+    }
+
+    /// Handle health check failure (to be implemented in next commit)
+    private func handleHealthFailure() async {
+        // Placeholder for restart logic
+        statusMessage = "Backend unhealthy, restart needed"
+        status = .error("Health checks failed")
     }
 }
