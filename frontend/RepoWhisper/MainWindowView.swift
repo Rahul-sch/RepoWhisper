@@ -128,6 +128,8 @@ struct SearchView: View {
     @State private var isSearching = false
     @State private var searchLatency: Double = 0
     @State private var copiedResultId: String?
+    @State private var showAudioFilePicker = false
+    @State private var isTranscribing = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -147,6 +149,39 @@ struct SearchView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                     Spacer()
+
+                    // Audio file upload button
+                    Button {
+                        showAudioFilePicker = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            if isTranscribing {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                            } else {
+                                Image(systemName: "waveform.circle.fill")
+                                    .foregroundStyle(
+                                        LinearGradient(colors: [.orange, .pink], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                    )
+                            }
+                            Text(isTranscribing ? "Transcribing" : "Upload")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.primary.opacity(0.05))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isTranscribing)
+                    .fileImporter(
+                        isPresented: $showAudioFilePicker,
+                        allowedContentTypes: [.audio],
+                        allowsMultipleSelection: false
+                    ) { result in
+                        handleAudioFileSelection(result)
+                    }
 
                     // Voice button (compact)
                     Button {
@@ -466,6 +501,42 @@ struct SearchView: View {
     private func openInEditor(_ result: SearchResultItem) {
         let url = URL(fileURLWithPath: result.filePath)
         NSWorkspace.shared.open(url)
+    }
+
+    private func handleAudioFileSelection(_ result: Result<[URL], Error>) {
+        guard case .success(let urls) = result, let audioURL = urls.first else {
+            return
+        }
+
+        isTranscribing = true
+
+        Task {
+            do {
+                // Read audio file data
+                let audioData = try Data(contentsOf: audioURL)
+
+                print("🎙️ [AUDIO] Transcribing audio file: \(audioURL.lastPathComponent)")
+
+                // Call transcribe endpoint
+                let result = try await apiClient.transcribe(audioData: audioData)
+
+                print("✅ [AUDIO] Transcription complete: \(result.text)")
+
+                // Fill search query and trigger search
+                await MainActor.run {
+                    searchQuery = result.text
+                    isTranscribing = false
+
+                    // Auto-trigger search
+                    performSearch()
+                }
+            } catch {
+                print("❌ [AUDIO] Transcription error: \(error)")
+                await MainActor.run {
+                    isTranscribing = false
+                }
+            }
+        }
     }
 }
 
