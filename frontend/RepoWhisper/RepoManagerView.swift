@@ -2,7 +2,8 @@
 //  RepoManagerView.swift
 //  RepoWhisper
 //
-//  Repository selection and management view with file picker.
+//  Repository management view - Phase C.2
+//  Lists approved repositories with add/remove functionality.
 //
 
 import SwiftUI
@@ -10,26 +11,63 @@ import AppKit
 
 struct RepoManagerView: View {
     @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
-    @State private var selectedRepoPath: String = ""
-    @State private var indexedRepos: [IndexedRepo] = []
-    @State private var isIndexing = false
-    @State private var indexProgress: Double = 0
-    @State private var statusMessage: String = ""
-    @State private var selectedIndexMode: IndexMode = .smart
-    @State private var showError: Bool = false
-    @State private var errorMessage: String = ""
-    
+    @StateObject private var backendManager = BackendProcessManager.shared
+
+    @State private var showError = false
+    @State private var errorMessage = ""
+    @State private var pathToRemove: String?
+    @State private var showRemoveConfirmation = false
+
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Image(systemName: "folder.badge.gearshape")
-                    .font(.title2)
-                    .foregroundStyle(.blue)
-                Text("Repository Manager")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                Spacer()
+            // Header with backend status
+            VStack(spacing: 12) {
+                HStack {
+                    Image(systemName: "folder.badge.gearshape")
+                        .font(.title2)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Text("Repositories")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Spacer()
+                }
+
+                // Backend status pill
+                HStack(spacing: 12) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(statusColor)
+                            .frame(width: 8, height: 8)
+                        Text(backendManager.statusMessage)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if backendManager.isHealthy && backendManager.indexCount > 0 {
+                        Divider()
+                            .frame(height: 12)
+
+                        HStack(spacing: 4) {
+                            Image(systemName: "doc.text.fill")
+                                .font(.caption2)
+                            Text("\(backendManager.indexCount) chunks")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.primary.opacity(0.05))
+                .cornerRadius(8)
             }
             .padding()
             .background(
@@ -39,112 +77,21 @@ struct RepoManagerView: View {
                     endPoint: .bottomTrailing
                 )
             )
-            
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // File Selection Card
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Select Repository", systemImage: "folder")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        // Selected path display
-                        if !selectedRepoPath.isEmpty {
-                            HStack {
-                                Image(systemName: "folder.fill")
-                                    .foregroundColor(.blue)
-                                Text(selectedRepoPath)
-                                    .font(.system(.body, design: .monospaced))
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                Spacer()
-                            }
-                            .padding(12)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                        }
-                        
-                        // Choose folder button
-                        Button(action: selectFolder) {
-                            HStack {
-                                Image(systemName: "folder.badge.plus")
-                                Text(selectedRepoPath.isEmpty ? "Choose Folder..." : "Change Folder")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [.blue, .purple],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding()
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                    
-                    // Index Mode Selection
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Indexing Mode", systemImage: "slider.horizontal.3")
-                            .font(.headline)
-                        
-                        Picker("Mode", selection: $selectedIndexMode) {
-                            ForEach(IndexMode.allCases, id: \.self) { mode in
-                                VStack(alignment: .leading) {
-                                    Text(mode.displayName)
-                                        .fontWeight(.medium)
-                                    Text(mode.description)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .tag(mode)
-                            }
-                        }
-                        .pickerStyle(.radioGroup)
-                        
-                        // Mode info
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "info.circle.fill")
-                                .foregroundColor(.blue)
-                            Text(selectedIndexMode.detailedDescription)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(10)
-                        .background(Color.blue.opacity(0.05))
-                        .cornerRadius(8)
-                    }
-                    .padding()
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                    
-                    // Index Button
-                    Button(action: startIndexing) {
+                    // Add repository button
+                    Button(action: addRepository) {
                         HStack {
-                            if isIndexing {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .progressViewStyle(.circular)
-                                Text("Indexing...")
-                            } else {
-                                Image(systemName: "arrow.triangle.2.circlepath")
-                                Text("Index Repository")
-                                    .fontWeight(.semibold)
-                            }
+                            Image(systemName: "folder.badge.plus")
+                            Text("Add Repository")
+                                .fontWeight(.semibold)
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(
                             LinearGradient(
-                                colors: isIndexing ? [.gray, .gray] : [.green, .blue],
+                                colors: [.blue, .purple],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -153,52 +100,35 @@ struct RepoManagerView: View {
                         .cornerRadius(10)
                     }
                     .buttonStyle(.plain)
-                    .disabled(selectedRepoPath.isEmpty || isIndexing)
-                    .opacity(selectedRepoPath.isEmpty ? 0.5 : 1.0)
-                    
-                    // Progress bar
-                    if isIndexing {
-                        VStack(spacing: 8) {
-                            ProgressView(value: indexProgress, total: 1.0)
-                                .progressViewStyle(.linear)
-                            Text(statusMessage)
+
+                    // Approved repositories list
+                    if bookmarkManager.approvedPaths.isEmpty {
+                        // Empty state
+                        VStack(spacing: 16) {
+                            Image(systemName: "folder.badge.questionmark")
+                                .font(.system(size: 50))
+                                .foregroundColor(.secondary)
+
+                            Text("No Repositories Added")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+
+                            Text("Add a repository to start indexing and searching your code")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
                         }
-                    }
-                    
-                    // Indexed Repositories List
-                    if !indexedRepos.isEmpty {
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 60)
+                    } else {
                         VStack(alignment: .leading, spacing: 12) {
-                            Label("Indexed Repositories", systemImage: "list.bullet.rectangle")
+                            Label("Approved Repositories", systemImage: "checkmark.shield.fill")
                                 .font(.headline)
-                            
-                            ForEach(indexedRepos) { repo in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(repo.name)
-                                            .fontWeight(.medium)
-                                        Text(repo.path)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(1)
-                                            .truncationMode(.middle)
-                                        Text("\(repo.fileCount) files • Indexed \(repo.lastIndexed.formatted(date: .abbreviated, time: .shortened))")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Button(action: { deleteRepo(repo) }) {
-                                        Image(systemName: "trash")
-                                            .foregroundColor(.red)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                                .padding()
-                                .background(Color.gray.opacity(0.05))
-                                .cornerRadius(8)
+                                .foregroundColor(.primary)
+
+                            ForEach(bookmarkManager.approvedPaths, id: \.self) { path in
+                                repositoryRow(path: path)
                             }
                         }
                         .padding()
@@ -211,27 +141,132 @@ struct RepoManagerView: View {
             }
         }
         .frame(minWidth: 500, minHeight: 600)
-        .onAppear {
-            loadIndexedRepos()
-        }
         .alert("Error", isPresented: $showError) {
-            Button("OK") {
-                showError = false
-            }
+            Button("OK") { showError = false }
         } message: {
             Text(errorMessage)
         }
+        .confirmationDialog(
+            "Remove Repository",
+            isPresented: $showRemoveConfirmation,
+            presenting: pathToRemove
+        ) { path in
+            Button("Remove", role: .destructive) {
+                removeRepository(path: path)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { path in
+            Text("Remove '\(URL(fileURLWithPath: path).lastPathComponent)' from approved repositories?\n\nThis will not delete any files, but RepoWhisper will no longer be able to access this folder.")
+        }
     }
-    
+
+    // MARK: - Repository Row
+
+    @ViewBuilder
+    private func repositoryRow(path: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "folder.fill")
+                    .foregroundColor(.blue)
+                    .font(.title3)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(URL(fileURLWithPath: path).lastPathComponent)
+                        .fontWeight(.medium)
+                        .font(.body)
+
+                    Text(path)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+
+                Spacer()
+
+                Button(action: { confirmRemove(path: path) }) {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundColor(.red)
+                        .font(.title3)
+                }
+                .buttonStyle(.plain)
+                .help("Remove repository")
+            }
+            .padding()
+            .background(Color.primary.opacity(0.03))
+            .cornerRadius(8)
+
+            // Warning for overly broad paths
+            if isOverlyBroadPath(path) {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Overly Broad Access")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.orange)
+
+                        Text("This grants access to your entire system. Consider selecting a specific project folder instead.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(10)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    // MARK: - Backend Status Color
+
+    private var statusColor: Color {
+        switch backendManager.status {
+        case .healthy:
+            return .green
+        case .starting:
+            return .yellow
+        case .stopped:
+            return .gray
+        case .error:
+            return .red
+        }
+    }
+
+    // MARK: - Path Validation
+
+    private func isOverlyBroadPath(_ path: String) -> Bool {
+        let nsPath = path as NSString
+        let expandedPath = nsPath.expandingTildeInPath
+
+        // Check for root or home directory
+        return expandedPath == "/" ||
+               expandedPath == NSHomeDirectory() ||
+               expandedPath == "/Users" ||
+               expandedPath == "/Applications" ||
+               expandedPath == "/System"
+    }
+
     // MARK: - Actions
-    
-    private func selectFolder() {
+
+    private func addRepository() {
         Task { @MainActor in
             do {
                 if let path = try bookmarkManager.addFolder() {
-                    selectedRepoPath = path
-                    // Write allowlist after adding
+                    // Write allowlist to disk
                     try bookmarkManager.writeAllowlistFile()
+
+                    // Show warning if overly broad
+                    if isOverlyBroadPath(path) {
+                        errorMessage = "Warning: You've granted access to '\(path)'. This is a very broad path. Consider selecting a specific project folder instead."
+                        showError = true
+                    }
                 }
             } catch {
                 errorMessage = error.localizedDescription
@@ -239,81 +274,23 @@ struct RepoManagerView: View {
             }
         }
     }
-    
-    private func startIndexing() {
-        guard !selectedRepoPath.isEmpty else { return }
-        
-        print("🚀 [UI] Starting indexing for: \(selectedRepoPath)")
-        isIndexing = true
-        indexProgress = 0
-        statusMessage = "Starting indexing..."
-        
-        Task {
+
+    private func confirmRemove(path: String) {
+        pathToRemove = path
+        showRemoveConfirmation = true
+    }
+
+    private func removeRepository(path: String) {
+        Task { @MainActor in
             do {
-                // Call backend to index the repository
-                let apiClient = APIClient.shared
-                statusMessage = "Scanning files..."
-                indexProgress = 0.3
-                
-                print("📡 [UI] Calling API client...")
-                try await apiClient.indexRepository(
-                    repoPath: selectedRepoPath,
-                    mode: selectedIndexMode
-                )
-                
-                print("✅ [UI] Indexing completed successfully")
-                statusMessage = "Indexing complete!"
-                indexProgress = 1.0
-                
-                // Add to indexed repos
-                let newRepo = IndexedRepo(
-                    name: URL(fileURLWithPath: selectedRepoPath).lastPathComponent,
-                    path: selectedRepoPath,
-                    fileCount: 0, // TODO: Get actual count from backend
-                    lastIndexed: Date()
-                )
-                indexedRepos.insert(newRepo, at: 0)
-                saveIndexedRepos()
-                
-                // Reset after delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    isIndexing = false
-                    statusMessage = ""
-                }
+                bookmarkManager.removeFolder(path: path)
+                try bookmarkManager.writeAllowlistFile()
             } catch {
-                print("❌ [UI] Indexing error: \(error)")
-                print("❌ [UI] Error details: \(error.localizedDescription)")
-                if let apiError = error as? APIError {
-                    print("❌ [UI] API Error: \(apiError.errorDescription ?? "Unknown")")
-                }
-                statusMessage = "Error: \(error.localizedDescription)"
-                isIndexing = false
+                errorMessage = error.localizedDescription
+                showError = true
             }
         }
     }
-    
-    private func deleteRepo(_ repo: IndexedRepo) {
-        indexedRepos.removeAll { $0.id == repo.id }
-        saveIndexedRepos()
-    }
-    
-    private func loadIndexedRepos() {
-        // TODO: Load from UserDefaults or backend
-    }
-    
-    private func saveIndexedRepos() {
-        // TODO: Save to UserDefaults or backend
-    }
-}
-
-// MARK: - Models
-
-struct IndexedRepo: Identifiable, Codable {
-    var id = UUID()
-    let name: String
-    let path: String
-    let fileCount: Int
-    let lastIndexed: Date
 }
 
 #Preview {
