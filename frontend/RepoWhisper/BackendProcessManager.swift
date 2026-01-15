@@ -213,21 +213,211 @@ class BackendProcessManager: ObservableObject {
         )
     }
 
-    // MARK: - Lifecycle (Stubs for B2)
+    // MARK: - Lifecycle
 
-    func start() {
-        // TODO: B2 - Implement process start
-        print("⏳ [BACKEND] start() called - not implemented yet")
+    /// Start the backend process
+    func start() throws {
+        guard process == nil else {
+            print("⚠️ [BACKEND] Process already running")
+            return
+        }
+
+        print("🚀 [BACKEND] Starting backend process...")
+        status = .starting
+        statusMessage = "Starting backend..."
+
+        // Step 1: Setup directories
+        try setupDirectories()
+
+        // Step 2: Delete stale socket
+        let fm = FileManager.default
+        if fm.fileExists(atPath: socketPath) {
+            try fm.removeItem(atPath: socketPath)
+            print("🗑️ [BACKEND] Removed stale socket")
+        }
+
+        // Step 3: Write allowlist (FAIL-CLOSED)
+        do {
+            try SecurityScopedBookmarkManager.shared.writeAllowlistFile()
+            print("✅ [BACKEND] Allowlist written")
+        } catch {
+            let errorMsg = "No repositories approved. Please add a repository folder first."
+            print("❌ [BACKEND] \(errorMsg)")
+            status = .error(errorMsg)
+            statusMessage = errorMsg
+            throw NSError(
+                domain: "BackendProcessManager",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: errorMsg]
+            )
+        }
+
+        // Step 4: Get backend binary path
+        guard let binaryPath = backendBinaryPath else {
+            let errorMsg = "Backend binary not found"
+            print("❌ [BACKEND] \(errorMsg)")
+            status = .error(errorMsg)
+            statusMessage = errorMsg
+            throw NSError(
+                domain: "BackendProcessManager",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: errorMsg]
+            )
+        }
+
+        // Step 5: Setup process
+        let proc = Process()
+        proc.currentDirectoryURL = supportDirectory
+
+        // Determine executable and arguments
+        if binaryPath.hasSuffix(".py") {
+            // Development mode: run Python script
+            guard let python = pythonPath else {
+                let errorMsg = "Python interpreter not found"
+                print("❌ [BACKEND] \(errorMsg)")
+                status = .error(errorMsg)
+                statusMessage = errorMsg
+                throw NSError(
+                    domain: "BackendProcessManager",
+                    code: 3,
+                    userInfo: [NSLocalizedDescriptionKey: errorMsg]
+                )
+            }
+            proc.executableURL = URL(fileURLWithPath: python)
+            proc.arguments = [binaryPath]
+            print("🐍 [BACKEND] Running Python mode: \(python) \(binaryPath)")
+        } else {
+            // Production mode: run compiled binary
+            proc.executableURL = URL(fileURLWithPath: binaryPath)
+            proc.arguments = []
+            print("📦 [BACKEND] Running binary mode: \(binaryPath)")
+        }
+
+        // Set environment
+        proc.environment = try backendEnvironment
+
+        // Setup logging
+        let stdoutLog = logsDirectory.appendingPathComponent("backend.log")
+        let stderrLog = logsDirectory.appendingPathComponent("backend.err.log")
+
+        // Create log files if needed
+        if !fm.fileExists(atPath: stdoutLog.path) {
+            fm.createFile(atPath: stdoutLog.path, contents: nil, attributes: [.posixPermissions: 0o600])
+        }
+        if !fm.fileExists(atPath: stderrLog.path) {
+            fm.createFile(atPath: stderrLog.path, contents: nil, attributes: [.posixPermissions: 0o600])
+        }
+
+        let stdoutHandle = try FileHandle(forWritingTo: stdoutLog)
+        let stderrHandle = try FileHandle(forWritingTo: stderrLog)
+
+        proc.standardOutput = stdoutHandle
+        proc.standardError = stderrHandle
+
+        // Launch process
+        try proc.run()
+        process = proc
+        print("✅ [BACKEND] Process launched (PID: \(proc.processIdentifier))")
+
+        // Step 6: Wait for socket to appear (poll for up to 30s)
+        let startTime = Date()
+        let timeout: TimeInterval = 30.0
+        var socketAppeared = false
+
+        while Date().timeIntervalSince(startTime) < timeout {
+            if fm.fileExists(atPath: socketPath) {
+                socketAppeared = true
+                print("✅ [BACKEND] Socket appeared at \(socketPath)")
+                break
+            }
+
+            if !proc.isRunning {
+                let errorMsg = "Backend process exited prematurely"
+                print("❌ [BACKEND] \(errorMsg)")
+                process = nil
+                status = .error(errorMsg)
+                statusMessage = errorMsg
+                throw NSError(
+                    domain: "BackendProcessManager",
+                    code: 4,
+                    userInfo: [NSLocalizedDescriptionKey: errorMsg]
+                )
+            }
+
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+
+        guard socketAppeared else {
+            let errorMsg = "Socket did not appear within timeout"
+            print("❌ [BACKEND] \(errorMsg)")
+            stop()
+            status = .error(errorMsg)
+            statusMessage = errorMsg
+            throw NSError(
+                domain: "BackendProcessManager",
+                code: 5,
+                userInfo: [NSLocalizedDescriptionKey: errorMsg]
+            )
+        }
+
+        // Step 7: Health check will be done by performHealthCheck() in next commit
+        isRunning = true
+        statusMessage = "Backend started, awaiting health check"
+        print("✅ [BACKEND] Backend process started successfully")
     }
 
+    /// Stop the backend process
     func stop() {
-        // TODO: B2 - Implement process stop
-        print("⏳ [BACKEND] stop() called - not implemented yet")
+        guard let proc = process else {
+            print("ℹ️ [BACKEND] No process to stop")
+            isRunning = false
+            isHealthy = false
+            status = .stopped
+            statusMessage = "Backend stopped"
+            return
+        }
+
+        print("🛑 [BACKEND] Stopping backend process (PID: \(proc.processIdentifier))...")
+
+        // Send SIGTERM first
+        if proc.isRunning {
+            proc.terminate()
+            print("📤 [BACKEND] Sent SIGTERM")
+
+            // Wait up to 3 seconds for graceful shutdown
+            let startTime = Date()
+            while proc.isRunning && Date().timeIntervalSince(startTime) < 3.0 {
+                Thread.sleep(forTimeInterval: 0.1)
+            }
+
+            // Force kill if still running
+            if proc.isRunning {
+                print("⚠️ [BACKEND] Process still running, sending SIGKILL")
+                kill(proc.processIdentifier, SIGKILL)
+                Thread.sleep(forTimeInterval: 0.5)
+            }
+        }
+
+        process = nil
+
+        // Clean up socket
+        let fm = FileManager.default
+        if fm.fileExists(atPath: socketPath) {
+            try? fm.removeItem(atPath: socketPath)
+            print("🗑️ [BACKEND] Removed socket file")
+        }
+
+        // Update state
+        isRunning = false
+        isHealthy = false
+        status = .stopped
+        statusMessage = "Backend stopped"
+        print("✅ [BACKEND] Backend process stopped")
     }
 
     func restart() {
         stop()
-        start()
+        try? start()
     }
 
     // MARK: - Health Monitoring (Stub for B3)
