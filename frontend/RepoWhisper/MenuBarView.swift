@@ -251,7 +251,7 @@ struct MenuBarView: View {
                         .fill(apiClient.isConnected ? Color.green : Color.red)
                         .frame(width: 6, height: 6)
                     
-                    Text(authManager.currentUser?.email ?? "")
+                    Text("Local User")
                         .font(.system(size: 11, weight: .regular, design: .rounded))
                         .foregroundColor(.secondary)
                 }

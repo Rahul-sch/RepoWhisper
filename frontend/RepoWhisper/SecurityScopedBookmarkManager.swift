@@ -24,9 +24,8 @@ class SecurityScopedBookmarkManager: ObservableObject {
         loadBookmarks()
     }
 
-    deinit {
-        stopAccessingAll()
-    }
+    // Note: stopAccessingAll() should be called manually on app termination
+    // Cannot call @MainActor method from deinit
 
     // MARK: - Bookmark Management
 

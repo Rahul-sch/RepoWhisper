@@ -257,17 +257,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
     
-    // Handle OAuth callback URLs
+    // Handle OAuth callback URLs (disabled for local-first mode)
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls {
-            if url.scheme == "repowhisper" {
-                print("📥 Received OAuth callback: \(url)")
-                // Handle the OAuth callback
-                Task { @MainActor in
-                    await AuthManager.shared.handleOAuthCallback(url: url)
-                }
-            }
-        }
+        // TODO: Remove in Phase D when removing auth completely
+        print("📥 URL handling disabled in local-first mode")
     }
 }
 

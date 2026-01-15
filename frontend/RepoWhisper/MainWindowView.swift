@@ -79,12 +79,10 @@ struct MainWindowView: View {
                 
                 Divider()
                 
-                // User info
-                if let email = authManager.currentUser?.email {
-                    Text(email)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+                // User info - local mode
+                Text("Local User")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                 
                 // Sign out button
                 Button(action: {

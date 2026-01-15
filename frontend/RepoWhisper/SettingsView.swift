@@ -211,9 +211,9 @@ struct SettingsView: View {
                             .foregroundColor(.accentColor)
                         
                         VStack(alignment: .leading) {
-                            Text(authManager.currentUser?.email ?? "Unknown")
+                            Text("Local User")
                                 .fontWeight(.medium)
-                            Text("Authenticated")
+                            Text("No authentication required")
                                 .font(.caption)
                                 .foregroundColor(.green)
                         }
