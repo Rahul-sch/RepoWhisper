@@ -272,17 +272,19 @@ _user_stores: dict[str, VectorStore] = {}
 def get_vector_store(user_id: str, db_path: str | None = None) -> VectorStore:
     """
     Get user-specific vector store instance.
-    
+
     Args:
         user_id: User UUID for isolation
-        db_path: Optional custom path (defaults to .repowhisper/{user_id})
-        
+        db_path: Optional custom path (defaults to REPOWHISPER_DATA_DIR/{user_id}/lancedb)
+
     Returns:
         VectorStore instance for this user
     """
     if user_id not in _user_stores:
         if db_path is None:
-            db_path = f".repowhisper/{user_id}"
+            # Use REPOWHISPER_DATA_DIR if set, otherwise fall back to .repowhisper
+            data_dir = os.getenv("REPOWHISPER_DATA_DIR", ".repowhisper")
+            db_path = f"{data_dir}/{user_id}/lancedb"
         _user_stores[user_id] = VectorStore(db_path)
     return _user_stores[user_id]
 
