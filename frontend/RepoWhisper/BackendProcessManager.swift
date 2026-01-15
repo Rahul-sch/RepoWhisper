@@ -23,66 +23,139 @@ class BackendProcessManager: ObservableObject {
 
     @Published var status: BackendStatus = .stopped
     @Published var indexCount: Int = 0
+    @Published var isRunning: Bool = false
+    @Published var isHealthy: Bool = false
+    @Published var statusMessage: String = "Backend stopped"
 
     // MARK: - Paths and Configuration
 
-    /// Path to the Unix Domain Socket
-    private var socketPath: String {
+    /// Application Support directory (0700)
+    private var supportDirectory: URL {
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first!
-        let repoWhisperDir = appSupport.appendingPathComponent("RepoWhisper")
-        return repoWhisperDir.appendingPathComponent("backend.sock").path
+        return appSupport.appendingPathComponent("RepoWhisper")
     }
 
-    /// Path to the backend main.py
-    private var backendScriptPath: String {
-        // Look for backend in same directory as app bundle
-        if let bundlePath = Bundle.main.bundlePath as NSString? {
-            let parentPath = bundlePath.deletingLastPathComponent
-            let backendPath = (parentPath as NSString).appendingPathComponent("backend/main.py")
-            if FileManager.default.fileExists(atPath: backendPath) {
-                return backendPath
+    /// Logs directory (0700)
+    private var logsDirectory: URL {
+        return supportDirectory.appendingPathComponent("logs")
+    }
+
+    /// Path to the Unix Domain Socket
+    private var socketPath: String {
+        return supportDirectory.appendingPathComponent("backend.sock").path
+    }
+
+    /// Path to backend binary (architecture-specific)
+    private var backendBinaryPath: String? {
+        // Detect current architecture
+        #if arch(arm64)
+        let binaryName = "repowhisper-backend-arm64"
+        #elseif arch(x86_64)
+        let binaryName = "repowhisper-backend-x86_64"
+        #else
+        return nil
+        #endif
+
+        // Look for binary in app bundle Resources
+        if let resourcePath = Bundle.main.resourcePath {
+            let binaryPath = (resourcePath as NSString).appendingPathComponent(binaryName)
+            if FileManager.default.fileExists(atPath: binaryPath) {
+                return binaryPath
             }
         }
 
-        // Fallback to development path (when running from Xcode)
+        // Development fallback: use Python script
         let devPath = (Bundle.main.bundlePath as NSString).deletingLastPathComponent
         let parentDevPath = (devPath as NSString).deletingLastPathComponent
-        return (parentDevPath as NSString).appendingPathComponent("backend/main.py")
+        let backendMainPy = (parentDevPath as NSString).appendingPathComponent("backend/main.py")
+        if FileManager.default.fileExists(atPath: backendMainPy) {
+            return backendMainPy
+        }
+
+        return nil
     }
 
-    /// Path to Python virtual environment
-    private var pythonPath: String {
-        // Look for venv in backend directory
-        let backendDir = (backendScriptPath as NSString).deletingLastPathComponent
+    /// Path to Python virtual environment (for dev mode only)
+    private var pythonPath: String? {
+        guard let binaryPath = backendBinaryPath,
+              binaryPath.hasSuffix(".py") else {
+            return nil // Not needed for compiled binaries
+        }
+
+        let backendDir = (binaryPath as NSString).deletingLastPathComponent
         let venvPython = (backendDir as NSString).appendingPathComponent("venv/bin/python3")
         if FileManager.default.fileExists(atPath: venvPython) {
             return venvPython
         }
 
-        // Fallback to system python
         return "/usr/bin/python3"
     }
 
     /// Path to allowlist file
-    private var allowlistPath: String {
-        SecurityScopedBookmarkManager.shared.getAllowlistFilePath()
+    private var allowlistPath: URL {
+        return URL(fileURLWithPath: SecurityScopedBookmarkManager.shared.getAllowlistFilePath())
     }
 
-    /// Per-install auth token (generated once and persisted)
-    private var authToken: String {
-        let key = "RepoWhisper.BackendAuthToken"
-        if let token = UserDefaults.standard.string(forKey: key) {
-            return token
-        }
+    /// Path to auth token file
+    private var authTokenPath: URL {
+        return supportDirectory.appendingPathComponent("auth_token.txt")
+    }
 
-        // Generate new token
-        let newToken = UUID().uuidString
-        UserDefaults.standard.set(newToken, forKey: key)
-        print("🔑 [BACKEND] Generated new auth token")
-        return newToken
+    /// Path to models directory (if present in Resources)
+    private var modelsDirectory: String {
+        if let resourcePath = Bundle.main.resourcePath {
+            let modelsPath = (resourcePath as NSString).appendingPathComponent("models")
+            if FileManager.default.fileExists(atPath: modelsPath) {
+                return modelsPath
+            }
+        }
+        return ""
+    }
+
+    /// Per-install auth token (read from file or generate)
+    private var authToken: String {
+        get throws {
+            // Try to read existing token
+            if FileManager.default.fileExists(atPath: authTokenPath.path) {
+                if let token = try? String(contentsOf: authTokenPath, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines),
+                   !token.isEmpty {
+                    return token
+                }
+            }
+
+            // Generate new token
+            let newToken = UUID().uuidString
+            try newToken.write(to: authTokenPath, atomically: true, encoding: .utf8)
+
+            // Set permissions to 0600
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o600],
+                ofItemAtPath: authTokenPath.path
+            )
+
+            print("🔑 [BACKEND] Generated new auth token at \(authTokenPath.path)")
+            return newToken
+        }
+    }
+
+    /// Environment variables for backend process
+    private var backendEnvironment: [String: String] {
+        get throws {
+            var env = ProcessInfo.processInfo.environment
+            let token = try authToken
+
+            env["REPOWHISPER_SOCKET_PATH"] = socketPath
+            env["REPOWHISPER_AUTH_TOKEN"] = token
+            env["REPOWHISPER_ALLOWLIST_FILE"] = allowlistPath.path
+            env["REPOWHISPER_DATA_DIR"] = supportDirectory.path
+            env["REPOWHISPER_MODELS_DIR"] = modelsDirectory
+            env["DEBUG"] = "false"
+
+            return env
+        }
     }
 
     // MARK: - Process Management
@@ -92,13 +165,53 @@ class BackendProcessManager: ObservableObject {
     private init() {
         print("🏗️ [BACKEND] BackendProcessManager initialized")
         print("📍 [BACKEND] Socket path: \(socketPath)")
-        print("📍 [BACKEND] Backend script: \(backendScriptPath)")
-        print("📍 [BACKEND] Python path: \(pythonPath)")
-        print("📍 [BACKEND] Allowlist: \(allowlistPath)")
+        print("📍 [BACKEND] Binary path: \(backendBinaryPath ?? "NOT FOUND")")
+        print("📍 [BACKEND] Support dir: \(supportDirectory.path)")
+        print("📍 [BACKEND] Logs dir: \(logsDirectory.path)")
+        print("📍 [BACKEND] Allowlist: \(allowlistPath.path)")
     }
 
     // Note: stop() should be called manually on app termination
     // Cannot call @MainActor method from deinit
+
+    // MARK: - Directory Setup
+
+    /// Create required directories with proper permissions
+    private func setupDirectories() throws {
+        let fm = FileManager.default
+
+        // Create Application Support directory (0700)
+        if !fm.fileExists(atPath: supportDirectory.path) {
+            try fm.createDirectory(
+                at: supportDirectory,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
+            print("📁 [BACKEND] Created support directory: \(supportDirectory.path)")
+        }
+
+        // Ensure correct permissions on existing directory
+        try fm.setAttributes(
+            [.posixPermissions: 0o700],
+            ofItemAtPath: supportDirectory.path
+        )
+
+        // Create logs directory (0700)
+        if !fm.fileExists(atPath: logsDirectory.path) {
+            try fm.createDirectory(
+                at: logsDirectory,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
+            print("📁 [BACKEND] Created logs directory: \(logsDirectory.path)")
+        }
+
+        // Ensure correct permissions on logs directory
+        try fm.setAttributes(
+            [.posixPermissions: 0o700],
+            ofItemAtPath: logsDirectory.path
+        )
+    }
 
     // MARK: - Lifecycle (Stubs for B2)
 
