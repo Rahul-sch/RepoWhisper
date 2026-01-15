@@ -554,10 +554,89 @@ async def upload_screenshot(
 # ============ Entry Point ============
 
 if __name__ == "__main__":
+    import stat
+    import socket as sock_module
+
     settings = get_settings()
-    uvicorn.run(
-        "main:app",
-        host=settings.host,
-        port=settings.port,
-        reload=settings.debug
-    )
+    logger = get_logger()
+
+    # Check for required environment variables
+    socket_path = os.getenv("REPOWHISPER_SOCKET_PATH")
+    auth_token = os.getenv("REPOWHISPER_AUTH_TOKEN")
+
+    if not socket_path:
+        logger.error("REPOWHISPER_SOCKET_PATH not set")
+        raise RuntimeError("REPOWHISPER_SOCKET_PATH environment variable required")
+
+    if not auth_token:
+        logger.error("REPOWHISPER_AUTH_TOKEN not set")
+        raise RuntimeError("REPOWHISPER_AUTH_TOKEN environment variable required")
+
+    # Remove stale socket if it exists
+    if os.path.exists(socket_path):
+        try:
+            os.unlink(socket_path)
+            logger.info("removed_stale_socket", path=socket_path)
+        except OSError as e:
+            logger.error("failed_to_remove_stale_socket", path=socket_path, error=str(e))
+            raise
+
+    # Set restrictive umask before creating socket
+    old_umask = os.umask(0o077)
+
+    try:
+        # Store auth token in app state for middleware
+        app.state.auth_token = auth_token
+
+        logger.info("starting_uds_server", socket_path=socket_path)
+
+        # Run uvicorn with Unix Domain Socket
+        config = uvicorn.Config(
+            app=app,
+            uds=socket_path,
+            log_level="info" if settings.debug else "warning"
+        )
+        server = uvicorn.Server(config)
+
+        # Ensure socket has correct permissions after creation
+        def set_socket_permissions():
+            if os.path.exists(socket_path):
+                os.chmod(socket_path, 0o600)
+                logger.info("set_socket_permissions", path=socket_path, mode="0600")
+
+        # Set permissions after socket is bound
+        import asyncio
+        import signal
+
+        async def serve():
+            # Start server
+            await server.serve()
+
+        # Handle cleanup on exit
+        def cleanup_handler(signum, frame):
+            logger.info("received_signal", signal=signum)
+            if os.path.exists(socket_path):
+                try:
+                    os.unlink(socket_path)
+                    logger.info("cleaned_up_socket", path=socket_path)
+                except OSError:
+                    pass
+            raise SystemExit(0)
+
+        signal.signal(signal.SIGINT, cleanup_handler)
+        signal.signal(signal.SIGTERM, cleanup_handler)
+
+        try:
+            asyncio.run(serve())
+            # Set permissions after server starts
+            set_socket_permissions()
+        finally:
+            # Cleanup socket on exit
+            if os.path.exists(socket_path):
+                try:
+                    os.unlink(socket_path)
+                    logger.info("cleaned_up_socket_on_exit", path=socket_path)
+                except OSError:
+                    pass
+    finally:
+        os.umask(old_umask)
