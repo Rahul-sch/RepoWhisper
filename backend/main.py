@@ -336,6 +336,63 @@ async def index_repository(
         raise HTTPException(status_code=500, detail="Indexing failed. Please check the repository path and try again.")
 
 
+@app.post("/clear_index")
+@limiter.limit("10/minute")
+async def clear_index(
+    request: Request,
+    clear_request: dict,
+    user_id: str = Depends(get_user_id)
+):
+    """
+    Clear all indexed chunks for a specific repository.
+    Requires the repository path to be in the allowlist.
+    Rate limited: 10 requests per minute.
+    """
+    logger = get_logger()
+
+    try:
+        # Extract repo_path from request
+        repo_path = clear_request.get("repo_path")
+        if not repo_path:
+            raise HTTPException(status_code=400, detail="repo_path is required")
+
+        logger.info("clear_index_request", user_id=user_id, repo_path=repo_path)
+
+        # Validate repo_path against allowlist (fail-closed)
+        validator = get_path_validator()
+        if not validator.is_path_allowed(repo_path):
+            logger.warning("clear_index_path_rejected", repo_path=repo_path)
+            raise HTTPException(
+                status_code=403,
+                detail="Repository path not in allowlist. Add it via the UI first."
+            )
+
+        # Get vector store and clear data for this repo
+        from search import get_vector_store
+        store = get_vector_store(user_id)
+
+        # Calculate repo_id from path (same as indexing)
+        import hashlib
+        repo_id = hashlib.sha256(repo_path.encode()).hexdigest()[:16]
+
+        # Clear the repo data
+        store.clear_repo(user_id, repo_id)
+
+        logger.info("clear_index_success", user_id=user_id, repo_id=repo_id)
+
+        return {
+            "status": "success",
+            "message": f"Cleared index for {repo_path}",
+            "repo_id": repo_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("clear_index_failed", error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to clear index")
+
+
 @app.post("/search", response_model=SearchResponse)
 @limiter.limit("60/minute")
 async def search_code(
