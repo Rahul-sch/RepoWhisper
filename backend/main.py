@@ -210,11 +210,22 @@ async def health_check(request: Request):
     try:
         # Check if models are loaded
         model_loaded = get_whisper_model() is not None
-        
+
+        # Get index count from default local store
+        index_count = 0
+        try:
+            # Use default local store path (no user_id for local-first)
+            store = get_vector_store(user_id="local", db_path=".repowhisper/local")
+            index_count = store.count()
+        except Exception as count_error:
+            # If count fails, return 0 (store might not exist yet)
+            logger = get_logger()
+            logger.debug("index_count_failed", error=str(count_error))
+
         return HealthResponse(
             status="healthy",
             model_loaded=model_loaded,
-            index_count=0,  # User-specific, can't show global count
+            index_count=index_count,
             version="0.1.0"
         )
     except Exception as e:
