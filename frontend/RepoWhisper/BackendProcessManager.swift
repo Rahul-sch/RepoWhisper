@@ -561,10 +561,40 @@ class BackendProcessManager: ObservableObject {
         }
     }
 
-    /// Handle health check failure (to be implemented in next commit)
+    /// Handle health check failure with auto-restart
     private func handleHealthFailure() async {
-        // Placeholder for restart logic
-        statusMessage = "Backend unhealthy, restart needed"
-        status = .error("Health checks failed")
+        guard restartAttempts < maxRestartAttempts else {
+            let errorMsg = "Backend failed after \(maxRestartAttempts) restart attempts"
+            print("❌ [BACKEND] \(errorMsg)")
+            statusMessage = errorMsg
+            status = .error(errorMsg)
+            stop()
+            return
+        }
+
+        restartAttempts += 1
+
+        // Calculate backoff delay: 2^attempt seconds (2s, 4s, 8s)
+        let backoffDelay = pow(2.0, Double(restartAttempts))
+
+        print("🔄 [BACKEND] Attempting restart \(restartAttempts)/\(maxRestartAttempts) after \(Int(backoffDelay))s backoff...")
+        statusMessage = "Restarting backend (attempt \(restartAttempts)/\(maxRestartAttempts))..."
+
+        // Stop current process
+        stop()
+
+        // Wait for backoff delay
+        try? await Task.sleep(nanoseconds: UInt64(backoffDelay * 1_000_000_000))
+
+        // Attempt restart
+        do {
+            try start()
+            print("✅ [BACKEND] Restart successful")
+            consecutiveFailures = 0
+        } catch {
+            print("❌ [BACKEND] Restart failed: \(error.localizedDescription)")
+            statusMessage = "Restart failed: \(error.localizedDescription)"
+            status = .error("Restart failed")
+        }
     }
 }
