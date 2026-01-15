@@ -12,11 +12,27 @@ struct MainWindowView: View {
     @StateObject private var audioCapture = AudioCapture.shared
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
-    
+    @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
+
     @State private var selectedTab = 0
     @State private var showingRepoManager = false
-    
+    @State private var showingOnboarding = false
+
     var body: some View {
+        // Show onboarding if no repositories approved
+        if bookmarkManager.approvedPaths.isEmpty && !showingOnboarding {
+            OnboardingView {
+                showingOnboarding = false
+            }
+            .onAppear {
+                showingOnboarding = true
+            }
+        } else {
+            mainContent
+        }
+    }
+
+    var mainContent: some View {
         NavigationSplitView {
             // Sidebar
             List(selection: $selectedTab) {
