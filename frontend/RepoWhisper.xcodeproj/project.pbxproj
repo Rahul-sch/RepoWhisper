@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		WRKCCU9S6B00J0FQ93CMRH0U /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = XYZHDWHQAKJYMFB9HTO95EVU /* OnboardingView.swift */; };
+		5A9278D8BD47A91A6DA16E96 /* IndexingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7618B9DCE4996F03A34F3DC5 /* IndexingView.swift */; };
 		PC8JND62EXGEP88TBC673GQX /* UnixSocketHTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = UETYLVAY7O0PU1OQKT65LLNG /* UnixSocketHTTPClient.swift */; };
 		QU50IXTUKBQSNRW85TZD1JV5 /* BackendProcessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2LQ2PTKMLFB7HEILYPULC5RD /* BackendProcessManager.swift */; };
 		EL9TTU4L5LJI9J1ZQCPP1PE5 /* SecurityScopedBookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED80T92YRYZV6HT4M4GDGKX /* SecurityScopedBookmarkManager.swift */; };
@@ -30,6 +31,7 @@
 
 /* Begin PBXFileReference section */
 		XYZHDWHQAKJYMFB9HTO95EVU /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		7618B9DCE4996F03A34F3DC5 /* IndexingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingView.swift; sourceTree = "<group>"; };
 		UETYLVAY7O0PU1OQKT65LLNG /* UnixSocketHTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnixSocketHTTPClient.swift; sourceTree = "<group>"; };
 		2LQ2PTKMLFB7HEILYPULC5RD /* BackendProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendProcessManager.swift; sourceTree = "<group>"; };
 		3ED80T92YRYZV6HT4M4GDGKX /* SecurityScopedBookmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedBookmarkManager.swift; sourceTree = "<group>"; };
@@ -94,6 +96,7 @@
 				9525BF6FA708784BB4732856 /* MainWindowView.swift */,
 				56794B25204A09A55F3A9ED8 /* MenuBarView.swift */,
 				XYZHDWHQAKJYMFB9HTO95EVU /* OnboardingView.swift */,
+				7618B9DCE4996F03A34F3DC5 /* IndexingView.swift */,
 				39D17F56AFD20E211D9DBA23 /* RepoManagerView.swift */,
 				F3D9270A8D2D21F165255BB6 /* RepoWhisper.entitlements */,
 				4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */,
@@ -175,6 +178,7 @@
 				BD8C5F87BCF7A81A6112F627 /* MainWindowView.swift in Sources */,
 				046F2E69329442D6F03F6BDC /* MenuBarView.swift in Sources */,
 				WRKCCU9S6B00J0FQ93CMRH0U /* OnboardingView.swift in Sources */,
+				5A9278D8BD47A91A6DA16E96 /* IndexingView.swift in Sources */,
 				65DA88E60D57364B4F0F4FF3 /* RepoManagerView.swift in Sources */,
 				F10DAA4CBDDECE2B9BC04FB2 /* RepoWhisperApp.swift in Sources */,
 				3AEE6B107A1F93D675E424B7 /* ResultsWindow.swift in Sources */,

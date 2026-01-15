@@ -40,10 +40,12 @@ struct MainWindowView: View {
                     .tag(0)
                 Label("Repositories", systemImage: "folder.badge.gearshape")
                     .tag(1)
-                Label("Boss Mode", systemImage: "crown.fill")
+                Label("Indexing", systemImage: "arrow.triangle.2.circlepath")
                     .tag(2)
-                Label("Settings", systemImage: "gearshape")
+                Label("Boss Mode", systemImage: "crown.fill")
                     .tag(3)
+                Label("Settings", systemImage: "gearshape")
+                    .tag(4)
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 250)
             .listStyle(.sidebar)
@@ -70,8 +72,10 @@ struct MainWindowView: View {
                     case 1:
                         RepoManagerView()
                     case 2:
-                        BossModeView()
+                        IndexingView()
                     case 3:
+                        BossModeView()
+                    case 4:
                         SettingsView()
                     default:
                         SearchView()
