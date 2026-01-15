@@ -122,188 +122,317 @@ struct SearchView: View {
     @StateObject private var audioCapture = AudioCapture.shared
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
-    
+
     @State private var searchQuery = ""
     @State private var searchResults: [SearchResultItem] = []
     @State private var isSearching = false
     @State private var searchLatency: Double = 0
-    
+    @State private var copiedResultId: String?
+
     var body: some View {
-        VStack(spacing: 20) {
-            // Header
-            VStack(spacing: 8) {
-                Image(systemName: "waveform.circle.fill")
-                    .font(.system(size: 60))
-                    .foregroundStyle(.linearGradient(
-                        colors: [.purple, .blue],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                
-                Text("Voice-Powered Code Search")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                Text("Speak or type to search your repositories")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.top, 40)
-            
-            Spacer()
-            
-            // Recording control
-            VStack(spacing: 20) {
-                Button {
-                    if audioCapture.isRecording {
-                        audioCapture.stopRecording()
-                    } else {
-                        Task {
-                            let granted = await audioCapture.requestPermission()
-                            if granted {
-                                audioCapture.startRecording()
+        VStack(spacing: 0) {
+            // Header with search bar
+            VStack(spacing: 16) {
+                HStack {
+                    Image(systemName: "magnifyingglass.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.purple, .blue],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Text("Search")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Spacer()
+
+                    // Voice button (compact)
+                    Button {
+                        if audioCapture.isRecording {
+                            audioCapture.stopRecording()
+                        } else {
+                            Task {
+                                let granted = await audioCapture.requestPermission()
+                                if granted {
+                                    audioCapture.startRecording()
+                                }
                             }
                         }
-                    }
-                } label: {
-                    HStack(spacing: 16) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: audioCapture.isRecording ? [.red.opacity(0.2), .red.opacity(0.1)] : [.purple.opacity(0.2), .blue.opacity(0.1)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 80, height: 80)
-                            
+                    } label: {
+                        HStack(spacing: 6) {
                             Image(systemName: audioCapture.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                                .font(.system(size: 50))
                                 .foregroundStyle(
                                     audioCapture.isRecording ?
                                     LinearGradient(colors: [.red], startPoint: .top, endPoint: .bottom) :
                                     LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing)
                                 )
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(audioCapture.isRecording ? "Listening..." : "Start Voice Search")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                            
-                            Text("Press ⌘⇧R or click to toggle")
+                            Text(audioCapture.isRecording ? "Stop" : "Voice")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .fontWeight(.medium)
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.primary.opacity(0.05))
+                        .cornerRadius(8)
                     }
-                    .padding(24)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
-                        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
-                )
-                
-                // Or divider
-                HStack {
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(height: 1)
-                    Text("or")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(height: 1)
-                }
-                .padding(.horizontal, 100)
-                
-                // Text search
+
+                // Search bar
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.secondary)
-                    
-                    TextField("Type to search...", text: $searchQuery)
+
+                    TextField("Search your code...", text: $searchQuery)
                         .textFieldStyle(.plain)
-                        .font(.title3)
-                        .onSubmit {
-                            performSearch()
+                        .onSubmit { performSearch() }
+
+                    if !searchQuery.isEmpty {
+                        Button(action: { searchQuery = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
                         }
-                    
+                        .buttonStyle(.plain)
+                    }
+
                     if isSearching {
                         ProgressView()
                             .scaleEffect(0.8)
+                    } else if !searchQuery.isEmpty {
+                        Button(action: performSearch) {
+                            Image(systemName: "arrow.right.circle.fill")
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.primary.opacity(0.05))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                )
-                .frame(maxWidth: 500)
+                .padding(12)
+                .background(Color.primary.opacity(0.05))
+                .cornerRadius(10)
+
+                // Stats row
+                if searchLatency > 0 || apiClient.indexCount > 0 {
+                    HStack(spacing: 20) {
+                        if apiClient.indexCount > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "doc.text.fill")
+                                    .font(.caption2)
+                                Text("\(apiClient.indexCount) chunks")
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.secondary)
+                        }
+
+                        if searchLatency > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "bolt.fill")
+                                    .font(.caption2)
+                                Text("\(Int(searchLatency))ms")
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.secondary)
+                        }
+
+                        if !searchResults.isEmpty {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.caption2)
+                                Text("\(searchResults.count) results")
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.green)
+                        }
+
+                        Spacer()
+                    }
+                }
             }
-            
-            Spacer()
-            
-            // Quick stats
-            if apiClient.indexCount > 0 {
-                HStack(spacing: 30) {
-                    StatBadge(
-                        icon: "doc.text.fill",
-                        value: "\(apiClient.indexCount)",
-                        label: "Chunks Indexed"
+            .padding()
+            .background(
+                LinearGradient(
+                    colors: [Color.purple.opacity(0.1), Color.blue.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+
+            // Results or empty state
+            if searchResults.isEmpty && !isSearching {
+                // Empty state
+                VStack(spacing: 20) {
+                    Spacer()
+
+                    Image(systemName: searchQuery.isEmpty ? "magnifyingglass" : "doc.text.magnifyingglass")
+                        .font(.system(size: 60))
+                        .foregroundColor(.secondary)
+
+                    Text(searchQuery.isEmpty ? "Search Your Code" : "No Results Found")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+
+                    Text(searchQuery.isEmpty ?
+                         "Type a query or use voice search to find code" :
+                         "Try a different search query"
                     )
-                    
-                    if searchLatency > 0 {
-                        StatBadge(
-                            icon: "bolt.fill",
-                            value: "\(Int(searchLatency))ms",
-                            label: "Last Search"
-                        )
-                    }
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+
+                    Spacer()
                 }
-                .padding(.bottom, 40)
+            } else {
+                // Results list
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(Array(searchResults.enumerated()), id: \.element.id) { index, result in
+                            searchResultRow(result: result, index: index)
+                        }
+                    }
+                    .padding()
+                }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
     }
-    
+
+    // MARK: - Search Result Row
+
+    @ViewBuilder
+    private func searchResultRow(result: SearchResultItem, index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header: file path + line numbers
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "doc.text.fill")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+
+                    Text(URL(fileURLWithPath: result.filePath).lastPathComponent)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                    Text("•")
+                        .foregroundColor(.secondary)
+
+                    Text("Lines \(result.lineStart)-\(result.lineEnd)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                // Score badge
+                HStack(spacing: 4) {
+                    Image(systemName: "star.fill")
+                        .font(.caption2)
+                    Text(String(format: "%.0f%%", result.score * 100))
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                .foregroundColor(.orange)
+            }
+
+            // Code snippet
+            ScrollView(.horizontal, showsIndicators: false) {
+                Text(result.chunk)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(.primary)
+                    .padding(10)
+                    .background(Color.primary.opacity(0.03))
+                    .cornerRadius(6)
+            }
+
+            // File path
+            Text(result.filePath)
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            // Action buttons
+            HStack(spacing: 12) {
+                // Copy
+                Button(action: { copyToClipboard(result) }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: copiedResultId == result.id ? "checkmark" : "doc.on.doc")
+                            .font(.caption)
+                        Text(copiedResultId == result.id ? "Copied" : "Copy")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(copiedResultId == result.id ? .green : .blue)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.primary.opacity(0.05))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+
+                // Open in Finder
+                Button(action: { openInFinder(result) }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "folder")
+                            .font(.caption)
+                        Text("Finder")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.primary.opacity(0.05))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+
+                // Open in editor
+                Button(action: { openInEditor(result) }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left.forwardslash.chevron.right")
+                            .font(.caption)
+                        Text("Editor")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.primary.opacity(0.05))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+        }
+        .padding()
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
+    }
+
+    // MARK: - Actions
+
     private func performSearch() {
         guard !searchQuery.isEmpty else { return }
-        
+
         print("🔍 [SEARCH] Starting search for: '\(searchQuery)'")
         isSearching = true
-        
-        // Show loading popup immediately
-        popupManager.showLoadingPopup(query: searchQuery, isRecording: audioCapture.isRecording)
-        
+        searchResults = []
+
         Task {
             do {
                 print("📡 [SEARCH] Calling API...")
                 let results = try await apiClient.search(query: searchQuery)
                 print("✅ [SEARCH] Got \(results.results.count) results")
-                
+
                 await MainActor.run {
                     searchResults = results.results
                     searchLatency = results.latencyMs
                     isSearching = false
-                    
-                    // Show popup with results
-                    print("🎯 [SEARCH] Showing popup with results...")
-                    popupManager.showPopup(
-                        results: results.results,
-                        query: searchQuery,
-                        latency: results.latencyMs,
-                        isRecording: audioCapture.isRecording
-                    )
                 }
             } catch {
                 print("❌ [SEARCH] Search error: \(error)")
@@ -312,6 +441,31 @@ struct SearchView: View {
                 }
             }
         }
+    }
+
+    private func copyToClipboard(_ result: SearchResultItem) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(result.chunk, forType: .string)
+
+        copiedResultId = result.id
+
+        // Reset after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            if copiedResultId == result.id {
+                copiedResultId = nil
+            }
+        }
+    }
+
+    private func openInFinder(_ result: SearchResultItem) {
+        let url = URL(fileURLWithPath: result.filePath)
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    private func openInEditor(_ result: SearchResultItem) {
+        let url = URL(fileURLWithPath: result.filePath)
+        NSWorkspace.shared.open(url)
     }
 }
 
