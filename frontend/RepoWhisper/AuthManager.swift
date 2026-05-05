@@ -29,10 +29,15 @@ class AuthManager: ObservableObject {
     private let tokenKey = "RepoWhisper.AccessToken"
 
     private init() {
-        // Load saved token
+        // Local-first: the backend uses a per-install X-Auth-Token managed by
+        // BackendProcessManager, not a remote user account. There's no working
+        // /auth/login endpoint anymore (Supabase was removed), so we treat the
+        // user as authenticated by default and let the OS account boundary be
+        // the trust boundary. signIn/signUp below are kept as no-op stubs only
+        // because LoginView still references them.
+        self.isAuthenticated = true
         if let savedToken = UserDefaults.standard.string(forKey: tokenKey), !savedToken.isEmpty {
             self.accessToken = savedToken
-            self.isAuthenticated = true
         }
     }
 

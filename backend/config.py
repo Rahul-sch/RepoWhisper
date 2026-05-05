@@ -12,7 +12,7 @@ from pydantic_settings import BaseSettings
 class IndexMode(str, Enum):
     """Indexing mode for repository scanning."""
     MANUAL = "manual"      # User selects specific files
-    GUIDED = "guided"      # LLM-guided file selection  
+    GUIDED = "smart"       # LLM-guided file selection (wire value matches frontend "smart")
     FULL = "full"          # Index entire repository
 
 

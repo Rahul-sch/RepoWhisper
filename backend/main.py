@@ -225,8 +225,12 @@ async def health_check(request: Request):
             logger = get_logger()
             logger.debug("index_count_failed", error=str(count_error))
 
+        # Status reflects whether the backend itself is serving requests.
+        # whisper_available is the per-feature flag the UI checks separately —
+        # don't degrade overall health on a missing optional dep, otherwise
+        # the macOS app's auto-restart loop will keep killing a healthy backend.
         return HealthResponse(
-            status="healthy" if whisper_ok else "degraded",
+            status="healthy",
             model_loaded=model_loaded,
             whisper_available=whisper_ok,
             index_count=index_count,

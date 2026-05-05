@@ -43,9 +43,15 @@ class BackendProcessManager: ObservableObject {
         return supportDirectory.appendingPathComponent("logs")
     }
 
-    /// Path to the Unix Domain Socket
-    private var socketPath: String {
+    /// Path to the Unix Domain Socket. Public so APIClient can connect.
+    var socketPath: String {
         return supportDirectory.appendingPathComponent("backend.sock").path
+    }
+
+    /// Public accessor for the per-install auth token used in X-Auth-Token.
+    /// Throws if the token file can't be read or written.
+    func currentAuthToken() throws -> String {
+        return try authToken
     }
 
     /// Path to backend binary (architecture-specific)
@@ -470,6 +476,7 @@ class BackendProcessManager: ObservableObject {
     struct HealthCheckResponse: Codable {
         let status: String
         let model_loaded: Bool
+        let whisper_available: Bool?
         let index_count: Int
         let version: String
 
