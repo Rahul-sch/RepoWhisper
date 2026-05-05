@@ -20,6 +20,11 @@ except ImportError:
     WHISPER_AVAILABLE = False
     WhisperModel = None  # type: ignore
 
+
+def is_whisper_available() -> bool:
+    """Cheap check the API layer can use without loading the model."""
+    return WHISPER_AVAILABLE
+
 from config import get_settings
 
 

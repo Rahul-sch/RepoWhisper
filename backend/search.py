@@ -129,40 +129,46 @@ class VectorStore:
         return self._table
     
     def index_chunks(
-        self, 
+        self,
         chunks: list[CodeChunk],
+        user_id: str,
+        repo_id: str,
         table_name: str = "code_chunks",
         batch_size: int = 100
     ) -> int:
         """
         Index code chunks into the vector store.
-        
+
         Args:
             chunks: List of CodeChunk objects to index
+            user_id: User UUID for isolation (required, stored on every record)
+            repo_id: Repository UUID for filtering (required, stored on every record)
             table_name: Name of the LanceDB table
             batch_size: Batch size for embedding generation
-            
+
         Returns:
             Number of chunks indexed
         """
         if not chunks:
             return 0
-        
+
         table = self.get_table(table_name)
         indexed = 0
-        
+
         # Process in batches
         for i in range(0, len(chunks), batch_size):
             batch = chunks[i:i + batch_size]
             texts = [chunk.content for chunk in batch]
-            
+
             # Generate embeddings
             embeddings = embed_batch(texts)
-            
-            # Prepare records
+
+            # Prepare records — include user_id/repo_id so search filtering works
             records = []
             for chunk, embedding in zip(batch, embeddings):
                 records.append({
+                    "user_id": user_id,
+                    "repo_id": repo_id,
                     "file_path": chunk.file_path,
                     "content": chunk.content,
                     "line_start": chunk.line_start,
@@ -170,11 +176,11 @@ class VectorStore:
                     "chunk_type": chunk.chunk_type,
                     "vector": embedding
                 })
-            
+
             # Add to table
             table.add(records)
             indexed += len(records)
-        
+
         return indexed
     
     def search(
@@ -199,25 +205,31 @@ class VectorStore:
             Tuple of (results list, latency in ms)
         """
         start_time = time.perf_counter()
-        
+
         # Get table
         table = self.get_table(table_name)
-        
+
+        # Empty table → nothing to search; avoid LanceDB error on empty index
+        if table.count_rows() == 0:
+            return [], (time.perf_counter() - start_time) * 1000
+
         # Generate query embedding
         query_embedding = embed_text(query)
-        
-        # Search with user isolation
-        search_query = table.search(query_embedding)
-        
-        # Filter by user_id (required for isolation)
-        # Note: LanceDB filtering happens after vector search for efficiency
-        results = search_query.limit(top_k * 3).to_list()  # Get more to filter
-        
-        # Filter by user_id and optionally repo_id
-        filtered_results = [
-            r for r in results
-            if r.get("user_id") == user_id and (repo_id is None or r.get("repo_id") == repo_id)
-        ][:top_k]
+
+        # Push the user/repo filter into LanceDB (server-side prefilter)
+        # so we don't waste vector candidates on other users' data.
+        escaped_user = user_id.replace("'", "''")
+        where_clause = f"user_id = '{escaped_user}'"
+        if repo_id is not None:
+            escaped_repo = repo_id.replace("'", "''")
+            where_clause += f" AND repo_id = '{escaped_repo}'"
+
+        filtered_results = (
+            table.search(query_embedding)
+            .where(where_clause, prefilter=True)
+            .limit(top_k)
+            .to_list()
+        )
         
         # Convert to SearchResult objects
         search_results = [
@@ -234,24 +246,31 @@ class VectorStore:
         latency_ms = (time.perf_counter() - start_time) * 1000
         return search_results, latency_ms
     
-    def clear_repo(self, user_id: str, repo_id: str, table_name: str = "code_chunks"):
+    def clear_repo(self, user_id: str, repo_id: str, table_name: str = "code_chunks") -> int:
         """
-        Mark repository for re-indexing by filtering it out of searches.
-        Note: LanceDB doesn't support efficient deletes, so we filter during search.
-        For production, consider using separate tables per user or a proper vector DB with delete support.
-        
+        Delete all rows for a given user/repo from the vector store.
+
         Args:
             user_id: User UUID
             repo_id: Repository UUID to clear
             table_name: Name of the LanceDB table
+
+        Returns:
+            Number of rows deleted (best-effort; LanceDB delete returns no count,
+            so we compute via before/after row counts).
         """
-        # Since LanceDB doesn't have efficient delete, we rely on filtering during search
-        # The old data will be overwritten when re-indexing
-        # For production, consider:
-        # 1. Separate tables per user
-        # 2. A vector DB with proper delete support (Pinecone, Weaviate, etc.)
-        # 3. Soft delete with a deleted_at timestamp
-        pass
+        if table_name not in self.db.table_names():
+            return 0
+
+        table = self.get_table(table_name)
+        before = table.count_rows()
+
+        escaped_user = user_id.replace("'", "''")
+        escaped_repo = repo_id.replace("'", "''")
+        table.delete(f"user_id = '{escaped_user}' AND repo_id = '{escaped_repo}'")
+
+        after = table.count_rows()
+        return max(0, before - after)
     
     def count(self, table_name: str = "code_chunks") -> int:
         """Get the number of indexed chunks."""
@@ -292,15 +311,15 @@ def get_vector_store(user_id: str, db_path: str | None = None) -> VectorStore:
 def search_code(user_id: str, query: str, top_k: int = 5) -> tuple[list[SearchResult], float]:
     """
     Convenience function for searching code.
-    
+
     Args:
         user_id: User UUID for isolation
         query: Search query string
         top_k: Number of results
-        
+
     Returns:
         Tuple of (results, latency_ms)
     """
     store = get_vector_store(user_id)
-    return store.search(query, top_k)
+    return store.search(query=query, user_id=user_id, top_k=top_k)
 

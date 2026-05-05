@@ -19,7 +19,7 @@ from config import get_settings, IndexMode
 from auth import get_current_user, get_user_id, get_optional_user
 from indexer import index_repository as index_repo, CodeChunk
 from search import get_vector_store, SearchResult as VectorSearchResult
-from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model
+from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model, is_whisper_available
 from logger import setup_logging, get_logger
 from advise import get_advisor, AdvisorContext, process_screenshot
 from path_validator import init_path_validator, get_path_validator
@@ -190,6 +190,7 @@ class HealthResponse(BaseModel):
     """Response model for health check."""
     status: str
     model_loaded: bool
+    whisper_available: bool
     index_count: int
     version: str
 
@@ -208,8 +209,10 @@ async def root():
 async def health_check(request: Request):
     """Health check endpoint - no auth required."""
     try:
-        # Check if models are loaded
-        model_loaded = get_whisper_model() is not None
+        # Whisper presence is a hard prerequisite for /transcribe.
+        whisper_ok = is_whisper_available()
+        # Cheap check that doesn't actually load the model on a hot path.
+        model_loaded = whisper_ok
 
         # Get index count from default local store
         index_count = 0
@@ -223,8 +226,9 @@ async def health_check(request: Request):
             logger.debug("index_count_failed", error=str(count_error))
 
         return HealthResponse(
-            status="healthy",
+            status="healthy" if whisper_ok else "degraded",
             model_loaded=model_loaded,
+            whisper_available=whisper_ok,
             index_count=index_count,
             version="0.1.0"
         )
@@ -234,6 +238,7 @@ async def health_check(request: Request):
         return HealthResponse(
             status="unhealthy",
             model_loaded=False,
+            whisper_available=False,
             index_count=0,
             version="0.1.0"
         )
@@ -293,8 +298,8 @@ async def index_repository(
         # Get user-specific vector store
         store = get_vector_store(user_id)
         
-        # Note: clear_repo is a no-op - old data will be filtered out during search
-        # Re-indexing will add new data, and search filters by repo_id
+        # Drop any prior rows for this (user, repo) so re-indexing replaces
+        # rather than accumulates duplicates.
         store.clear_repo(user_id, repo_id)
         
         # Collect chunks
@@ -368,22 +373,22 @@ async def clear_index(
             )
 
         # Get vector store and clear data for this repo
-        from search import get_vector_store
         store = get_vector_store(user_id)
 
-        # Calculate repo_id from path (same as indexing)
-        import hashlib
-        repo_id = hashlib.sha256(repo_path.encode()).hexdigest()[:16]
+        # Use the SAME deterministic repo_id derivation as /index, otherwise
+        # we'd be clearing a repo_id that was never indexed.
+        repo_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{user_id}:{repo_path}"))
 
         # Clear the repo data
-        store.clear_repo(user_id, repo_id)
+        deleted = store.clear_repo(user_id, repo_id)
 
-        logger.info("clear_index_success", user_id=user_id, repo_id=repo_id)
+        logger.info("clear_index_success", user_id=user_id, repo_id=repo_id, deleted=deleted)
 
         return {
             "status": "success",
             "message": f"Cleared index for {repo_path}",
-            "repo_id": repo_id
+            "repo_id": repo_id,
+            "deleted": deleted,
         }
 
     except HTTPException:
@@ -417,7 +422,12 @@ async def search_code(
         
         # Get user-specific vector store
         store = get_vector_store(user_id)
-        results, latency_ms = store.search(search_request.query, search_request.top_k)
+        results, latency_ms = store.search(
+            query=search_request.query,
+            user_id=user_id,
+            repo_id=search_request.repo_id,
+            top_k=search_request.top_k,
+        )
         
         logger.info("search_complete", query_length=len(search_request.query), results_count=len(results), latency_ms=latency_ms)
         
@@ -456,22 +466,30 @@ async def transcribe_audio_endpoint(
     Rate limited: 120 requests per minute.
     """
     logger = get_logger()
-    
+
     try:
+        # Fail loudly if faster-whisper isn't installed. Silent empty
+        # transcripts hide the real problem from the UI.
+        if not is_whisper_available():
+            raise HTTPException(
+                status_code=503,
+                detail="Transcription unavailable: faster-whisper is not installed on the backend.",
+            )
+
         # Read raw audio bytes from request body
         audio_data = await request.body()
-        
+
         if not audio_data:
             return TranscribeResponse(
                 text="",
                 confidence=0.0,
                 latency_ms=0.0
             )
-        
+
         # Validate audio data size (max 10MB)
         if len(audio_data) > 10 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="Audio data too large (max 10MB)")
-        
+
         # Transcribe
         result = whisper_transcribe(audio_data)
         
