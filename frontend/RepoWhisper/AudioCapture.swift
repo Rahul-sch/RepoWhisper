@@ -15,31 +15,51 @@ import Combine
 class AudioCapture: ObservableObject {
     /// Shared singleton instance
     static let shared = AudioCapture()
-    
+
     /// Whether currently recording
     @Published var isRecording: Bool = false
-    
+
+    /// Whether system-audio capture (interviewer voice) is also active
+    /// for the current recording session.
+    @Published var isCapturingSystemAudio: Bool = false
+
     /// Current audio level (0-1) for visualization
     @Published var audioLevel: Float = 0.0
-    
+
     /// Error message if capture fails
     @Published var errorMessage: String?
-    
+
+    /// User preference: capture system audio (interviewer voice) alongside the
+    /// microphone. Defaults to true since this is an interview assistant — the
+    /// other person's voice is the primary signal we care about.
+    private let captureSystemAudioKey = "RepoWhisper.CaptureSystemAudio"
+    var captureSystemAudio: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: captureSystemAudioKey) == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: captureSystemAudioKey)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: captureSystemAudioKey)
+        }
+    }
+
     /// Audio engine for capture
     private var audioEngine: AVAudioEngine?
-    
+
     /// Buffer for accumulating audio samples
     private var audioBuffer: Data = Data()
-    
+
     /// Target sample rate (16kHz for Whisper)
     private let targetSampleRate: Double = 16000
-    
+
     /// Chunk duration in seconds before sending to backend
     private let chunkDuration: Double = 1.0
-    
+
     /// Callback for when audio chunk is ready
     var onAudioChunk: ((Data) -> Void)?
-    
+
     private init() {}
     
     /// Request microphone permission
@@ -51,20 +71,24 @@ class AudioCapture: ObservableObject {
         }
     }
     
-    /// Start recording audio
+    /// Start recording audio. Captures the microphone and, if
+    /// `captureSystemAudio` is enabled, also captures system audio
+    /// (the other side of a video call) in parallel. Both streams emit
+    /// through `onAudioChunk` so the existing transcription pipeline works
+    /// unchanged.
     func startRecording() {
         guard !isRecording else { return }
-        
+
         do {
             audioEngine = AVAudioEngine()
             guard let audioEngine = audioEngine else { return }
-            
+
             let inputNode = audioEngine.inputNode
             let inputFormat = inputNode.outputFormat(forBus: 0)
-            
+
             // Calculate buffer size for ~100ms chunks
             let bufferSize = AVAudioFrameCount(inputFormat.sampleRate * 0.1)
-            
+
             // Install tap on input node
             inputNode.installTap(
                 onBus: 0,
@@ -73,38 +97,72 @@ class AudioCapture: ObservableObject {
             ) { [weak self] buffer, time in
                 self?.processAudioBuffer(buffer, format: inputFormat)
             }
-            
+
             // Start the engine
             audioEngine.prepare()
             try audioEngine.start()
-            
+
             isRecording = true
             errorMessage = nil
             print("🎤 Audio capture started")
-            
+
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
             print("❌ Audio capture error: \(error)")
         }
+
+        // Optionally capture interviewer audio in parallel.
+        if captureSystemAudio {
+            startSystemAudioForwarding()
+        }
     }
-    
-    /// Stop recording audio
+
+    /// Stop recording audio (mic + system audio if active).
     func stopRecording() {
         guard isRecording else { return }
-        
+
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine?.stop()
         audioEngine = nil
-        
-        // Flush remaining audio
+
+        // Flush remaining mic audio
         if !audioBuffer.isEmpty {
             onAudioChunk?(audioBuffer)
             audioBuffer.removeAll()
         }
-        
+
+        if isCapturingSystemAudio {
+            ScreenCaptureManager.shared.stopSystemAudioCapture()
+            ScreenCaptureManager.shared.onSystemAudioChunk = nil
+            isCapturingSystemAudio = false
+        }
+
         isRecording = false
         audioLevel = 0.0
         print("🛑 Audio capture stopped")
+    }
+
+    /// Wire ScreenCaptureManager's chunks into our onAudioChunk callback so
+    /// interviewer voice gets transcribed by the same backend path as mic audio.
+    /// Failure (e.g. screen-recording permission denied) is non-fatal — mic
+    /// recording continues and we set an errorMessage so the UI can show it.
+    private func startSystemAudioForwarding() {
+        let manager = ScreenCaptureManager.shared
+        manager.onSystemAudioChunk = { [weak self] chunk in
+            guard let self else { return }
+            // Hop to main actor since the SCStream callback is on a background queue.
+            Task { @MainActor in
+                self.onAudioChunk?(chunk)
+            }
+        }
+        Task { @MainActor in
+            await manager.startSystemAudioCapture()
+            isCapturingSystemAudio = manager.isCapturingSystemAudio
+            if !manager.isCapturingSystemAudio, let msg = manager.errorMessage {
+                // Surface the screen-recording failure but keep mic running.
+                errorMessage = "System audio: \(msg). Mic still recording."
+            }
+        }
     }
     
     /// Process captured audio buffer

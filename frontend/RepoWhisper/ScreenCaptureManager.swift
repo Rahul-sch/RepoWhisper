@@ -158,26 +158,78 @@ class ScreenCaptureManager: ObservableObject {
         }
     }
     
-    /// Convert system audio to 16kHz mono PCM16
+    /// Convert SCStream audio (typically 48 kHz Float32 stereo) into the
+    /// 16 kHz mono Int16 PCM that the Whisper backend expects.
+    /// Returns empty Data if the format can't be read or conversion fails.
     private func convertSystemAudioToPCM16(_ sampleBuffer: CMSampleBuffer, _ formatDescription: CMFormatDescription) -> Data {
-        guard let blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else {
+        guard let asbdPtr = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription) else {
             return Data()
         }
-        
-        var length: Int = 0
-        var dataPointer: UnsafeMutablePointer<Int8>?
-        
-        guard CMBlockBufferGetDataPointer(blockBuffer, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length, dataPointerOut: &dataPointer) == noErr,
-              let pointer = dataPointer else {
+        var asbd = asbdPtr.pointee
+        guard let sourceFormat = AVAudioFormat(streamDescription: &asbd) else {
             return Data()
         }
-        
-        // Convert from system audio format to PCM16
-        // This is a simplified conversion - in production, use AudioConverter
-        let audioData = Data(bytes: pointer, count: length)
-        
-        // Downsample and convert to mono (simplified - use proper resampling in production)
-        return audioData  // Placeholder - needs proper conversion
+
+        let frames = AVAudioFrameCount(CMSampleBufferGetNumSamples(sampleBuffer))
+        guard frames > 0,
+              let sourceBuffer = AVAudioPCMBuffer(pcmFormat: sourceFormat, frameCapacity: frames) else {
+            return Data()
+        }
+        sourceBuffer.frameLength = frames
+
+        // Pull the audio bytes out of the CMSampleBuffer into the PCM buffer.
+        // withAudioBufferList handles ABL sizing for multi-channel non-interleaved data.
+        do {
+            try sampleBuffer.withAudioBufferList { srcABL, _ in
+                let dstABL = UnsafeMutableAudioBufferListPointer(sourceBuffer.mutableAudioBufferList)
+                for i in 0..<min(srcABL.count, dstABL.count) {
+                    if let src = srcABL[i].mData, let dst = dstABL[i].mData {
+                        let bytes = Int(min(srcABL[i].mDataByteSize, dstABL[i].mDataByteSize))
+                        memcpy(dst, src, bytes)
+                    }
+                }
+            }
+        } catch {
+            return Data()
+        }
+
+        guard let targetFormat = AVAudioFormat(
+                commonFormat: .pcmFormatInt16,
+                sampleRate: 16000,
+                channels: 1,
+                interleaved: true
+              ),
+              let converter = AVAudioConverter(from: sourceFormat, to: targetFormat) else {
+            return Data()
+        }
+
+        // Generous capacity for resampling slack.
+        let outCapacity = AVAudioFrameCount(
+            Double(frames) * 16000.0 / sourceFormat.sampleRate + 1024
+        )
+        guard let targetBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outCapacity) else {
+            return Data()
+        }
+
+        var error: NSError?
+        var consumed = false
+        let status = converter.convert(to: targetBuffer, error: &error) { _, outStatus in
+            if consumed {
+                outStatus.pointee = .endOfStream
+                return nil
+            }
+            consumed = true
+            outStatus.pointee = .haveData
+            return sourceBuffer
+        }
+
+        guard status != .error, error == nil,
+              let channel = targetBuffer.int16ChannelData?[0] else {
+            return Data()
+        }
+
+        let outFrames = Int(targetBuffer.frameLength)
+        return Data(bytes: channel, count: outFrames * 2)
     }
     
     // MARK: - Screenshot Capture
