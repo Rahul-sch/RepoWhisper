@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Combine
 import ServiceManagement
 
 @main
@@ -34,22 +35,16 @@ struct RepoWhisperApp: App {
     }
     
     var body: some Scene {
-        // Main Window - Full app interface
+        // Main Window - Full app interface.
+        // Local-first: there is no remote login, so we always show the main UI.
+        // LoginView still exists in the bundle but is unreachable.
         WindowGroup("RepoWhisper", id: "main") {
-            Group {
-                if authManager.isAuthenticated {
-                    MainWindowView()
-                        .environmentObject(authManager)
-                        .frame(minWidth: 800, minHeight: 600)
-                } else {
-                    LoginView()
-                        .environmentObject(authManager)
-                        .frame(width: 400, height: 500)
+            MainWindowView()
+                .environmentObject(authManager)
+                .frame(minWidth: 800, minHeight: 600)
+                .onAppear {
+                    print("🪟 [APP] Main window appeared")
                 }
-            }
-            .onAppear {
-                print("🪟 [APP] Main window appeared")
-            }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
@@ -149,10 +144,23 @@ func setLaunchAtLogin(enabled: Bool) {
 
 // App delegate for keyboard shortcuts and URL handling
 class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Combine subscriptions retained for the app lifetime.
+    private var cancellables = Set<AnyCancellable>()
+    /// True after we've successfully spawned the backend at least once
+    /// this session, so we don't keep restarting it as the user toggles repos.
+    private var backendStartedThisSession = false
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("✅ RepoWhisper app finished launching")
         print("📌 Look for the menu bar icon (waveform.circle.fill) in the top menu bar")
         print("🔍 [APP] Auth state: authenticated=\(AuthManager.shared.isAuthenticated)")
+
+        // Bring up the backend. If a repo is already approved, start now;
+        // otherwise wait for the user to approve one and start then.
+        Task { @MainActor in
+            self.bootstrapBackend()
+            self.observeRepoApprovals()
+        }
 
         // Auto-launch: Show centered welcome popup on first launch
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -187,7 +195,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if AudioCapture.shared.isRecording {
                     AudioCapture.shared.stopRecording()
                 } else {
-                    Task {
+                    Task { @MainActor in
+                        // Guard 1: must have at least one approved repo, otherwise
+                        // the backend can't start and a search would have nothing to hit.
+                        if SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty {
+                            FloatingPopupManager.shared.showErrorToast(
+                                "Add a repository folder first (open RepoWhisper → Add Repo)."
+                            )
+                            return
+                        }
+                        // Guard 2: backend healthy. If it crashed/didn't start, kick it.
+                        if !BackendProcessManager.shared.isRunning {
+                            FloatingPopupManager.shared.showErrorToast("Starting backend…")
+                            do { try BackendProcessManager.shared.start() }
+                            catch {
+                                FloatingPopupManager.shared.showErrorToast(
+                                    "Backend failed to start: \(error.localizedDescription)"
+                                )
+                                return
+                            }
+                        }
+                        // Guard 3: warn (but don't block) if models are still loading.
+                        if APIClient.shared.modelsLoading {
+                            FloatingPopupManager.shared.showErrorToast(
+                                "Loading speech models (one-time, ~30-60s) — recording anyway."
+                            )
+                        }
+
                         let granted = await AudioCapture.shared.requestPermission()
                         if granted {
                             AudioCapture.shared.startRecording()
@@ -261,6 +295,62 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         // TODO: Remove in Phase D when removing auth completely
         print("📥 URL handling disabled in local-first mode")
+    }
+
+    // MARK: - Backend Lifecycle
+
+    /// Try to spawn the backend if (a) we haven't already this session and
+    /// (b) at least one repo folder has been approved.
+    @MainActor
+    private func bootstrapBackend() {
+        guard !backendStartedThisSession else { return }
+        guard !SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty else {
+            print("⏸ [APP] No repos approved yet — backend will start when one is added.")
+            return
+        }
+        do {
+            try BackendProcessManager.shared.start()
+            backendStartedThisSession = true
+            BackendProcessManager.shared.startHealthMonitoring()
+            // Once the socket is up, kick the warmup so the first /transcribe
+            // and /search calls are fast.
+            scheduleWarmupWhenHealthy()
+        } catch {
+            print("❌ [APP] Backend start failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Watch the bookmark manager. As soon as the user approves their first
+    /// repo, bootstrap the backend (deferred-start case).
+    @MainActor
+    private func observeRepoApprovals() {
+        SecurityScopedBookmarkManager.shared.$approvedPaths
+            .removeDuplicates()
+            .sink { [weak self] paths in
+                guard let self = self,
+                      !self.backendStartedThisSession,
+                      !paths.isEmpty else { return }
+                Task { @MainActor in self.bootstrapBackend() }
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Poll BackendProcessManager.isHealthy and call APIClient.warmup() once.
+    /// Stops polling after success or after ~60s of failure.
+    @MainActor
+    private func scheduleWarmupWhenHealthy() {
+        let deadline = Date().addingTimeInterval(60)
+        Task { @MainActor in
+            while Date() < deadline {
+                if BackendProcessManager.shared.isHealthy {
+                    print("🔥 [APP] Backend healthy — kicking warmup")
+                    await APIClient.shared.warmup()
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+            print("⚠️ [APP] Backend never reported healthy within 60s — warmup skipped")
+        }
     }
 }
 

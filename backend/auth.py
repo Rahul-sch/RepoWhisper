@@ -99,14 +99,27 @@ async def get_current_user(
 async def get_user_id(user: dict = Depends(get_current_user)) -> str:
     """
     Dependency to get just the user ID from the token.
-    
+
     Args:
         user: The decoded user payload
-        
+
     Returns:
         The user's UUID string
     """
     return user.get("sub")
+
+
+# Local-first single-user mode.
+# The X-Auth-Token middleware in main.py has already authenticated the
+# request by the time any endpoint runs, so we don't need the JWT bearer
+# dance. Returning a stable per-install id keeps user_id-keyed data
+# isolation working (LanceDB rows tagged with this id).
+LOCAL_USER_ID = "local"
+
+
+async def get_local_user_id() -> str:
+    """Single-user dependency: returns a stable id for the local install."""
+    return LOCAL_USER_ID
 
 
 # Optional auth - returns None if not authenticated

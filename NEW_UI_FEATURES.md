@@ -92,20 +92,17 @@
 
 ### Test the Floating Popup:
 ```bash
-# 1. Start the backend
-cd /Users/rahulbainsla/Desktop/RepoWhisper
-./START_BACKEND.sh
-
-# 2. Open Xcode and run the app
+# 1. Open Xcode and run the app — the backend is spawned automatically
 cd frontend
 open RepoWhisper.xcodeproj
 
-# 3. In Xcode, press ⌘R to run
-# 4. Click the menu bar icon
-# 5. Click "Manage Repositories"
-# 6. Add a repo and index it
-# 7. Start recording and speak: "authentication function"
-# 8. Watch the popup appear! ✨
+# 2. In Xcode, press ⌘R to run
+# 3. Click the menu bar icon
+# 4. Click "Manage Repositories" and approve a folder
+#    (this triggers the backend to start the first time)
+# 5. Index the repo
+# 6. Start recording and speak: "authentication function"
+# 7. Watch the popup appear! ✨
 ```
 
 ---

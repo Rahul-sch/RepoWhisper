@@ -21,6 +21,13 @@ class APIClient: ObservableObject {
     /// Faster-Whisper is installed on the backend (transcription possible)
     @Published var whisperAvailable: Bool = false
 
+    /// Models (whisper + embedding) are warmed up — first transcribe/search
+    /// won't stall for 30-60s downloading.
+    @Published var modelsReady: Bool = false
+
+    /// A warmup is currently in flight.
+    @Published var modelsLoading: Bool = false
+
     /// Number of indexed chunks
     @Published var indexCount: Int = 0
 
@@ -110,6 +117,30 @@ class APIClient: ObservableObject {
             isConnected = false
             whisperAvailable = false
             errorMessage = "Backend not reachable"
+        }
+    }
+
+    // MARK: - Warmup
+
+    /// Eagerly load the backend's Whisper + embedding models. Safe to call
+    /// repeatedly — backend lru_caches both. The first call after launch
+    /// can take 30-60s if models are downloading from HuggingFace.
+    func warmup() async {
+        guard !modelsReady, !modelsLoading else { return }
+        modelsLoading = true
+        defer { modelsLoading = false }
+
+        do {
+            // Generous timeout: model download from HuggingFace can take a while
+            // on a slow connection, especially the first time.
+            let response = try await send(method: "POST", path: "/warmup", timeout: 180.0)
+            guard response.statusCode == 200 else { return }
+            let decoded = try decode(WarmupResponse.self, from: response)
+            // Embedding model is required for search to work at all.
+            // Whisper model is required for transcription, but optional overall.
+            modelsReady = decoded.embeddingLoaded
+        } catch {
+            print("⚠️ [API] Warmup failed: \(error.localizedDescription)")
         }
     }
 
@@ -244,6 +275,18 @@ struct HealthResponse: Codable {
         case whisperAvailable = "whisper_available"
         case indexCount = "index_count"
         case version
+    }
+}
+
+struct WarmupResponse: Codable {
+    let whisperLoaded: Bool
+    let embeddingLoaded: Bool
+    let elapsedMs: Double
+
+    enum CodingKeys: String, CodingKey {
+        case whisperLoaded = "whisper_loaded"
+        case embeddingLoaded = "embedding_loaded"
+        case elapsedMs = "elapsed_ms"
     }
 }
 

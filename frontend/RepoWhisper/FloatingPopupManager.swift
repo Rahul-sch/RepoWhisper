@@ -435,6 +435,12 @@ class FloatingPopupManager: ObservableObject {
         isStealthMode.toggle()
         print("🥷 [POPUP] Stealth mode: \(isStealthMode ? "ON" : "OFF")")
 
+        // Always confirm visually so the user knows the hotkey actually toggled.
+        // This shows even when the popup window doesn't exist yet.
+        showErrorToast(isStealthMode
+            ? "🥷 Stealth ON — overlay hidden from screen sharing"
+            : "👁 Stealth OFF — overlay is shareable")
+
         guard let panel = popupWindow else { return }
 
         // Update panel properties

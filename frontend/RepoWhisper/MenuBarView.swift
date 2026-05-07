@@ -14,6 +14,8 @@ struct MenuBarView: View {
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var screenshotCapture = ScreenshotCapture.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
+    @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
+    @StateObject private var backendManager = BackendProcessManager.shared
     
     @State private var selectedMode: IndexMode = .smart
     @State private var showingRepoManager = false
@@ -32,11 +34,10 @@ struct MenuBarView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            if authManager.isAuthenticated {
-                authenticatedView
-            } else {
-                unauthenticatedView
-            }
+            // Local-first: no remote login. The unauthenticated path below
+            // is unreachable and kept only to avoid a destructive Xcode
+            // project edit; clean up alongside LoginView in a future pass.
+            authenticatedView
         }
         .frame(width: 360)
         .onAppear {
@@ -211,8 +212,28 @@ struct MenuBarView: View {
         )
     }
     
+    // MARK: - Header Status
+
+    /// Dot color: red = backend down, amber = no repos / models loading,
+    /// green = ready to record.
+    private var statusColor: Color {
+        if bookmarkManager.approvedPaths.isEmpty { return .orange }
+        if !apiClient.isConnected { return .red }
+        if apiClient.modelsLoading || !apiClient.modelsReady { return .yellow }
+        return .green
+    }
+
+    /// One-line description that mirrors the dot color.
+    private var statusLabel: String {
+        if bookmarkManager.approvedPaths.isEmpty { return "Add a repo to get started" }
+        if !apiClient.isConnected { return "Backend offline" }
+        if apiClient.modelsLoading { return "Loading speech models…" }
+        if !apiClient.modelsReady { return "Warming up…" }
+        return "Ready"
+    }
+
     // MARK: - Premium Header
-    
+
     private var premiumHeader: some View {
         HStack(spacing: 12) {
             // Logo
@@ -248,12 +269,27 @@ struct MenuBarView: View {
                 
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(apiClient.isConnected ? Color.green : Color.red)
+                        .fill(statusColor)
                         .frame(width: 6, height: 6)
-                    
-                    Text("Local User")
+
+                    Text(statusLabel)
                         .font(.system(size: 11, weight: .regular, design: .rounded))
                         .foregroundColor(.secondary)
+
+                    if apiClient.modelsLoading {
+                        ProgressView()
+                            .controlSize(.mini)
+                            .scaleEffect(0.6)
+                    }
+
+                    if popupManager.isStealthMode {
+                        // So users know whether the overlay is currently
+                        // hidden from screen sharing (toggled via ⌘⇧H).
+                        Image(systemName: "eye.slash.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.purple)
+                            .help("Stealth mode ON — overlay is hidden from screen sharing")
+                    }
                 }
             }
             
@@ -282,7 +318,19 @@ struct MenuBarView: View {
             if audioCapture.isRecording {
                 audioCapture.stopRecording()
             } else {
-                Task {
+                Task { @MainActor in
+                    if bookmarkManager.approvedPaths.isEmpty {
+                        popupManager.showErrorToast("Add a repository folder first.")
+                        return
+                    }
+                    if !backendManager.isRunning {
+                        popupManager.showErrorToast("Starting backend…")
+                        do { try backendManager.start() }
+                        catch {
+                            popupManager.showErrorToast("Backend failed: \(error.localizedDescription)")
+                            return
+                        }
+                    }
                     let granted = await audioCapture.requestPermission()
                     if granted {
                         audioCapture.startRecording()

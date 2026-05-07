@@ -11,15 +11,17 @@ from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
 import os
+import hmac
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from config import get_settings, IndexMode
-from auth import get_current_user, get_user_id, get_optional_user
+from auth import get_current_user, get_user_id, get_optional_user, get_local_user_id
 from indexer import index_repository as index_repo, CodeChunk
 from search import get_vector_store, SearchResult as VectorSearchResult
 from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model, is_whisper_available
+from search import get_embedding_model
 from logger import setup_logging, get_logger
 from advise import get_advisor, AdvisorContext, process_screenshot
 from path_validator import init_path_validator, get_path_validator
@@ -84,11 +86,13 @@ async def auth_token_middleware(request: Request, call_next):
     if request.url.path == "/health":
         return await call_next(request)
 
-    # Check X-Auth-Token header
+    # Check X-Auth-Token header. hmac.compare_digest is constant-time so we
+    # don't leak information about the expected token via comparison timing,
+    # even though over a UDS the variance is below the noise floor.
     token = request.headers.get("X-Auth-Token")
     expected_token = getattr(app.state, "auth_token", None)
 
-    if not token or not expected_token or token != expected_token:
+    if not token or not expected_token or not hmac.compare_digest(token, expected_token):
         return JSONResponse(
             status_code=401,
             content={"detail": "Unauthorized: Invalid or missing X-Auth-Token"}
@@ -188,11 +192,22 @@ class TranscribeResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Response model for health check."""
+    # Pydantic v2 reserves the "model_" namespace for its own validators —
+    # silence the warning since "model_loaded" is intentional API shape.
+    model_config = {"protected_namespaces": ()}
+
     status: str
     model_loaded: bool
     whisper_available: bool
     index_count: int
     version: str
+
+
+class WarmupResponse(BaseModel):
+    """Response model for /warmup."""
+    whisper_loaded: bool
+    embedding_loaded: bool
+    elapsed_ms: float
 
 
 # ============ API Endpoints ============
@@ -248,12 +263,56 @@ async def health_check(request: Request):
         )
 
 
+@app.post("/warmup", response_model=WarmupResponse)
+@limiter.limit("6/minute")
+async def warmup(request: Request):
+    """
+    Eagerly load the Whisper and embedding models so the first user-visible
+    request doesn't pay the 30-60s cold-start cost. Idempotent — both
+    loaders are lru_cached, so subsequent calls return immediately.
+    """
+    import time as _time
+    logger = get_logger()
+    start = _time.perf_counter()
+
+    whisper_loaded = False
+    embedding_loaded = False
+
+    try:
+        if is_whisper_available():
+            # get_whisper_model returns None if faster-whisper isn't installed,
+            # so check explicitly rather than truthiness on a heavy object.
+            model = get_whisper_model()
+            whisper_loaded = model is not None
+    except Exception as e:
+        logger.error("warmup_whisper_failed", error=str(e))
+
+    try:
+        _ = get_embedding_model()
+        embedding_loaded = True
+    except Exception as e:
+        logger.error("warmup_embedding_failed", error=str(e))
+
+    elapsed_ms = (_time.perf_counter() - start) * 1000
+    logger.info(
+        "warmup_complete",
+        whisper_loaded=whisper_loaded,
+        embedding_loaded=embedding_loaded,
+        elapsed_ms=elapsed_ms,
+    )
+    return WarmupResponse(
+        whisper_loaded=whisper_loaded,
+        embedding_loaded=embedding_loaded,
+        elapsed_ms=elapsed_ms,
+    )
+
+
 @app.post("/index", response_model=IndexResponse)
 @limiter.limit("10/minute")
 async def index_repository(
     request: Request,
     index_request: IndexRequest,
-    user_id: str = Depends(get_user_id)
+    user_id: str = Depends(get_local_user_id)
 ):
     """
     Index a repository for vector search.
@@ -350,7 +409,7 @@ async def index_repository(
 async def clear_index(
     request: Request,
     clear_request: dict,
-    user_id: str = Depends(get_user_id)
+    user_id: str = Depends(get_local_user_id)
 ):
     """
     Clear all indexed chunks for a specific repository.
@@ -407,7 +466,7 @@ async def clear_index(
 async def search_code(
     request: Request,
     search_request: SearchRequest,
-    user_id: str = Depends(get_user_id)
+    user_id: str = Depends(get_local_user_id)
 ):
     """
     Search indexed code using semantic vector search.
@@ -461,7 +520,7 @@ async def search_code(
 @limiter.limit("120/minute")
 async def transcribe_audio_endpoint(
     request: Request,
-    user_id: str = Depends(get_user_id)  # Require auth in production
+    user_id: str = Depends(get_local_user_id)  # Require auth in production
 ):
     """
     Transcribe audio to text using Faster-Whisper.
@@ -518,7 +577,7 @@ async def transcribe_audio_endpoint(
 @limiter.limit("30/minute")
 async def list_repos(
     request: Request,
-    user_id: str = Depends(get_user_id)
+    user_id: str = Depends(get_local_user_id)
 ):
     """List all repositories for the authenticated user."""
     logger = get_logger()
@@ -537,7 +596,7 @@ async def list_repos(
 async def delete_repo(
     request: Request,
     repo_id: str,
-    user_id: str = Depends(get_user_id)
+    user_id: str = Depends(get_local_user_id)
 ):
     """Delete a repository."""
     logger = get_logger()
@@ -576,7 +635,7 @@ class AdviseResponse(BaseModel):
 async def get_advice(
     request: Request,
     advise_request: AdviseRequest,
-    user_id: str = Depends(get_user_id)
+    user_id: str = Depends(get_local_user_id)
 ):
     """
     Boss Mode: Generate talking points from transcript, screenshot, and code.
@@ -621,7 +680,7 @@ async def get_advice(
 @limiter.limit("60/minute")
 async def upload_screenshot(
     request: Request,
-    user_id: str = Depends(get_user_id)
+    user_id: str = Depends(get_local_user_id)
 ):
     """
     Upload and process screenshot for Boss Mode.

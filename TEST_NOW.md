@@ -24,18 +24,13 @@ All fixed and ready to test:
 
 ## 🚀 Quick Start (2 Minutes)
 
-### Step 1: Start Backend
-```bash
-cd /Users/rahulbainsla/Desktop/RepoWhisper
-./START_BACKEND.sh
-```
+### Step 1: Launch the App
+The macOS app now spawns the Python backend automatically — no manual
+start step. Just open the app from Xcode (⌘R) or from Applications.
+The backend launches the moment you approve your first repo folder.
 
-**Expected output:**
-```
-✅ Backend running at http://127.0.0.1:8000
-```
-
-(It's probably already running from before!)
+**You can confirm it's healthy by:** opening the menu-bar icon — the
+status row shows a green dot and "Ready" once models are warmed up.
 
 ### Step 2: Build & Run Frontend
 ```bash
@@ -171,15 +166,12 @@ But you can fully test:
 ## 🚀 Go Test It!
 
 ```bash
-# 1. Backend (probably already running)
-./START_BACKEND.sh
-
-# 2. Frontend
+# Just open the project — the app will spawn the backend automatically.
 cd frontend && open RepoWhisper.xcodeproj
 # Press ⌘R in Xcode
 ```
 
 **Enjoy your beautiful new UI!** ✨
 
-(Check BACKEND_FIX.md for Python 3.12 setup if you want voice features)
+(Check BACKEND_FIX.md for Python 3.12 setup if you want voice features.)
 

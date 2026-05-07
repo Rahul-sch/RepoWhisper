@@ -42,13 +42,16 @@ def _get_whisper_config() -> tuple[str, str, int]:
     Returns:
         (device, compute_type, cpu_threads)
 
-    M2 Optimization:
-    - Use float16 (int8 has issues on ARM)
-    - 8 threads to leverage efficiency cores
+    Apple Silicon CPU notes:
+    - ctranslate2 does NOT support float16 on CPU (only on GPU/CUDA);
+      requesting it raises ValueError. The earlier comment claiming
+      "float16 on M2" was wrong.
+    - int8 is the recommended ARM-CPU compute type per faster-whisper docs.
+    - 8 threads leverages efficiency cores on M2/M3.
     """
     if _is_apple_silicon():
-        print("🍎 [WHISPER] Apple Silicon detected - using M2-optimized config")
-        return "cpu", "float16", 8  # float16 is faster on M2 than int8
+        print("🍎 [WHISPER] Apple Silicon detected - using int8 on CPU")
+        return "cpu", "int8", 8
     elif platform.system() == "Darwin":
         print("🖥️ [WHISPER] Intel Mac detected")
         return "cpu", "int8", 4

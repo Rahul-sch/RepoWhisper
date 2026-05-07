@@ -1,17 +1,22 @@
 # Troubleshooting Guide
 
-## Port 8000 Already in Use
+> **Backend startup is automatic.** The macOS app spawns the backend
+> as a subprocess once you've approved at least one repo folder.
+> There is no manual `./START_BACKEND.sh` step anymore — that script
+> was removed because the backend now binds a Unix Domain Socket
+> at `~/Library/Application Support/RepoWhisper/backend.sock`, not TCP port 8000.
 
-**Error**: `ERROR: [Errno 48] Address already in use`
+## Stale UDS socket
 
-**Fix**:
+**Symptom**: app shows "Backend offline" after a crash.
+
+**Fix**: the backend deletes any stale `backend.sock` on startup
+([BackendProcessManager.swift](frontend/RepoWhisper/BackendProcessManager.swift)).
+If for some reason that fails, remove it manually:
 ```bash
-# Kill process on port 8000
-lsof -ti:8000 | xargs kill -9
-
-# Or use the updated startup script (auto-kills)
-./START_BACKEND.sh
+rm -f "$HOME/Library/Application Support/RepoWhisper/backend.sock"
 ```
+Then quit and relaunch RepoWhisper.
 
 ## "Not Found" Error
 

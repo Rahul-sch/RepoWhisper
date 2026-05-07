@@ -61,10 +61,13 @@ brew install python@3.12
 # Activate and install
 source venv/bin/activate
 pip install -r backend/requirements.txt
-
-# Start backend
-./START_BACKEND.sh
 ```
+
+> **Note:** You no longer need to start the backend manually.
+> The macOS app spawns the backend as a subprocess on launch
+> (see `BackendProcessManager.swift`). For a built `.app`, the backend
+> is a frozen binary at `Resources/repowhisper-backend-arm64`. For dev mode,
+> it falls back to running `backend/main.py` from your active venv.
 
 ### Option 2: Wait for Package Updates
 `onnxruntime` will eventually release Python 3.14 wheels. Check:
@@ -121,12 +124,10 @@ INFO:     127.0.0.1:50752 - "POST /transcribe HTTP/1.1" 401 Unauthorized
 
 You can test everything else:
 
-1. **Start backend** (already running):
-   ```bash
-   ./START_BACKEND.sh
-   ```
+1. **Backend startup is automatic** — the macOS app spawns it on launch
+   once at least one repo folder has been approved. No manual start needed.
 
-2. **Test manually**:
+2. **Test manually** (if you want to hit the API directly while the app is running):
    ```bash
    # Health check
    curl http://localhost:8000/health

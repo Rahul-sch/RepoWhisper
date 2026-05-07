@@ -188,7 +188,21 @@ struct SearchView: View {
                         if audioCapture.isRecording {
                             audioCapture.stopRecording()
                         } else {
-                            Task {
+                            Task { @MainActor in
+                                if SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty {
+                                    FloatingPopupManager.shared.showErrorToast("Add a repository folder first.")
+                                    return
+                                }
+                                if !BackendProcessManager.shared.isRunning {
+                                    FloatingPopupManager.shared.showErrorToast("Starting backend…")
+                                    do { try BackendProcessManager.shared.start() }
+                                    catch {
+                                        FloatingPopupManager.shared.showErrorToast(
+                                            "Backend failed: \(error.localizedDescription)"
+                                        )
+                                        return
+                                    }
+                                }
                                 let granted = await audioCapture.requestPermission()
                                 if granted {
                                     audioCapture.startRecording()

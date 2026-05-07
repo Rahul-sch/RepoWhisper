@@ -121,6 +121,16 @@ class BackendProcessManager: ObservableObject {
         return ""
     }
 
+    /// Path to the bundled HuggingFace cache (set as HF_HOME for the
+    /// backend process so faster-whisper and sentence-transformers find
+    /// the pre-downloaded weights instead of downloading them at runtime).
+    /// Empty string if no bundled cache exists — libs will fall back to
+    /// downloading on first /warmup.
+    private var bundledHFHome: String {
+        let candidate = (modelsDirectory as NSString).appendingPathComponent("hf")
+        return FileManager.default.fileExists(atPath: candidate) ? candidate : ""
+    }
+
     /// Per-install auth token (read from file or generate)
     private var authToken: String {
         get throws {
@@ -159,6 +169,18 @@ class BackendProcessManager: ObservableObject {
             env["REPOWHISPER_DATA_DIR"] = supportDirectory.path
             env["REPOWHISPER_MODELS_DIR"] = modelsDirectory
             env["DEBUG"] = "false"
+
+            // Point HuggingFace caches at our bundled weights when present.
+            let hfHome = bundledHFHome
+            if !hfHome.isEmpty {
+                env["HF_HOME"] = hfHome
+                env["SENTENCE_TRANSFORMERS_HOME"] = hfHome
+                // Block accidental network hits — if the bundled cache is
+                // missing a file we'd rather fail loudly than silently
+                // download at runtime. Comment out if that's too strict.
+                env["HF_HUB_OFFLINE"] = "1"
+                env["TRANSFORMERS_OFFLINE"] = "1"
+            }
 
             return env
         }
