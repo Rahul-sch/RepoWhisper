@@ -56,6 +56,13 @@ class BackendProcessManager: ObservableObject {
 
     /// Path to backend binary (architecture-specific)
     private var backendBinaryPath: String? {
+        // Allow developers and CI to point at an explicit backend without
+        // changing the project or relying on DerivedData's directory layout.
+        if let overridePath = ProcessInfo.processInfo.environment["REPOWHISPER_BACKEND_PATH"],
+           FileManager.default.fileExists(atPath: overridePath) {
+            return overridePath
+        }
+
         // Detect current architecture
         #if arch(arm64)
         let binaryName = "repowhisper-backend-arm64"
@@ -73,13 +80,22 @@ class BackendProcessManager: ObservableObject {
             }
         }
 
-        // Development fallback: use Python script
-        let devPath = (Bundle.main.bundlePath as NSString).deletingLastPathComponent
-        let parentDevPath = (devPath as NSString).deletingLastPathComponent
-        let backendMainPy = (parentDevPath as NSString).appendingPathComponent("backend/main.py")
+        #if DEBUG
+        // #filePath points at this checkout's source tree. A built app lives
+        // under DerivedData, so walking upward from Bundle.main can never find
+        // the repository's backend directory.
+        let sourceFile = URL(fileURLWithPath: #filePath)
+        let repositoryRoot = sourceFile
+            .deletingLastPathComponent() // RepoWhisper source directory
+            .deletingLastPathComponent() // frontend
+            .deletingLastPathComponent() // repository root
+        let backendMainPy = repositoryRoot
+            .appendingPathComponent("backend/main.py")
+            .path
         if FileManager.default.fileExists(atPath: backendMainPy) {
             return backendMainPy
         }
+        #endif
 
         return nil
     }

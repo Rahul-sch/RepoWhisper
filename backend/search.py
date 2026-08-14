@@ -8,14 +8,15 @@ import os
 import time
 import platform
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from dataclasses import dataclass
 from functools import lru_cache
 
-import torch
 import lancedb
 from lancedb.pydantic import LanceModel, Vector
-from sentence_transformers import SentenceTransformer
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 from config import get_settings
 
@@ -27,6 +28,11 @@ def _get_device() -> str:
     Detect optimal device for embeddings.
     M2 Macs: Use MPS (Metal Performance Shaders) for 2-3x speedup.
     """
+    # Torch and Transformers take tens of seconds to import on a cold start.
+    # Keep them out of the backend's socket-startup path and load them only
+    # when embeddings are first requested or explicitly warmed up.
+    import torch
+
     if torch.backends.mps.is_available():
         print("🚀 [SEARCH] Using MPS (Metal) for embeddings - M2 optimized")
         return "mps"
@@ -65,7 +71,7 @@ class SearchResult:
 # ============ Embedding Model ============
 
 @lru_cache(maxsize=1)
-def get_embedding_model() -> SentenceTransformer:
+def get_embedding_model() -> "SentenceTransformer":
     """
     Load and cache the embedding model.
     Using all-MiniLM-L6-v2 for fast inference.
@@ -73,6 +79,8 @@ def get_embedding_model() -> SentenceTransformer:
     """
     settings = get_settings()
     device = _get_device()
+    from sentence_transformers import SentenceTransformer
+
     model = SentenceTransformer(settings.embedding_model, device=device)
     # Warm up the model
     model.encode("warmup", show_progress_bar=False)
@@ -322,4 +330,3 @@ def search_code(user_id: str, query: str, top_k: int = 5) -> tuple[list[SearchRe
     """
     store = get_vector_store(user_id)
     return store.search(query=query, user_id=user_id, top_k=top_k)
-
