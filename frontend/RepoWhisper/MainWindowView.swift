@@ -195,7 +195,7 @@ struct SearchView: View {
                                 }
                                 if !BackendProcessManager.shared.isRunning {
                                     FloatingPopupManager.shared.showErrorToast("Starting backend…")
-                                    do { try BackendProcessManager.shared.start() }
+                                    do { try await BackendProcessManager.shared.start() }
                                     catch {
                                         FloatingPopupManager.shared.showErrorToast(
                                             "Backend failed: \(error.localizedDescription)"
@@ -614,4 +614,3 @@ struct StatBadge: View {
     MainWindowView()
         .environmentObject(AuthManager.shared)
 }
-

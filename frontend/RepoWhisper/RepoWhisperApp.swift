@@ -121,6 +121,7 @@ struct RepoWhisperApp: App {
     }
 }
 
+
 // MARK: - Launch at Login Helper
 
 func setLaunchAtLogin(enabled: Bool) {
@@ -158,7 +159,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Bring up the backend. If a repo is already approved, start now;
         // otherwise wait for the user to approve one and start then.
         Task { @MainActor in
-            self.bootstrapBackend()
+            await self.bootstrapBackend()
             self.observeRepoApprovals()
         }
 
@@ -207,7 +208,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                         // Guard 2: backend healthy. If it crashed/didn't start, kick it.
                         if !BackendProcessManager.shared.isRunning {
                             FloatingPopupManager.shared.showErrorToast("Starting backend…")
-                            do { try BackendProcessManager.shared.start() }
+                            do { try await BackendProcessManager.shared.start() }
                             catch {
                                 FloatingPopupManager.shared.showErrorToast(
                                     "Backend failed to start: \(error.localizedDescription)"
@@ -302,14 +303,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Try to spawn the backend if (a) we haven't already this session and
     /// (b) at least one repo folder has been approved.
     @MainActor
-    private func bootstrapBackend() {
+    private func bootstrapBackend() async {
         guard !backendStartedThisSession else { return }
         guard !SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty else {
             print("⏸ [APP] No repos approved yet — backend will start when one is added.")
             return
         }
         do {
-            try BackendProcessManager.shared.start()
+            try await BackendProcessManager.shared.start()
             backendStartedThisSession = true
             BackendProcessManager.shared.startHealthMonitoring()
             // Once the socket is up, kick the warmup so the first /transcribe
@@ -330,7 +331,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self = self,
                       !self.backendStartedThisSession,
                       !paths.isEmpty else { return }
-                Task { @MainActor in self.bootstrapBackend() }
+                Task { @MainActor in await self.bootstrapBackend() }
             }
             .store(in: &cancellables)
     }
@@ -387,4 +388,3 @@ struct ResultsWindowContainer: View {
         }
     }
 }
-
