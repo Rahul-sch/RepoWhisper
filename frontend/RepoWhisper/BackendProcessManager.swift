@@ -63,6 +63,24 @@ class BackendProcessManager: ObservableObject {
             return overridePath
         }
 
+        #if DEBUG
+        // Debug builds must run the backend from this checkout. DerivedData
+        // can retain a previously bundled PyInstaller executable after an
+        // incremental build, which otherwise masks source changes and may
+        // contain stale or incomplete ML dependencies.
+        let sourceFile = URL(fileURLWithPath: #filePath)
+        let repositoryRoot = sourceFile
+            .deletingLastPathComponent() // RepoWhisper source directory
+            .deletingLastPathComponent() // frontend
+            .deletingLastPathComponent() // repository root
+        let backendMainPy = repositoryRoot
+            .appendingPathComponent("backend/main.py")
+            .path
+        if FileManager.default.fileExists(atPath: backendMainPy) {
+            return backendMainPy
+        }
+        #endif
+
         // Detect current architecture
         #if arch(arm64)
         let binaryName = "repowhisper-backend-arm64"
@@ -79,23 +97,6 @@ class BackendProcessManager: ObservableObject {
                 return binaryPath
             }
         }
-
-        #if DEBUG
-        // #filePath points at this checkout's source tree. A built app lives
-        // under DerivedData, so walking upward from Bundle.main can never find
-        // the repository's backend directory.
-        let sourceFile = URL(fileURLWithPath: #filePath)
-        let repositoryRoot = sourceFile
-            .deletingLastPathComponent() // RepoWhisper source directory
-            .deletingLastPathComponent() // frontend
-            .deletingLastPathComponent() // repository root
-        let backendMainPy = repositoryRoot
-            .appendingPathComponent("backend/main.py")
-            .path
-        if FileManager.default.fileExists(atPath: backendMainPy) {
-            return backendMainPy
-        }
-        #endif
 
         return nil
     }
