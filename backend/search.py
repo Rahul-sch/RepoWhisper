@@ -285,6 +285,18 @@ class VectorStore:
         table = self.get_table(table_name)
         return table.count_rows()
 
+    def count_repo(self, user_id: str, repo_id: str, table_name: str = "code_chunks") -> int:
+        """Get the number of indexed chunks for one authenticated repository."""
+        if table_name not in self.db.table_names():
+            return 0
+
+        table = self.get_table(table_name)
+        escaped_user = user_id.replace("'", "''")
+        escaped_repo = repo_id.replace("'", "''")
+        return table.count_rows(
+            f"user_id = '{escaped_user}' AND repo_id = '{escaped_repo}'"
+        )
+
 
 # ============ Convenience Functions ============
 

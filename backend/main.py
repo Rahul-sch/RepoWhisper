@@ -165,6 +165,7 @@ class SearchRequest(BaseModel):
     query: str
     top_k: int = 5
     repo_id: Optional[str] = None
+    repo_path: Optional[str] = None
 
 
 class SearchResultItem(BaseModel):
@@ -356,7 +357,7 @@ async def index_repository(
                 raise HTTPException(status_code=403, detail=str(e))
 
         # Generate a deterministic repo_id from user_id and repo_path
-        repo_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{user_id}:{index_request.repo_path}"))
+        repo_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{user_id}:{repo_path_normalized}"))
 
         # Get user-specific vector store
         store = get_vector_store(user_id)
@@ -367,7 +368,7 @@ async def index_repository(
         
         # Collect chunks
         chunks = list(index_repo(
-            repo_path=index_request.repo_path,
+            repo_path=repo_path_normalized,
             mode=index_request.mode,
             file_paths=index_request.file_paths,
             patterns=index_request.patterns
@@ -440,6 +441,7 @@ async def clear_index(
 
         # Use the SAME deterministic repo_id derivation as /index, otherwise
         # we'd be clearing a repo_id that was never indexed.
+        repo_path = validator.validate_path(repo_path)
         repo_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{user_id}:{repo_path}"))
 
         # Clear the repo data
@@ -483,12 +485,24 @@ async def search_code(
         if len(search_request.query) > 500:
             raise HTTPException(status_code=400, detail="Query too long (max 500 characters)")
         
+        scoped_repo_id = search_request.repo_id
+        if search_request.repo_path is not None:
+            validator = get_path_validator()
+            try:
+                normalized_path = validator.validate_path(search_request.repo_path)
+            except PermissionError as e:
+                raise HTTPException(status_code=403, detail=str(e))
+            scoped_repo_id = str(uuid.uuid5(
+                uuid.NAMESPACE_DNS,
+                f"{user_id}:{normalized_path}",
+            ))
+
         # Get user-specific vector store
         store = get_vector_store(user_id)
         results, latency_ms = store.search(
             query=search_request.query,
             user_id=user_id,
-            repo_id=search_request.repo_id,
+            repo_id=scoped_repo_id,
             top_k=search_request.top_k,
         )
         
@@ -582,10 +596,24 @@ async def list_repos(
     """List all repositories for the authenticated user."""
     logger = get_logger()
     try:
-        # Repos are stored locally in the vector store, not in external DB
-        # Return empty list - repos are identified by their indexed data
-        logger.info("repos_listed", user_id=user_id, count=0)
-        return []
+        validator = get_path_validator()
+        store = get_vector_store(user_id)
+        repos = []
+        for repo_path in validator.allowed_paths:
+            normalized_path = validator.validate_path(repo_path)
+            repo_id = str(uuid.uuid5(
+                uuid.NAMESPACE_DNS,
+                f"{user_id}:{normalized_path}",
+            ))
+            repos.append({
+                "id": repo_id,
+                "name": os.path.basename(normalized_path),
+                "repo_path": normalized_path,
+                "chunks_indexed": store.count_repo(user_id, repo_id),
+            })
+
+        logger.info("repos_listed", user_id=user_id, count=len(repos))
+        return repos
     except Exception as e:
         logger.error("list_repos_failed", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to list repositories")
@@ -767,19 +795,41 @@ if __name__ == "__main__":
         )
         server = uvicorn.Server(config)
 
-        # Ensure socket has correct permissions after creation
-        def set_socket_permissions():
-            if os.path.exists(socket_path):
-                os.chmod(socket_path, 0o600)
-                logger.info("set_socket_permissions", path=socket_path, mode="0600")
-
-        # Set permissions after socket is bound
         import asyncio
         import signal
 
+        async def secure_socket_permissions():
+            """Apply owner-only permissions as soon as Uvicorn binds the socket."""
+            for _ in range(1000):
+                if os.path.exists(socket_path):
+                    os.chmod(socket_path, 0o600)
+                    logger.info("set_socket_permissions", path=socket_path, mode="0600")
+                    return
+                await asyncio.sleep(0.01)
+            raise RuntimeError("Backend socket was not created within 10 seconds")
+
         async def serve():
-            # Start server
-            await server.serve()
+            server_task = asyncio.create_task(server.serve())
+            permissions_task = asyncio.create_task(secure_socket_permissions())
+            try:
+                done, _ = await asyncio.wait(
+                    {server_task, permissions_task},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                if server_task in done:
+                    await server_task
+                    raise RuntimeError("Backend exited before securing its socket")
+                await permissions_task
+                await server_task
+            except BaseException:
+                server.should_exit = True
+                if not server_task.done():
+                    await server_task
+                raise
+            finally:
+                if not permissions_task.done():
+                    permissions_task.cancel()
+                    await asyncio.gather(permissions_task, return_exceptions=True)
 
         # Handle cleanup on exit
         def cleanup_handler(signum, frame):
@@ -797,8 +847,6 @@ if __name__ == "__main__":
 
         try:
             asyncio.run(serve())
-            # Set permissions after server starts
-            set_socket_permissions()
         finally:
             # Cleanup socket on exit
             if os.path.exists(socket_path):

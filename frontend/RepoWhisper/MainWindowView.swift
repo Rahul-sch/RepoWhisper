@@ -13,6 +13,7 @@ struct MainWindowView: View {
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
     @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
+    @StateObject private var backendManager = BackendProcessManager.shared
 
     @State private var selectedTab = 0
     @State private var showingRepoManager = false
@@ -90,11 +91,12 @@ struct MainWindowView: View {
                 // Connection status
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(apiClient.isConnected ? Color.green : Color.red)
+                        .fill(backendManager.isHealthy ? Color.green : Color.red)
                         .frame(width: 8, height: 8)
-                    Text(apiClient.isConnected ? "Connected" : "Offline")
+                    Text(backendManager.isHealthy ? "Connected" : backendManager.statusMessage)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
                 
                 Divider()
@@ -122,6 +124,7 @@ struct SearchView: View {
     @StateObject private var audioCapture = AudioCapture.shared
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
+    @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
 
     @State private var searchQuery = ""
     @State private var searchResults: [SearchResultItem] = []
@@ -130,6 +133,8 @@ struct SearchView: View {
     @State private var copiedResultId: String?
     @State private var showAudioFilePicker = false
     @State private var isTranscribing = false
+    @State private var selectedRepoPath: String?
+    @State private var searchError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -261,6 +266,24 @@ struct SearchView: View {
                 .background(Color.primary.opacity(0.05))
                 .cornerRadius(10)
 
+                HStack(spacing: 8) {
+                    Image(systemName: "folder")
+                        .foregroundColor(.secondary)
+                    Text("Search in")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Picker("Repository", selection: $selectedRepoPath) {
+                        Text("All repositories").tag(nil as String?)
+                        ForEach(bookmarkManager.approvedPaths, id: \.self) { path in
+                            Text(URL(fileURLWithPath: path).lastPathComponent)
+                                .tag(path as String?)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 240)
+                    Spacer()
+                }
+
                 // Stats row
                 if searchLatency > 0 || apiClient.indexCount > 0 {
                     HStack(spacing: 20) {
@@ -344,6 +367,14 @@ struct SearchView: View {
                     .padding()
                 }
             }
+        }
+        .alert("Search Failed", isPresented: Binding(
+            get: { searchError != nil },
+            set: { if !$0 { searchError = nil } }
+        )) {
+            Button("OK", role: .cancel) { searchError = nil }
+        } message: {
+            Text(searchError ?? "The backend could not complete the search.")
         }
     }
 
@@ -471,11 +502,15 @@ struct SearchView: View {
         print("🔍 [SEARCH] Starting search for: '\(searchQuery)'")
         isSearching = true
         searchResults = []
+        searchError = nil
 
         Task {
             do {
                 print("📡 [SEARCH] Calling API...")
-                let results = try await apiClient.search(query: searchQuery)
+                let results = try await apiClient.search(
+                    query: searchQuery,
+                    repoPath: selectedRepoPath
+                )
                 print("✅ [SEARCH] Got \(results.results.count) results")
 
                 await MainActor.run {
@@ -487,6 +522,7 @@ struct SearchView: View {
                 print("❌ [SEARCH] Search error: \(error)")
                 await MainActor.run {
                     isSearching = false
+                    searchError = error.localizedDescription
                 }
             }
         }
