@@ -28,6 +28,36 @@ class ScreenshotCapture: ObservableObject {
     var onScreenshot: ((Data) -> Void)?
     
     private init() {}
+
+    /// Capture one active window for local OCR. Screenshot bytes never leave Swift.
+    @MainActor
+    func captureVisibleScreen() async throws -> VisibleScreenCapture {
+        guard await requestPermission() else {
+            throw ExplainVisibleFeatureError.screenPermissionDenied
+        }
+
+        var frontmost = NSWorkspace.shared.frontmostApplication
+        let ownBundleID = Bundle.main.bundleIdentifier
+        let hidApplication = frontmost?.bundleIdentifier == ownBundleID
+        if hidApplication {
+            NSApp.hide(nil)
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            frontmost = NSWorkspace.shared.frontmostApplication
+        }
+        defer {
+            if hidApplication { NSApp.unhideWithoutActivation() }
+        }
+
+        latestScreenshot = nil
+        await captureActiveWindow()
+        guard let imageData = latestScreenshot else {
+            throw ExplainVisibleFeatureError.screenCaptureFailed
+        }
+        return VisibleScreenCapture(
+            imageData: imageData,
+            visibleApp: frontmost?.localizedName
+        )
+    }
     
     /// Request screen recording permission
     func requestPermission() async -> Bool {
@@ -156,4 +186,3 @@ class ScreenshotCapture: ObservableObject {
         return pngData
     }
 }
-

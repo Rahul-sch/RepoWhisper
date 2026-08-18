@@ -17,6 +17,9 @@ struct ResultsWindow: View {
     let isLoading: Bool
     let isRecording: Bool
     let isStealthMode: Bool
+    let explainStage: ExplainVisibleStage?
+    let explainResponse: ExplainVisibleResponse?
+    let explainError: String?
 
     @State private var selectedResult: SearchResultItem?
     @State private var hoveredResult: SearchResultItem?
@@ -34,13 +37,19 @@ struct ResultsWindow: View {
     }
 
     init(results: [SearchResultItem], query: String, latencyMs: Double,
-         isLoading: Bool, isRecording: Bool, isStealthMode: Bool = false) {
+         isLoading: Bool, isRecording: Bool, isStealthMode: Bool = false,
+         explainStage: ExplainVisibleStage? = nil,
+         explainResponse: ExplainVisibleResponse? = nil,
+         explainError: String? = nil) {
         self.results = results
         self.query = query
         self.latencyMs = latencyMs
         self.isLoading = isLoading
         self.isRecording = isRecording
         self.isStealthMode = isStealthMode
+        self.explainStage = explainStage
+        self.explainResponse = explainResponse
+        self.explainError = explainError
     }
     
     var body: some View {
@@ -90,7 +99,13 @@ struct ResultsWindow: View {
             }
 
             // Content
-            if isLoading {
+            if let explainStage {
+                ExplainVisibleContentView(stage: explainStage)
+            } else if let explainError {
+                ExplainVisibleContentView(errorMessage: explainError)
+            } else if let explainResponse {
+                ExplainVisibleContentView(response: explainResponse)
+            } else if isLoading {
                 loadingView
             } else if results.isEmpty {
                 emptyStateView
@@ -502,6 +517,15 @@ struct PremiumResultCard: View {
 
                 Spacer()
 
+                Button {
+                    Task { await ExplainVisibleCoordinator.shared.explain(selectedText: result.chunk) }
+                } label: {
+                    Label("Explain", systemImage: "sparkles")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.purple)
+
                 // Copy button (appears on hover)
                 if isHovered || isHoveringCopy {
                     Button(action: copyToClipboard) {
@@ -639,6 +663,200 @@ struct PremiumResultCard: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation { showCopied = false }
         }
+    }
+}
+
+// MARK: - Explain Visible Function
+
+struct ExplainVisibleContentView: View {
+    let stage: ExplainVisibleStage?
+    let response: ExplainVisibleResponse?
+    let errorMessage: String?
+
+    init(stage: ExplainVisibleStage) {
+        self.stage = stage
+        self.response = nil
+        self.errorMessage = nil
+    }
+
+    init(response: ExplainVisibleResponse) {
+        self.stage = nil
+        self.response = response
+        self.errorMessage = nil
+    }
+
+    init(errorMessage: String) {
+        self.stage = nil
+        self.response = nil
+        self.errorMessage = errorMessage
+    }
+
+    var body: some View {
+        Group {
+            if let stage {
+                VStack(spacing: 16) {
+                    ProgressView().controlSize(.large)
+                    Text(stage.rawValue)
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    Text("OCR stays on this Mac. Only matched repository context is sent to an explicitly configured provider.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(28)
+            } else if let errorMessage {
+                VStack(spacing: 14) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.orange)
+                    Text("Explanation unavailable").font(.headline)
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Try Again") {
+                        Task { await ExplainVisibleCoordinator.shared.explain() }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(28)
+            } else if let response {
+                responseContent(response)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func responseContent(_ response: ExplainVisibleResponse) -> some View {
+        if response.requiresCandidateSelection {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Choose the visible symbol")
+                    .font(.headline)
+                Text("Several indexed implementations are equally plausible.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                ForEach(response.candidateSymbols) { candidate in
+                    Button {
+                        Task { await ExplainVisibleCoordinator.shared.selectCandidate(candidate) }
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(candidate.name).font(.system(.body, design: .monospaced))
+                                Text("\(candidate.filePath):\(candidate.lineStart)-\(candidate.lineEnd)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                            Spacer()
+                            Text("\(Int(candidate.confidence * 100))%")
+                                .font(.caption)
+                        }
+                        .padding(10)
+                        .background(Color.primary.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(20)
+        } else if let symbol = response.matchedSymbol,
+                  let explanation = response.explanation {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(symbol.name)
+                                .font(.system(size: 17, weight: .bold, design: .monospaced))
+                            Text("\(symbol.kind) • \(Int(symbol.confidence * 100))% match")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Button("Open") { NSWorkspace.shared.open(URL(fileURLWithPath: symbol.filePath)) }
+                    }
+
+                    explanationSection("What it does", explanation.summary)
+                    explanationSection(
+                        explanation.purposeIsInference ? "Why it may exist (inference)" : "Why it exists",
+                        explanation.purpose
+                    )
+                    bulletSection("How it works", explanation.howItWorks)
+                    bulletSection("Inputs", explanation.inputs)
+                    bulletSection("Outputs", explanation.outputs)
+                    bulletSection("Side effects", explanation.sideEffects)
+                    bulletSection("Dependencies and callers", explanation.dependencies + explanation.callers)
+                    bulletSection("Risks and questions", explanation.risksAndQuestions)
+
+                    if !response.sources.isEmpty {
+                        Text("Sources").font(.headline)
+                        ForEach(response.sources) { source in
+                            Button {
+                                NSWorkspace.shared.open(URL(fileURLWithPath: source.filePath))
+                            } label: {
+                                Text("\(source.reason): \(source.filePath):\(source.lineStart)-\(source.lineEnd)")
+                                    .font(.caption2.monospaced())
+                                    .lineLimit(2)
+                            }
+                            .buttonStyle(.link)
+                        }
+                    }
+
+                    HStack {
+                        Button("Copy explanation") { copy(response) }
+                        Button("Ask a follow-up") {
+                            FloatingPopupManager.shared.showErrorToast("Follow-up questions are coming in the transcript phase.")
+                        }
+                        Button("Try another match") {
+                            Task { await ExplainVisibleCoordinator.shared.explain() }
+                        }
+                    }
+                    .font(.caption)
+                }
+                .padding(20)
+            }
+        } else {
+            VStack(spacing: 12) {
+                Image(systemName: "questionmark.folder")
+                    .font(.system(size: 28))
+                Text("No indexed symbol matched the visible code.")
+                Button("Try Another Match") {
+                    Task { await ExplainVisibleCoordinator.shared.explain() }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private func explanationSection(_ title: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.headline)
+            Text(text).font(.caption).textSelection(.enabled)
+        }
+    }
+
+    @ViewBuilder
+    private func bulletSection(_ title: String, _ items: [String]) -> some View {
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.headline)
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    Text("• \(item)").font(.caption).textSelection(.enabled)
+                }
+            }
+        }
+    }
+
+    private func copy(_ response: ExplainVisibleResponse) {
+        guard let explanation = response.explanation else { return }
+        let text = [
+            explanation.summary,
+            "Purpose: \(explanation.purpose)",
+            "How it works: \(explanation.howItWorks.joined(separator: "; "))",
+            "Risks/questions: \(explanation.risksAndQuestions.joined(separator: "; "))"
+        ].joined(separator: "\n\n")
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }
 

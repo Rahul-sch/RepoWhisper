@@ -237,6 +237,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 FloatingPopupManager.shared.centerAndShow()
             }
 
+            // ⌘⇧E - Explain the function visible in the frontmost editor
+            if flags == [.command, .shift] && event.keyCode == 14 { // E key
+                Task { @MainActor in
+                    guard !SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty else {
+                        FloatingPopupManager.shared.showErrorToast("Add and index a repository first.")
+                        return
+                    }
+                    if !BackendProcessManager.shared.isRunning {
+                        do { try await BackendProcessManager.shared.start() }
+                        catch {
+                            FloatingPopupManager.shared.showErrorToast(
+                                "Backend failed to start: \(error.localizedDescription)"
+                            )
+                            return
+                        }
+                    }
+                    await ExplainVisibleCoordinator.shared.explain()
+                }
+            }
+
             // ⌘B - Toggle visibility
             if flags == [.command] && event.keyCode == 11 { // B key
                 print("🎯 [HOTKEY] ⌘B - Toggle visibility")
@@ -270,7 +290,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        print("⌨️ [APP] Global hotkeys registered: ⌘⇧R (record), ⌘⇧Space (center), ⌘B (visibility), ⌘⇧H (stealth), ⌘+Arrows (move)")
+        print("⌨️ [APP] Global hotkeys registered: ⌘⇧R (record), ⌘⇧E (explain), ⌘⇧Space (center), ⌘B (visibility), ⌘⇧H (stealth), ⌘+Arrows (move)")
     }
     
     func applicationWillTerminate(_ notification: Notification) {

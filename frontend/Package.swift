@@ -23,7 +23,13 @@ let package = Package(
             dependencies: [
                 .product(name: "Supabase", package: "supabase-swift")
             ],
-            path: "RepoWhisper"
+            path: "RepoWhisper",
+            exclude: ["Info.plist", "RepoWhisper.entitlements"]
+        ),
+        .testTarget(
+            name: "RepoWhisperTests",
+            dependencies: ["RepoWhisper"],
+            path: "Tests/RepoWhisperTests"
         )
     ]
 )

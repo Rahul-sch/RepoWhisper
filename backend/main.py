@@ -24,6 +24,14 @@ from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model
 from search import get_embedding_model
 from logger import setup_logging, get_logger
 from advise import get_advisor, AdvisorContext, process_screenshot
+from explain_visible import (
+    ExplainVisibleRequest,
+    ExplainVisibleResponse,
+    ExplainVisibleService,
+    ExplanationProviderError,
+    SourceAccessDenied,
+    get_explanation_provider,
+)
 from path_validator import init_path_validator, get_path_validator
 import uuid
 
@@ -528,6 +536,47 @@ async def search_code(
     except Exception as e:
         logger.error("search_failed", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Search failed. Please try again.")
+
+
+@app.post("/explain-visible-code", response_model=ExplainVisibleResponse)
+@limiter.limit("20/minute")
+async def explain_visible_code(
+    request: Request,
+    explain_request: ExplainVisibleRequest,
+    user_id: str = Depends(get_local_user_id),
+):
+    """Match locally OCR'd code to approved indexed source and explain it."""
+    logger = get_logger()
+    try:
+        service = ExplainVisibleService(
+            store=get_vector_store(user_id),
+            path_validator=get_path_validator(),
+            provider=get_explanation_provider(),
+        )
+        response = await service.explain(explain_request, user_id=user_id)
+        logger.info(
+            "explain_visible_complete",
+            user_id=user_id,
+            matched=response.matched_symbol is not None,
+            candidates=len(response.candidate_symbols),
+            transcript_context_used=response.transcript_context_used,
+            latency_ms=response.latency_ms,
+        )
+        return response
+    except SourceAccessDenied as exc:
+        logger.warning("explain_visible_source_rejected", user_id=user_id)
+        raise HTTPException(status_code=403, detail=str(exc))
+    except ExplanationProviderError as exc:
+        logger.warning("explain_visible_provider_unavailable", user_id=user_id)
+        raise HTTPException(status_code=503, detail=str(exc))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.error("explain_visible_failed", user_id=user_id, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Visible-code explanation failed. Try again.",
+        )
 
 
 @app.post("/transcribe", response_model=TranscribeResponse)

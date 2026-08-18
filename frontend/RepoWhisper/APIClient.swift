@@ -192,6 +192,23 @@ class APIClient: ObservableObject {
         return try decode(SearchResponse.self, from: response)
     }
 
+    // MARK: - Explain Visible Function
+
+    func explainVisibleCode(_ request: ExplainVisibleRequest) async throws -> ExplainVisibleResponse {
+        let body = try JSONEncoder().encode(request)
+        let response = try await send(
+            method: "POST",
+            path: "/explain-visible-code",
+            body: body,
+            contentType: "application/json",
+            timeout: 30.0
+        )
+        guard response.statusCode == 200 else {
+            throw mapError(response)
+        }
+        return try decode(ExplainVisibleResponse.self, from: response)
+    }
+
     // MARK: - Indexing
 
     /// Index a repository

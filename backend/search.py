@@ -66,6 +66,8 @@ class SearchResult:
     line_start: int
     line_end: int
     score: float
+    repo_id: str = ""
+    chunk_type: str = ""
 
 
 # ============ Embedding Model ============
@@ -246,7 +248,9 @@ class VectorStore:
                 content=r["content"],
                 line_start=r["line_start"],
                 line_end=r["line_end"],
-                score=1 - r["_distance"]  # Convert distance to similarity
+                score=1 - r["_distance"],  # Convert distance to similarity
+                repo_id=r["repo_id"],
+                chunk_type=r["chunk_type"],
             )
             for r in filtered_results
         ]
@@ -296,6 +300,32 @@ class VectorStore:
         return table.count_rows(
             f"user_id = '{escaped_user}' AND repo_id = '{escaped_repo}'"
         )
+
+    def list_chunks(
+        self,
+        user_id: str,
+        repo_id: Optional[str] = None,
+        limit: int = 5000,
+        table_name: str = "code_chunks",
+    ) -> list[dict]:
+        """Return bounded indexed metadata/content for exact symbol matching."""
+        if table_name not in self.db.table_names():
+            return []
+
+        rows = self.get_table(table_name).to_arrow().to_pylist()
+        return [
+            {
+                "repo_id": row["repo_id"],
+                "file_path": row["file_path"],
+                "content": row["content"],
+                "line_start": row["line_start"],
+                "line_end": row["line_end"],
+                "chunk_type": row["chunk_type"],
+            }
+            for row in rows
+            if row["user_id"] == user_id
+            and (repo_id is None or row["repo_id"] == repo_id)
+        ][:limit]
 
 
 # ============ Convenience Functions ============

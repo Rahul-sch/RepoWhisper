@@ -125,6 +125,7 @@ struct SearchView: View {
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
     @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
+    @StateObject private var explainCoordinator = ExplainVisibleCoordinator.shared
 
     @State private var searchQuery = ""
     @State private var searchResults: [SearchResultItem] = []
@@ -154,6 +155,28 @@ struct SearchView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                     Spacer()
+
+                    Button {
+                        Task { await explainCoordinator.explain() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            if explainCoordinator.isWorking {
+                                ProgressView().scaleEffect(0.6)
+                            } else {
+                                Image(systemName: "sparkles")
+                            }
+                            Text(explainCoordinator.isWorking ? "Explaining" : "Explain Visible")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.purple.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(explainCoordinator.isWorking)
+                    .help("Capture and explain the visible function (⌘⇧E)")
 
                     // Audio file upload button
                     Button {
@@ -447,6 +470,21 @@ struct SearchView: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(Color.primary.opacity(0.05))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    Task { await explainCoordinator.explain(selectedText: result.chunk) }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles").font(.caption)
+                        Text("Explain").font(.caption).fontWeight(.medium)
+                    }
+                    .foregroundColor(.purple)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.purple.opacity(0.08))
                     .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
