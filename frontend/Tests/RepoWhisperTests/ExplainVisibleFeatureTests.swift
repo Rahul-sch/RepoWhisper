@@ -70,4 +70,58 @@ final class ExplainVisibleFeatureTests: XCTestCase {
             "Configure an explanation provider in Settings."
         )
     }
+
+    @MainActor
+    func testBackendReadinessStartsStoppedBackend() async throws {
+        let backend = ExplainVisibleBackendManagerStub(isRunning: false)
+
+        try await ExplainVisibleBackendReadiness.ensureReady(using: backend)
+
+        XCTAssertEqual(backend.startCallCount, 1)
+        XCTAssertTrue(backend.isRunning)
+    }
+
+    @MainActor
+    func testBackendReadinessLeavesRunningBackendAlone() async throws {
+        let backend = ExplainVisibleBackendManagerStub(isRunning: true)
+
+        try await ExplainVisibleBackendReadiness.ensureReady(using: backend)
+
+        XCTAssertEqual(backend.startCallCount, 0)
+    }
+
+    @MainActor
+    func testBackendReadinessSurfacesStartupFailure() async {
+        let expected = NSError(
+            domain: "ExplainVisibleTests",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "Backend failed to start"]
+        )
+        let backend = ExplainVisibleBackendManagerStub(isRunning: false, startError: expected)
+
+        do {
+            try await ExplainVisibleBackendReadiness.ensureReady(using: backend)
+            XCTFail("Expected backend startup to fail")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "Backend failed to start")
+        }
+    }
+}
+
+@MainActor
+private final class ExplainVisibleBackendManagerStub: ExplainVisibleBackendManaging {
+    var isRunning: Bool
+    private let startError: Error?
+    private(set) var startCallCount = 0
+
+    init(isRunning: Bool, startError: Error? = nil) {
+        self.isRunning = isRunning
+        self.startError = startError
+    }
+
+    func start() async throws {
+        startCallCount += 1
+        if let startError { throw startError }
+        isRunning = true
+    }
 }

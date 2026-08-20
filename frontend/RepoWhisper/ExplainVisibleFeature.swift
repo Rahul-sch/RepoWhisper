@@ -233,6 +233,22 @@ struct ExplainVisibleStateMachine {
 }
 
 @MainActor
+protocol ExplainVisibleBackendManaging: AnyObject {
+    var isRunning: Bool { get }
+    func start() async throws
+}
+
+extension BackendProcessManager: ExplainVisibleBackendManaging {}
+
+@MainActor
+enum ExplainVisibleBackendReadiness {
+    static func ensureReady(using backend: any ExplainVisibleBackendManaging) async throws {
+        guard !backend.isRunning else { return }
+        try await backend.start()
+    }
+}
+
+@MainActor
 final class ExplainVisibleCoordinator: ObservableObject {
     static let shared = ExplainVisibleCoordinator()
 
@@ -253,6 +269,9 @@ final class ExplainVisibleCoordinator: ObservableObject {
         FloatingPopupManager.shared.hidePopup()
 
         do {
+            try await ExplainVisibleBackendReadiness.ensureReady(
+                using: BackendProcessManager.shared
+            )
             let capture = try await ScreenshotCapture.shared.captureVisibleScreen()
             let ocrText = try await VisionOCRService().recognizeCode(in: capture.imageData)
             guard !VisibleCodeIdentifierExtractor.identifiers(
