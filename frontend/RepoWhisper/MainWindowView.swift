@@ -13,6 +13,7 @@ struct MainWindowView: View {
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
     @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
+    @StateObject private var backendManager = BackendProcessManager.shared
 
     @State private var selectedTab = 0
     @State private var showingRepoManager = false
@@ -90,11 +91,12 @@ struct MainWindowView: View {
                 // Connection status
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(apiClient.isConnected ? Color.green : Color.red)
+                        .fill(backendManager.isHealthy ? Color.green : Color.red)
                         .frame(width: 8, height: 8)
-                    Text(apiClient.isConnected ? "Connected" : "Offline")
+                    Text(backendManager.isHealthy ? "Connected" : backendManager.statusMessage)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
                 
                 Divider()
@@ -122,6 +124,8 @@ struct SearchView: View {
     @StateObject private var audioCapture = AudioCapture.shared
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
+    @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
+    @StateObject private var explainCoordinator = ExplainVisibleCoordinator.shared
 
     @State private var searchQuery = ""
     @State private var searchResults: [SearchResultItem] = []
@@ -130,6 +134,8 @@ struct SearchView: View {
     @State private var copiedResultId: String?
     @State private var showAudioFilePicker = false
     @State private var isTranscribing = false
+    @State private var selectedRepoPath: String?
+    @State private var searchError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -149,6 +155,28 @@ struct SearchView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                     Spacer()
+
+                    Button {
+                        Task { await explainCoordinator.explain() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            if explainCoordinator.isWorking {
+                                ProgressView().scaleEffect(0.6)
+                            } else {
+                                Image(systemName: "sparkles")
+                            }
+                            Text(explainCoordinator.isWorking ? "Explaining" : "Explain Visible")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.purple.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(explainCoordinator.isWorking)
+                    .help("Capture and explain the visible function (⌘⇧E)")
 
                     // Audio file upload button
                     Button {
@@ -195,7 +223,7 @@ struct SearchView: View {
                                 }
                                 if !BackendProcessManager.shared.isRunning {
                                     FloatingPopupManager.shared.showErrorToast("Starting backend…")
-                                    do { try BackendProcessManager.shared.start() }
+                                    do { try await BackendProcessManager.shared.start() }
                                     catch {
                                         FloatingPopupManager.shared.showErrorToast(
                                             "Backend failed: \(error.localizedDescription)"
@@ -260,6 +288,24 @@ struct SearchView: View {
                 .padding(12)
                 .background(Color.primary.opacity(0.05))
                 .cornerRadius(10)
+
+                HStack(spacing: 8) {
+                    Image(systemName: "folder")
+                        .foregroundColor(.secondary)
+                    Text("Search in")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Picker("Repository", selection: $selectedRepoPath) {
+                        Text("All repositories").tag(nil as String?)
+                        ForEach(bookmarkManager.approvedPaths, id: \.self) { path in
+                            Text(URL(fileURLWithPath: path).lastPathComponent)
+                                .tag(path as String?)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 240)
+                    Spacer()
+                }
 
                 // Stats row
                 if searchLatency > 0 || apiClient.indexCount > 0 {
@@ -345,6 +391,14 @@ struct SearchView: View {
                 }
             }
         }
+        .alert("Search Failed", isPresented: Binding(
+            get: { searchError != nil },
+            set: { if !$0 { searchError = nil } }
+        )) {
+            Button("OK", role: .cancel) { searchError = nil }
+        } message: {
+            Text(searchError ?? "The backend could not complete the search.")
+        }
     }
 
     // MARK: - Search Result Row
@@ -420,6 +474,21 @@ struct SearchView: View {
                 }
                 .buttonStyle(.plain)
 
+                Button {
+                    Task { await explainCoordinator.explain(selectedText: result.chunk) }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles").font(.caption)
+                        Text("Explain").font(.caption).fontWeight(.medium)
+                    }
+                    .foregroundColor(.purple)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.purple.opacity(0.08))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+
                 // Open in Finder
                 Button(action: { openInFinder(result) }) {
                     HStack(spacing: 4) {
@@ -471,11 +540,15 @@ struct SearchView: View {
         print("🔍 [SEARCH] Starting search for: '\(searchQuery)'")
         isSearching = true
         searchResults = []
+        searchError = nil
 
         Task {
             do {
                 print("📡 [SEARCH] Calling API...")
-                let results = try await apiClient.search(query: searchQuery)
+                let results = try await apiClient.search(
+                    query: searchQuery,
+                    repoPath: selectedRepoPath
+                )
                 print("✅ [SEARCH] Got \(results.results.count) results")
 
                 await MainActor.run {
@@ -487,6 +560,7 @@ struct SearchView: View {
                 print("❌ [SEARCH] Search error: \(error)")
                 await MainActor.run {
                     isSearching = false
+                    searchError = error.localizedDescription
                 }
             }
         }
@@ -614,4 +688,3 @@ struct StatBadge: View {
     MainWindowView()
         .environmentObject(AuthManager.shared)
 }
-

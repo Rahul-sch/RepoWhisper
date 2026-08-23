@@ -82,15 +82,21 @@ class APIClient: ObservableObject {
 
     /// Map non-200 responses to the appropriate APIError.
     private func mapError(_ response: HTTPResponse) -> APIError {
+        let backendDetail = try? JSONDecoder().decode(
+            BackendErrorResponse.self,
+            from: response.body
+        ).detail
+
         switch response.statusCode {
         case 401: return .notAuthenticated
         case 503:
             // /transcribe returns 503 when faster-whisper is missing.
-            if let detail = response.bodyString, detail.contains("faster-whisper") {
+            if let detail = backendDetail, detail.contains("faster-whisper") {
                 return .whisperUnavailable
             }
-            return .requestFailed
-        default: return .requestFailed
+            return backendDetail.map(APIError.serverError) ?? .requestFailed
+        default:
+            return backendDetail.map(APIError.serverError) ?? .requestFailed
         }
     }
 
@@ -169,10 +175,10 @@ class APIClient: ObservableObject {
     /// - Parameters:
     ///   - query: Search query text
     ///   - topK: Number of results to return
-    ///   - repoId: Optional repository UUID to scope the search
+    ///   - repoPath: Optional approved repository path to scope the search
     /// - Returns: Search results
-    func search(query: String, topK: Int = 5, repoId: String? = nil) async throws -> SearchResponse {
-        let body = try JSONEncoder().encode(SearchRequest(query: query, topK: topK, repoId: repoId))
+    func search(query: String, topK: Int = 5, repoPath: String? = nil) async throws -> SearchResponse {
+        let body = try JSONEncoder().encode(SearchRequest(query: query, topK: topK, repoPath: repoPath))
         let response = try await send(
             method: "POST",
             path: "/search",
@@ -184,6 +190,23 @@ class APIClient: ObservableObject {
             throw mapError(response)
         }
         return try decode(SearchResponse.self, from: response)
+    }
+
+    // MARK: - Explain Visible Function
+
+    func explainVisibleCode(_ request: ExplainVisibleRequest) async throws -> ExplainVisibleResponse {
+        let body = try JSONEncoder().encode(request)
+        let response = try await send(
+            method: "POST",
+            path: "/explain-visible-code",
+            body: body,
+            contentType: "application/json",
+            timeout: 30.0
+        )
+        guard response.statusCode == 200 else {
+            throw mapError(response)
+        }
+        return try decode(ExplainVisibleResponse.self, from: response)
     }
 
     // MARK: - Indexing
@@ -305,13 +328,17 @@ struct TranscriptionResult: Codable {
 struct SearchRequest: Codable {
     let query: String
     let topK: Int
-    let repoId: String?
+    let repoPath: String?
 
     enum CodingKeys: String, CodingKey {
         case query
         case topK = "top_k"
-        case repoId = "repo_id"
+        case repoPath = "repo_path"
     }
+}
+
+private struct BackendErrorResponse: Decodable {
+    let detail: String
 }
 
 struct SearchResponse: Codable {
@@ -443,6 +470,7 @@ enum APIError: Error, LocalizedError {
     case requestFailed
     case decodingFailed
     case whisperUnavailable
+    case serverError(String)
 
     var errorDescription: String? {
         switch self {
@@ -454,6 +482,8 @@ enum APIError: Error, LocalizedError {
             return "Failed to parse backend response"
         case .whisperUnavailable:
             return "Speech-to-text isn't available — install faster-whisper on the backend (pip install faster-whisper) and restart."
+        case .serverError(let message):
+            return message
         }
     }
 }

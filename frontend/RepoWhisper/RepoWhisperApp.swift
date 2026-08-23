@@ -121,6 +121,7 @@ struct RepoWhisperApp: App {
     }
 }
 
+
 // MARK: - Launch at Login Helper
 
 func setLaunchAtLogin(enabled: Bool) {
@@ -158,7 +159,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Bring up the backend. If a repo is already approved, start now;
         // otherwise wait for the user to approve one and start then.
         Task { @MainActor in
-            self.bootstrapBackend()
+            await self.bootstrapBackend()
             self.observeRepoApprovals()
         }
 
@@ -207,7 +208,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                         // Guard 2: backend healthy. If it crashed/didn't start, kick it.
                         if !BackendProcessManager.shared.isRunning {
                             FloatingPopupManager.shared.showErrorToast("Starting backend…")
-                            do { try BackendProcessManager.shared.start() }
+                            do { try await BackendProcessManager.shared.start() }
                             catch {
                                 FloatingPopupManager.shared.showErrorToast(
                                     "Backend failed to start: \(error.localizedDescription)"
@@ -234,6 +235,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if flags == [.command, .shift] && event.keyCode == 49 { // Space key
                 print("🎯 [HOTKEY] ⌘⇧Space - Center and show overlay")
                 FloatingPopupManager.shared.centerAndShow()
+            }
+
+            // ⌘⇧E - Explain the function visible in the frontmost editor
+            if flags == [.command, .shift] && event.keyCode == 14 { // E key
+                Task { @MainActor in
+                    guard !SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty else {
+                        FloatingPopupManager.shared.showErrorToast("Add and index a repository first.")
+                        return
+                    }
+                    if !BackendProcessManager.shared.isRunning {
+                        do { try await BackendProcessManager.shared.start() }
+                        catch {
+                            FloatingPopupManager.shared.showErrorToast(
+                                "Backend failed to start: \(error.localizedDescription)"
+                            )
+                            return
+                        }
+                    }
+                    await ExplainVisibleCoordinator.shared.explain()
+                }
             }
 
             // ⌘B - Toggle visibility
@@ -269,7 +290,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        print("⌨️ [APP] Global hotkeys registered: ⌘⇧R (record), ⌘⇧Space (center), ⌘B (visibility), ⌘⇧H (stealth), ⌘+Arrows (move)")
+        print("⌨️ [APP] Global hotkeys registered: ⌘⇧R (record), ⌘⇧E (explain), ⌘⇧Space (center), ⌘B (visibility), ⌘⇧H (stealth), ⌘+Arrows (move)")
     }
     
     func applicationWillTerminate(_ notification: Notification) {
@@ -302,14 +323,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Try to spawn the backend if (a) we haven't already this session and
     /// (b) at least one repo folder has been approved.
     @MainActor
-    private func bootstrapBackend() {
+    private func bootstrapBackend() async {
         guard !backendStartedThisSession else { return }
         guard !SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty else {
             print("⏸ [APP] No repos approved yet — backend will start when one is added.")
             return
         }
         do {
-            try BackendProcessManager.shared.start()
+            try await BackendProcessManager.shared.start()
             backendStartedThisSession = true
             BackendProcessManager.shared.startHealthMonitoring()
             // Once the socket is up, kick the warmup so the first /transcribe
@@ -330,7 +351,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self = self,
                       !self.backendStartedThisSession,
                       !paths.isEmpty else { return }
-                Task { @MainActor in self.bootstrapBackend() }
+                Task { @MainActor in await self.bootstrapBackend() }
             }
             .store(in: &cancellables)
     }
@@ -387,4 +408,3 @@ struct ResultsWindowContainer: View {
         }
     }
 }
-

@@ -197,7 +197,15 @@ class FloatingPopupManager: ObservableObject {
         }
     }
     
-    private func createAndShowPopup(results: [SearchResultItem], query: String, latency: Double, isRecording: Bool) {
+    private func createAndShowPopup(
+        results: [SearchResultItem],
+        query: String,
+        latency: Double,
+        isRecording: Bool,
+        explainStage: ExplainVisibleStage? = nil,
+        explainResponse: ExplainVisibleResponse? = nil,
+        explainError: String? = nil
+    ) {
         print("🎨 [POPUP] createAndShowPopup - creating window with \(results.count) results")
         // Create the SwiftUI view
         let contentView = ResultsWindow(
@@ -206,7 +214,10 @@ class FloatingPopupManager: ObservableObject {
             latencyMs: latency,
             isLoading: false,
             isRecording: isRecording,
-            isStealthMode: isStealthMode
+            isStealthMode: isStealthMode,
+            explainStage: explainStage,
+            explainResponse: explainResponse,
+            explainError: explainError
         )
 
         // Create hosting view
@@ -298,12 +309,51 @@ class FloatingPopupManager: ObservableObject {
 
         // Auto-dismiss (15s normal, 30s stealth)
         autoDismissTask?.cancel()
-        let dismissDelay: Double = isStealthMode ? 30 : 15
+        let dismissDelay: Double = explainResponse == nil ? (isStealthMode ? 30 : 15) : 60
         let task = DispatchWorkItem { [weak self] in
             self?.hidePopup()
         }
         autoDismissTask = task
         DispatchQueue.main.asyncAfter(deadline: .now() + dismissDelay, execute: task)
+    }
+
+    func showExplainStage(_ stage: ExplainVisibleStage) {
+        showExplainContent(stage: stage, response: nil, error: nil)
+    }
+
+    func showExplainResult(_ response: ExplainVisibleResponse) {
+        showExplainContent(stage: nil, response: response, error: nil)
+    }
+
+    func showExplainError(_ message: String) {
+        showExplainContent(stage: nil, response: nil, error: message)
+    }
+
+    private func showExplainContent(
+        stage: ExplainVisibleStage?,
+        response: ExplainVisibleResponse?,
+        error: String?
+    ) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let present = {
+                self.createAndShowPopup(
+                    results: [],
+                    query: "Explain Visible Function",
+                    latency: response?.latencyMs ?? 0,
+                    isRecording: false,
+                    explainStage: stage,
+                    explainResponse: response,
+                    explainError: error
+                )
+            }
+            if let existingWindow = self.popupWindow {
+                existingWindow.orderOut(nil)
+                existingWindow.close()
+                self.popupWindow = nil
+            }
+            present()
+        }
     }
     
     /// Show the popup in loading state
@@ -596,4 +646,3 @@ class FloatingPopupManager: ObservableObject {
         }
     }
 }
-

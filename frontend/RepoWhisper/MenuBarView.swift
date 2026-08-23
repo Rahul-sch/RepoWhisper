@@ -325,7 +325,7 @@ struct MenuBarView: View {
                     }
                     if !backendManager.isRunning {
                         popupManager.showErrorToast("Starting backend…")
-                        do { try backendManager.start() }
+                        do { try await backendManager.start() }
                         catch {
                             popupManager.showErrorToast("Backend failed: \(error.localizedDescription)")
                             return

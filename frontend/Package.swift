@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "RepoWhisper",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v14)
     ],
     products: [
         .executable(
@@ -23,8 +23,13 @@ let package = Package(
             dependencies: [
                 .product(name: "Supabase", package: "supabase-swift")
             ],
-            path: "RepoWhisper"
+            path: "RepoWhisper",
+            exclude: ["Info.plist", "RepoWhisper.entitlements"]
+        ),
+        .testTarget(
+            name: "RepoWhisperTests",
+            dependencies: ["RepoWhisper"],
+            path: "Tests/RepoWhisperTests"
         )
     ]
 )
-

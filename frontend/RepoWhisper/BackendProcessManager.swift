@@ -56,6 +56,31 @@ class BackendProcessManager: ObservableObject {
 
     /// Path to backend binary (architecture-specific)
     private var backendBinaryPath: String? {
+        // Allow developers and CI to point at an explicit backend without
+        // changing the project or relying on DerivedData's directory layout.
+        if let overridePath = ProcessInfo.processInfo.environment["REPOWHISPER_BACKEND_PATH"],
+           FileManager.default.fileExists(atPath: overridePath) {
+            return overridePath
+        }
+
+        #if DEBUG
+        // Debug builds must run the backend from this checkout. DerivedData
+        // can retain a previously bundled PyInstaller executable after an
+        // incremental build, which otherwise masks source changes and may
+        // contain stale or incomplete ML dependencies.
+        let sourceFile = URL(fileURLWithPath: #filePath)
+        let repositoryRoot = sourceFile
+            .deletingLastPathComponent() // RepoWhisper source directory
+            .deletingLastPathComponent() // frontend
+            .deletingLastPathComponent() // repository root
+        let backendMainPy = repositoryRoot
+            .appendingPathComponent("backend/main.py")
+            .path
+        if FileManager.default.fileExists(atPath: backendMainPy) {
+            return backendMainPy
+        }
+        #endif
+
         // Detect current architecture
         #if arch(arm64)
         let binaryName = "repowhisper-backend-arm64"
@@ -71,14 +96,6 @@ class BackendProcessManager: ObservableObject {
             if FileManager.default.fileExists(atPath: binaryPath) {
                 return binaryPath
             }
-        }
-
-        // Development fallback: use Python script
-        let devPath = (Bundle.main.bundlePath as NSString).deletingLastPathComponent
-        let parentDevPath = (devPath as NSString).deletingLastPathComponent
-        let backendMainPy = (parentDevPath as NSString).appendingPathComponent("backend/main.py")
-        if FileManager.default.fileExists(atPath: backendMainPy) {
-            return backendMainPy
         }
 
         return nil
@@ -169,6 +186,9 @@ class BackendProcessManager: ObservableObject {
             env["REPOWHISPER_DATA_DIR"] = supportDirectory.path
             env["REPOWHISPER_MODELS_DIR"] = modelsDirectory
             env["DEBUG"] = "false"
+            // Flush startup diagnostics immediately. Without this, a process
+            // terminated during startup can leave both log files empty.
+            env["PYTHONUNBUFFERED"] = "1"
 
             // Point HuggingFace caches at our bundled weights when present.
             let hfHome = bundledHFHome
@@ -250,7 +270,7 @@ class BackendProcessManager: ObservableObject {
     // MARK: - Lifecycle
 
     /// Start the backend process
-    func start() throws {
+    func start() async throws {
         guard process == nil else {
             print("⚠️ [BACKEND] Process already running")
             return
@@ -353,9 +373,10 @@ class BackendProcessManager: ObservableObject {
         process = proc
         print("✅ [BACKEND] Process launched (PID: \(proc.processIdentifier))")
 
-        // Step 6: Wait for socket to appear (poll for up to 30s)
+        // Step 6: Wait for the socket without blocking the main actor. Cold
+        // Python/ML imports can take over 30 seconds on a clean machine.
         let startTime = Date()
-        let timeout: TimeInterval = 30.0
+        let timeout: TimeInterval = 120.0
         var socketAppeared = false
 
         while Date().timeIntervalSince(startTime) < timeout {
@@ -378,11 +399,13 @@ class BackendProcessManager: ObservableObject {
                 )
             }
 
-            Thread.sleep(forTimeInterval: 0.1)
+            let elapsed = Date().timeIntervalSince(startTime)
+            statusMessage = "Starting backend… \(Int(elapsed))s"
+            try await Task.sleep(nanoseconds: 100_000_000)
         }
 
         guard socketAppeared else {
-            let errorMsg = "Socket did not appear within timeout"
+            let errorMsg = "Socket did not appear within \(Int(timeout)) seconds"
             print("❌ [BACKEND] \(errorMsg)")
             stop()
             status = .error(errorMsg)
@@ -474,7 +497,7 @@ class BackendProcessManager: ObservableObject {
     }
 
     /// Manually restart the backend (resets failure counters)
-    func restart() {
+    func restart() async {
         print("🔄 [BACKEND] Manual restart requested")
 
         // Reset counters for fresh start
@@ -484,7 +507,7 @@ class BackendProcessManager: ObservableObject {
         stop()
 
         do {
-            try start()
+            try await start()
         } catch {
             print("❌ [BACKEND] Manual restart failed: \(error.localizedDescription)")
             statusMessage = "Restart failed: \(error.localizedDescription)"
@@ -632,7 +655,7 @@ class BackendProcessManager: ObservableObject {
 
         // Attempt restart
         do {
-            try start()
+            try await start()
             print("✅ [BACKEND] Restart successful")
             consecutiveFailures = 0
         } catch {
