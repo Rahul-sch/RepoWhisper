@@ -108,6 +108,77 @@ final class ExplainVisibleFeatureTests: XCTestCase {
     }
 }
 
+final class BackendStartupCoordinatorTests: XCTestCase {
+    @MainActor
+    func testDoesNotStartWithoutApprovedRepository() async {
+        var startCount = 0
+        let coordinator = BackendStartupCoordinator(
+            startBackend: { startCount += 1 },
+            afterSuccessfulStart: {}
+        )
+
+        await coordinator.startIfPossible(approvedPaths: [])
+
+        XCTAssertEqual(startCount, 0)
+        XCTAssertFalse(coordinator.didStart)
+    }
+
+    @MainActor
+    func testSuccessfulStartupRunsOnlyOnce() async {
+        var startCount = 0
+        var successCount = 0
+        let coordinator = BackendStartupCoordinator(
+            startBackend: { startCount += 1 },
+            afterSuccessfulStart: { successCount += 1 }
+        )
+
+        await coordinator.startIfPossible(approvedPaths: ["/repo"])
+        await coordinator.startIfPossible(approvedPaths: ["/repo"])
+
+        XCTAssertEqual(startCount, 1)
+        XCTAssertEqual(successCount, 1)
+        XCTAssertTrue(coordinator.didStart)
+    }
+
+    @MainActor
+    func testFailedStartupCanRetry() async {
+        struct StartupFailure: Error {}
+        var startCount = 0
+        let coordinator = BackendStartupCoordinator(
+            startBackend: {
+                startCount += 1
+                if startCount == 1 { throw StartupFailure() }
+            },
+            afterSuccessfulStart: {}
+        )
+
+        await coordinator.startIfPossible(approvedPaths: ["/repo"])
+        await coordinator.startIfPossible(approvedPaths: ["/repo"])
+
+        XCTAssertEqual(startCount, 2)
+        XCTAssertTrue(coordinator.didStart)
+    }
+
+    @MainActor
+    func testOverlappingStartupRequestsAreCoalesced() async {
+        var startCount = 0
+        let coordinator = BackendStartupCoordinator(
+            startBackend: {
+                startCount += 1
+                try await Task.sleep(nanoseconds: 20_000_000)
+            },
+            afterSuccessfulStart: {}
+        )
+
+        async let first: Void = coordinator.startIfPossible(approvedPaths: ["/repo"])
+        async let second: Void = coordinator.startIfPossible(approvedPaths: ["/repo"])
+        _ = await (first, second)
+
+        XCTAssertEqual(startCount, 1)
+        XCTAssertTrue(coordinator.didStart)
+    }
+}
+
 @MainActor
 private final class ExplainVisibleBackendManagerStub: ExplainVisibleBackendManaging {
     var isRunning: Bool

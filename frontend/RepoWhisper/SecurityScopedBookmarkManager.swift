@@ -21,7 +21,7 @@ class SecurityScopedBookmarkManager: ObservableObject {
     private var activeBookmarks: [String: URL] = [:]
 
     private init() {
-        loadBookmarks()
+        startAccessingAll()
     }
 
     // Note: stopAccessingAll() should be called manually on app termination
@@ -96,11 +96,16 @@ class SecurityScopedBookmarkManager: ObservableObject {
 
     // MARK: - Lifecycle
 
-    /// Load and start accessing all saved bookmarks
-    private func loadBookmarks() {
+    /// Load and start accessing all saved bookmarks. This is intentionally
+    /// idempotent so launch-time callers can retry after SwiftUI and
+    /// cfprefsd have finished restoring application state.
+    func startAccessingAll() {
         let bookmarks = loadBookmarksData()
+        var stalePaths: [String] = []
 
         for (path, bookmarkData) in bookmarks {
+            guard activeBookmarks[path] == nil else { continue }
+
             do {
                 var isStale = false
                 let url = try URL(
@@ -112,16 +117,15 @@ class SecurityScopedBookmarkManager: ObservableObject {
 
                 if isStale {
                     print("⚠️ [BOOKMARK] Stale bookmark for: \(path)")
-                    // Remove stale bookmark
-                    var mutableBookmarks = bookmarks
-                    mutableBookmarks.removeValue(forKey: path)
-                    saveBookmarksData(mutableBookmarks)
+                    stalePaths.append(path)
                     continue
                 }
 
                 if url.startAccessingSecurityScopedResource() {
                     activeBookmarks[path] = url
-                    approvedPaths.append(path)
+                    if !approvedPaths.contains(path) {
+                        approvedPaths.append(path)
+                    }
                     print("✅ [BOOKMARK] Restored access: \(path)")
                 } else {
                     print("❌ [BOOKMARK] Failed to access: \(path)")
@@ -130,11 +134,13 @@ class SecurityScopedBookmarkManager: ObservableObject {
                 print("❌ [BOOKMARK] Failed to resolve bookmark for \(path): \(error)")
             }
         }
-    }
 
-    /// Start accessing all bookmarks (called on app launch)
-    func startAccessingAll() {
-        // Already done in loadBookmarks
+        if !stalePaths.isEmpty {
+            var mutableBookmarks = bookmarks
+            stalePaths.forEach { mutableBookmarks.removeValue(forKey: $0) }
+            saveBookmarksData(mutableBookmarks)
+        }
+
         print("📂 [BOOKMARK] Accessing \(activeBookmarks.count) folders")
     }
 

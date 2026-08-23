@@ -45,6 +45,12 @@ struct RepoWhisperApp: App {
                 .onAppear {
                     print("🪟 [APP] Main window appeared")
                 }
+                .task {
+                    // SwiftUI can finish restoring the window after the app
+                    // delegate callback. Retry through the idempotent launch
+                    // coordinator once the main scene is ready.
+                    await appDelegate.ensureBackendStartup()
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
@@ -143,13 +149,71 @@ func setLaunchAtLogin(enabled: Bool) {
     }
 }
 
+@MainActor
+final class BackendStartupCoordinator {
+    static let shared = BackendStartupCoordinator(
+        startBackend: { try await BackendProcessManager.shared.start() },
+        afterSuccessfulStart: {
+            BackendProcessManager.shared.startHealthMonitoring()
+            scheduleBackendWarmupWhenHealthy()
+        }
+    )
+
+    private let startBackend: () async throws -> Void
+    private let afterSuccessfulStart: () -> Void
+    private(set) var didStart = false
+    private var isStarting = false
+
+    init(
+        startBackend: @escaping () async throws -> Void,
+        afterSuccessfulStart: @escaping () -> Void
+    ) {
+        self.startBackend = startBackend
+        self.afterSuccessfulStart = afterSuccessfulStart
+    }
+
+    func startIfPossible(approvedPaths: [String]) async {
+        guard !approvedPaths.isEmpty else {
+            print("⏸ [APP] No repos approved yet — backend will start when one is added.")
+            return
+        }
+        guard !didStart, !isStarting else { return }
+
+        isStarting = true
+        defer { isStarting = false }
+
+        do {
+            try await startBackend()
+            didStart = true
+            afterSuccessfulStart()
+        } catch {
+            // Leave didStart false so a scene appearance or later approval
+            // event can retry a transient launch failure.
+            print("❌ [APP] Backend start failed: \(error.localizedDescription)")
+        }
+    }
+}
+
+@MainActor
+private func scheduleBackendWarmupWhenHealthy() {
+    let deadline = Date().addingTimeInterval(60)
+    Task { @MainActor in
+        while Date() < deadline {
+            if BackendProcessManager.shared.isHealthy {
+                print("🔥 [APP] Backend healthy — kicking warmup")
+                await APIClient.shared.warmup()
+                return
+            }
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+        }
+        print("⚠️ [APP] Backend never reported healthy within 60s — warmup skipped")
+    }
+}
+
 // App delegate for keyboard shortcuts and URL handling
 class AppDelegate: NSObject, NSApplicationDelegate {
     /// Combine subscriptions retained for the app lifetime.
     private var cancellables = Set<AnyCancellable>()
-    /// True after we've successfully spawned the backend at least once
-    /// this session, so we don't keep restarting it as the user toggles repos.
-    private var backendStartedThisSession = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("✅ RepoWhisper app finished launching")
@@ -159,8 +223,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Bring up the backend. If a repo is already approved, start now;
         // otherwise wait for the user to approve one and start then.
         Task { @MainActor in
-            await self.bootstrapBackend()
             self.observeRepoApprovals()
+            await self.ensureBackendStartup()
         }
 
         // Auto-launch: Show centered welcome popup on first launch
@@ -323,22 +387,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Try to spawn the backend if (a) we haven't already this session and
     /// (b) at least one repo folder has been approved.
     @MainActor
-    private func bootstrapBackend() async {
-        guard !backendStartedThisSession else { return }
-        guard !SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty else {
-            print("⏸ [APP] No repos approved yet — backend will start when one is added.")
-            return
-        }
-        do {
-            try await BackendProcessManager.shared.start()
-            backendStartedThisSession = true
-            BackendProcessManager.shared.startHealthMonitoring()
-            // Once the socket is up, kick the warmup so the first /transcribe
-            // and /search calls are fast.
-            scheduleWarmupWhenHealthy()
-        } catch {
-            print("❌ [APP] Backend start failed: \(error.localizedDescription)")
-        }
+    func ensureBackendStartup() async {
+        let bookmarks = SecurityScopedBookmarkManager.shared
+        bookmarks.startAccessingAll()
+        await BackendStartupCoordinator.shared.startIfPossible(
+            approvedPaths: bookmarks.approvedPaths
+        )
     }
 
     /// Watch the bookmark manager. As soon as the user approves their first
@@ -347,31 +401,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func observeRepoApprovals() {
         SecurityScopedBookmarkManager.shared.$approvedPaths
             .removeDuplicates()
-            .sink { [weak self] paths in
-                guard let self = self,
-                      !self.backendStartedThisSession,
-                      !paths.isEmpty else { return }
-                Task { @MainActor in await self.bootstrapBackend() }
+            .sink { paths in
+                guard !paths.isEmpty else { return }
+                Task { @MainActor in
+                    await BackendStartupCoordinator.shared.startIfPossible(
+                        approvedPaths: paths
+                    )
+                }
             }
             .store(in: &cancellables)
-    }
-
-    /// Poll BackendProcessManager.isHealthy and call APIClient.warmup() once.
-    /// Stops polling after success or after ~60s of failure.
-    @MainActor
-    private func scheduleWarmupWhenHealthy() {
-        let deadline = Date().addingTimeInterval(60)
-        Task { @MainActor in
-            while Date() < deadline {
-                if BackendProcessManager.shared.isHealthy {
-                    print("🔥 [APP] Backend healthy — kicking warmup")
-                    await APIClient.shared.warmup()
-                    return
-                }
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-            }
-            print("⚠️ [APP] Backend never reported healthy within 60s — warmup skipped")
-        }
     }
 }
 
