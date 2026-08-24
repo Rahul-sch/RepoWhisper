@@ -86,6 +86,77 @@ Backend starts at `http://127.0.0.1:8000`
 
 Open `frontend/RepoWhisper.xcodeproj` in Xcode and press `Cmd+R` to build and run.
 
+## Learn RepoWhisper: Zero → Expert
+
+If you are brand new, follow this path in order. It goes from fundamentals to advanced mastery.
+
+### Learning Ladder
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ Level 6: Expert                                          │
+│ Tune latency, improve retrieval quality, refine UX       │
+└──────────────────────────▲───────────────────────────────┘
+                           │
+┌──────────────────────────┴───────────────────────────────┐
+│ Level 5: Operator                                        │
+│ Run reliably, validate auth, troubleshoot production     │
+└──────────────────────────▲───────────────────────────────┘
+                           │
+┌──────────────────────────┴───────────────────────────────┐
+│ Level 4: Builder                                         │
+│ Add features across frontend and backend                 │
+└──────────────────────────▲───────────────────────────────┘
+                           │
+┌──────────────────────────┴───────────────────────────────┐
+│ Level 3: Flow Reader                                     │
+│ Trace full request path and understand data movement     │
+└──────────────────────────▲───────────────────────────────┘
+                           │
+┌──────────────────────────┴───────────────────────────────┐
+│ Level 2: Runner                                          │
+│ Start app + backend and verify search/transcription      │
+└──────────────────────────▲───────────────────────────────┘
+                           │
+┌──────────────────────────┴───────────────────────────────┐
+│ Level 1: Explorer                                        │
+│ Learn files, modules, and what each component owns       │
+└──────────────────────────────────────────────────────────┘
+```
+
+### What to Learn at Each Level
+
+1. **Explorer**: Read the Architecture + Project Structure sections.
+2. **Runner**: Use Quick Start and confirm `/health`, `/transcribe`, `/search`.
+3. **Flow Reader**: Follow one query from microphone to displayed result.
+4. **Builder**: Modify one endpoint and one UI interaction safely.
+5. **Operator**: Practice setup, deployment, and troubleshooting docs.
+6. **Expert**: Optimize MPS embeddings, float16 transcription, and search relevance.
+
+### End-to-End Learning Diagram
+
+```
+[Speak query]
+    │
+    ▼
+[AudioCapture.swift]
+    │
+    ▼
+[POST /transcribe] -> [Whisper] -> [Text query]
+                                      │
+                                      ▼
+                            [POST /search]
+                                      │
+                                      ▼
+                   [Sentence-Transformers embedding]
+                                      │
+                                      ▼
+                            [LanceDB similarity]
+                                      │
+                                      ▼
+                         [ResultsWindow shows code]
+```
+
 ## Hotkeys
 
 | Hotkey | Action |
