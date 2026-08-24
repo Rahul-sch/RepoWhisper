@@ -7,6 +7,7 @@
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
+   - [Beginner-to-Expert Learning Path](#11-beginner-to-expert-learning-path)
 2. [Architecture](#2-architecture)
 3. [Frontend (SwiftUI/macOS)](#3-frontend-swiftuimacos)
 4. [Backend (Python/FastAPI)](#4-backend-pythonfastapi)
@@ -62,6 +63,90 @@ RepoWhisper is a native macOS menu bar application that enables developers to se
 - Sentence-Transformers (MPS accelerated)
 - LanceDB (vector database)
 - Supabase (authentication & cloud sync)
+
+### 1.1 Beginner-to-Expert Learning Path
+
+If you are starting from zero, use this sequence. Each stage builds the mental model needed for the next one.
+
+#### Learning Ladder (Bottom → Top)
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ Stage 6: Expert                                            │
+│ Optimize latency, tune chunking/search quality, extend UX  │
+└──────────────────────────────▲─────────────────────────────┘
+                               │
+┌──────────────────────────────┴─────────────────────────────┐
+│ Stage 5: Production Operator                               │
+│ Deploy safely, monitor health, handle auth and failures    │
+└──────────────────────────────▲─────────────────────────────┘
+                               │
+┌──────────────────────────────┴─────────────────────────────┐
+│ Stage 4: Feature Builder                                   │
+│ Add endpoints, UI components, and new indexing/search logic│
+└──────────────────────────────▲─────────────────────────────┘
+                               │
+┌──────────────────────────────┴─────────────────────────────┐
+│ Stage 3: System Reader                                     │
+│ Trace end-to-end flow: mic → transcribe → search → UI      │
+└──────────────────────────────▲─────────────────────────────┘
+                               │
+┌──────────────────────────────┴─────────────────────────────┐
+│ Stage 2: Local Runner                                      │
+│ Run frontend + backend locally and verify core commands    │
+└──────────────────────────────▲─────────────────────────────┘
+                               │
+┌──────────────────────────────┴─────────────────────────────┐
+│ Stage 1: Orientation                                       │
+│ Learn repo layout, key files, and what each layer does     │
+└────────────────────────────────────────────────────────────┘
+```
+
+#### What to Master at Each Stage
+
+1. **Orientation**
+   - Understand what the frontend owns vs what the backend owns
+   - Identify the key files listed in this document
+2. **Local Runner**
+   - Build and run with the documented startup flows
+   - Confirm `/health`, transcription, and search are working
+3. **System Reader**
+   - Follow one full query through capture, API, embedding, search, and render
+   - Understand where latency comes from
+4. **Feature Builder**
+   - Add/modify one backend route and one frontend interaction
+   - Keep API contracts and error handling consistent
+5. **Production Operator**
+   - Validate auth behavior, startup reliability, and troubleshooting paths
+   - Use deployment and setup docs to reproduce clean environments
+6. **Expert**
+   - Improve performance with Apple Silicon optimizations (MPS + float16)
+   - Improve retrieval quality (chunking strategy, top-k, ranking signals)
+   - Evolve UX while preserving stealth mode and hotkey ergonomics
+
+#### End-to-End Mental Model Diagram
+
+```
+[You speak]
+    │
+    ▼
+[AudioCapture.swift]
+    │  (WAV/PCM)
+    ▼
+[POST /transcribe] ──► [Faster-Whisper] ──► [text query]
+                                                │
+                                                ▼
+                                     [POST /search]
+                                                │
+                                                ▼
+                          [Sentence-Transformers (MPS embedding)]
+                                                │
+                                                ▼
+                                  [LanceDB vector similarity]
+                                                │
+                                                ▼
+                               [ResultsWindow.swift shows matches]
+```
 
 ---
 
