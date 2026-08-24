@@ -157,6 +157,23 @@ struct SearchView: View {
                     Spacer()
 
                     Button {
+                        popupManager.centerAndShow()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "macwindow.on.rectangle")
+                            Text("Floating Display")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open and center the floating display (⌘⇧Space)")
+
+                    Button {
                         Task { await explainCoordinator.explain() }
                     } label: {
                         HStack(spacing: 6) {

@@ -8,6 +8,46 @@
 import SwiftUI
 import AppKit
 
+struct FloatingPopupLifecycle {
+    enum Command: Equatable {
+        case none
+        case reveal
+        case conceal
+    }
+
+    private(set) var hasReusableWindow = false
+    private(set) var isVisible = false
+
+    mutating func didCreateWindow() {
+        hasReusableWindow = true
+        isVisible = true
+    }
+
+    mutating func didRevealWindow() {
+        guard hasReusableWindow else { return }
+        isVisible = true
+    }
+
+    mutating func didHideWindow() {
+        guard hasReusableWindow else { return }
+        isVisible = false
+    }
+
+    mutating func didCloseWindow() {
+        hasReusableWindow = false
+        isVisible = false
+    }
+
+    func showCommand() -> Command {
+        hasReusableWindow && !isVisible ? .reveal : .none
+    }
+
+    func toggleCommand() -> Command {
+        guard hasReusableWindow else { return .none }
+        return isVisible ? .conceal : .reveal
+    }
+}
+
 /// Search history item for recent queries
 struct SearchHistoryItem: Codable, Identifiable {
     let id: UUID
@@ -58,6 +98,7 @@ class FloatingPopupManager: ObservableObject {
     private var popupWindow: NSPanel?
     private var savedPosition: NSPoint?
     private var autoDismissTask: DispatchWorkItem?
+    private var lifecycle = FloatingPopupLifecycle()
 
     private init() {
         // Load persisted settings
@@ -186,6 +227,8 @@ class FloatingPopupManager: ObservableObject {
                 }, completionHandler: {
                     existingWindow.close()
                     self.popupWindow = nil
+                    self.lifecycle.didCloseWindow()
+                    self.isVisible = self.lifecycle.isVisible
                     // Delay to let the window fully close before creating new one
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                         self.createAndShowPopup(results: results, query: query, latency: latency, isRecording: isRecording)
@@ -289,7 +332,8 @@ class FloatingPopupManager: ObservableObject {
 
         // Store and show
         self.popupWindow = panel
-        self.isVisible = true
+        lifecycle.didCreateWindow()
+        self.isVisible = lifecycle.isVisible
 
         print("📺 [POPUP] Window created at position: x=\(xPos), y=\(yPos), size=\(windowWidth)x\(windowHeight), stealth=\(isStealthMode)")
         
@@ -351,6 +395,8 @@ class FloatingPopupManager: ObservableObject {
                 existingWindow.orderOut(nil)
                 existingWindow.close()
                 self.popupWindow = nil
+                self.lifecycle.didCloseWindow()
+                self.isVisible = self.lifecycle.isVisible
             }
             present()
         }
@@ -371,6 +417,8 @@ class FloatingPopupManager: ObservableObject {
                 }, completionHandler: {
                     existingWindow.close()
                     self.popupWindow = nil
+                    self.lifecycle.didCloseWindow()
+                    self.isVisible = self.lifecycle.isVisible
                     // Delay to let the window fully close before creating new one
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                         self.createAndShowLoadingPopup(query: query, isRecording: isRecording)
@@ -455,7 +503,8 @@ class FloatingPopupManager: ObservableObject {
 
         // Store and show
         self.popupWindow = panel
-        self.isVisible = true
+        lifecycle.didCreateWindow()
+        self.isVisible = lifecycle.isVisible
 
         // Animate in
         let targetAlpha: CGFloat = isStealthMode ? 0.7 : 1.0
@@ -522,7 +571,7 @@ class FloatingPopupManager: ObservableObject {
         let y = screenFrame.midY - panel.frame.height / 2
         panel.setFrameOrigin(NSPoint(x: x, y: y))
 
-        if !isVisible {
+        if lifecycle.showCommand() == .reveal {
             let targetAlpha: CGFloat = isStealthMode ? 0.7 : 1.0
             panel.alphaValue = 0
             panel.orderFront(nil)
@@ -530,7 +579,8 @@ class FloatingPopupManager: ObservableObject {
                 ctx.duration = 0.2
                 panel.animator().alphaValue = targetAlpha
             }
-            isVisible = true
+            lifecycle.didRevealWindow()
+            isVisible = lifecycle.isVisible
         }
     }
 
@@ -538,10 +588,11 @@ class FloatingPopupManager: ObservableObject {
     func toggleVisibility() {
         guard let panel = popupWindow else { return }
 
-        if isVisible {
+        switch lifecycle.toggleCommand() {
+        case .conceal:
             savedPosition = panel.frame.origin
             hidePopup()
-        } else {
+        case .reveal:
             if let pos = savedPosition {
                 panel.setFrameOrigin(pos)
             }
@@ -552,7 +603,10 @@ class FloatingPopupManager: ObservableObject {
                 ctx.duration = 0.2
                 panel.animator().alphaValue = targetAlpha
             }
-            isVisible = true
+            lifecycle.didRevealWindow()
+            isVisible = lifecycle.isVisible
+        case .none:
+            break
         }
     }
 
@@ -571,6 +625,8 @@ class FloatingPopupManager: ObservableObject {
     func hidePopup() {
         // Save position before hiding
         saveWindowPosition()
+        autoDismissTask?.cancel()
+        autoDismissTask = nil
 
         DispatchQueue.main.async { [weak self] in
             guard let panel = self?.popupWindow else { return }
@@ -581,22 +637,17 @@ class FloatingPopupManager: ObservableObject {
                 context.timingFunction = CAMediaTimingFunction(name: .easeIn)
                 panel.animator().alphaValue = 0
             }, completionHandler: {
-                panel.orderOut(nil) // Use orderOut instead of close for smoother transition
-                // Delay before clearing to prevent ViewBridge errors
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    panel.close()
-                    self?.popupWindow = nil
-                    self?.isVisible = false
-                }
+                guard let self, self.popupWindow === panel else { return }
+                panel.orderOut(nil)
+                self.lifecycle.didHideWindow()
+                self.isVisible = self.lifecycle.isVisible
             })
         }
     }
     
     /// Toggle popup visibility
     func togglePopup() {
-        if self.isVisible {
-            hidePopup()
-        }
+        toggleVisibility()
     }
 
     // MARK: - Typed Search
