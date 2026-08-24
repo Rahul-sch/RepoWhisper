@@ -8,6 +8,10 @@
 import SwiftUI
 import AppKit
 
+final class KeyableFloatingPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+}
+
 struct FloatingPopupLifecycle {
     enum Command: Equatable {
         case none
@@ -303,7 +307,7 @@ class FloatingPopupManager: ObservableObject {
         )
 
         // Create the popup panel with stealth support
-        let panel = NSPanel(
+        let panel = KeyableFloatingPanel(
             contentRect: windowFrame,
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
@@ -475,7 +479,7 @@ class FloatingPopupManager: ObservableObject {
         )
 
         // Create the popup panel with stealth support
-        let panel = NSPanel(
+        let panel = KeyableFloatingPanel(
             contentRect: windowFrame,
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
