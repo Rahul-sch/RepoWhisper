@@ -190,33 +190,31 @@ struct ResultsWindow: View {
     @State private var isHoveringDragArea = false
 
     private var dragArea: some View {
-        HStack {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(isRecording ? OverlayTheme.danger : OverlayTheme.accent)
+                .frame(width: 6, height: 6)
+
+            Text(isRecording ? "Listening" : "RepoWhisper")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(OverlayTheme.textSecondary)
+
             Spacer()
 
-            // Hover-reveal close button
-            if isHoveringDragArea || isHoveringCloseButton {
-                Button(action: {
-                    FloatingPopupManager.shared.hidePopup()
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(isHoveringCloseButton ? Color.red.opacity(0.8) : Color.white.opacity(0.15))
-                            .frame(width: 20, height: 20)
-
-                        Image(systemName: "xmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(isHoveringCloseButton ? .white : .primary.opacity(0.6))
-                    }
+            Button(action: {
+                FloatingPopupManager.shared.hidePopup()
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(isHoveringCloseButton ? OverlayTheme.textPrimary : OverlayTheme.textSecondary)
+                    .frame(width: 24, height: 24)
+                    .background(isHoveringCloseButton ? OverlayTheme.hover : .clear, in: RoundedRectangle(cornerRadius: 7))
                 }
-                .buttonStyle(.plain)
-                .onHover { hovering in
-                    isHoveringCloseButton = hovering
-                }
-                .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                .padding(.trailing, 16)
+            .buttonStyle(.plain)
+            .onHover { isHoveringCloseButton = $0 }
             }
-        }
-        .frame(height: 44)
+        .padding(.horizontal, 14)
+        .frame(height: 36)
         .contentShape(Rectangle())
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -313,27 +311,16 @@ struct ResultsWindow: View {
     // MARK: - Header
     
     private var headerView: some View {
-        HStack(spacing: 12) {
-            // Search icon
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.08))
-                    .frame(width: 28, height: 28)
-                
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(.primary.opacity(0.7))
-            }
-            
+        HStack(spacing: 10) {
             // Query text
             if query.isEmpty {
-                Text("Listening...")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundColor(.secondary)
+                Text(isRecording ? "Listening for context…" : "Ready when you are")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(OverlayTheme.textSecondary)
             } else {
                 Text(query)
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundColor(.primary)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(OverlayTheme.textPrimary)
                     .lineLimit(1)
             }
             
@@ -347,12 +334,12 @@ struct ResultsWindow: View {
                     Text("STEALTH")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                 }
-                .foregroundColor(Color.purple.opacity(0.9))
+                .foregroundStyle(OverlayTheme.accent)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
                     Capsule()
-                        .fill(Color.purple.opacity(0.15))
+                        .fill(OverlayTheme.accent.opacity(0.12))
                 )
             }
 
@@ -364,12 +351,12 @@ struct ResultsWindow: View {
                     Text("\(Int(latencyMs))ms")
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 }
-                .foregroundColor(Color.green.opacity(0.9))
+                .foregroundStyle(OverlayTheme.success)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
                     Capsule()
-                        .fill(Color.green.opacity(0.12))
+                        .fill(OverlayTheme.success.opacity(0.10))
                 )
             }
 
@@ -395,8 +382,8 @@ struct ResultsWindow: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
     
     // MARK: - Loading View
