@@ -41,6 +41,7 @@ struct RepoWhisperApp: App {
         WindowGroup("RepoWhisper", id: "main") {
             MainWindowView()
                 .environmentObject(authManager)
+                .preferredColorScheme(.dark)
                 .frame(minWidth: 800, minHeight: 600)
                 .onAppear {
                     print("🪟 [APP] Main window appeared")
@@ -123,6 +124,7 @@ struct RepoWhisperApp: App {
         Settings {
             SettingsView()
                 .environmentObject(authManager)
+                .preferredColorScheme(.dark)
         }
     }
 }

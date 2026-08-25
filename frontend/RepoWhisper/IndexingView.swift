@@ -70,11 +70,11 @@ struct IndexingView: View {
 
                                 Text("No repositories approved")
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(OverlayTheme.textPrimary)
 
                                 Text("Go to the Repositories tab to add a folder")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(OverlayTheme.textSecondary)
                                     .multilineTextAlignment(.center)
                             }
                             .frame(maxWidth: .infinity)
@@ -85,10 +85,10 @@ struct IndexingView: View {
                                 ForEach(bookmarkManager.approvedPaths, id: \.self) { path in
                                     HStack {
                                         Text(URL(fileURLWithPath: path).lastPathComponent)
-                                        Text("•").foregroundColor(.secondary)
+                                        Text("•").foregroundStyle(OverlayTheme.textSecondary)
                                         Text(path)
                                             .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .foregroundStyle(OverlayTheme.textSecondary)
                                     }
                                     .tag(path)
                                 }
@@ -303,6 +303,8 @@ struct IndexingView: View {
     }
 }
 
+#if canImport(PreviewsMacros)
 #Preview {
     IndexingView()
 }
+#endif

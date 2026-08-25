@@ -332,6 +332,8 @@ struct SettingsView: View {
     }
 }
 
+#if canImport(PreviewsMacros)
 #Preview {
     SettingsView()
 }
+#endif

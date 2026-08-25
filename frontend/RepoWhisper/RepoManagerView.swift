@@ -276,6 +276,8 @@ struct RepoManagerView: View {
     }
 }
 
+#if canImport(PreviewsMacros)
 #Preview {
     RepoManagerView()
 }
+#endif

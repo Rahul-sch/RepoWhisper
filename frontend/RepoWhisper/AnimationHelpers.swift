@@ -16,7 +16,7 @@ enum OverlayTheme {
     static let border = Color.white.opacity(0.10)
     static let borderStrong = Color.white.opacity(0.16)
     static let textPrimary = Color.white.opacity(0.94)
-    static let textSecondary = Color.white.opacity(0.56)
+    static let textSecondary = Color.white.opacity(0.78)
     static let accent = Color(red: 0.38, green: 0.58, blue: 1.0)
     static let success = Color(red: 0.35, green: 0.82, blue: 0.62)
     static let danger = Color(red: 1.0, green: 0.38, blue: 0.42)
@@ -250,6 +250,7 @@ struct StatusBadge: View {
 
 // MARK: - Preview Helpers
 
+#if canImport(PreviewsMacros)
 #Preview("Animations") {
     VStack(spacing: 30) {
         PulsingCircles(color: .purple)
@@ -271,3 +272,4 @@ struct StatusBadge: View {
     .frame(width: 300, height: 400)
     .background(.black.opacity(0.5))
 }
+#endif

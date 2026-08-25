@@ -581,7 +581,9 @@ struct MenuBarView: View {
     }
 }
 
+#if canImport(PreviewsMacros)
 #Preview {
     MenuBarView()
         .environmentObject(AuthManager.shared)
 }
+#endif

@@ -117,6 +117,7 @@ struct ResultsWindow: View {
             controlBar
         }
         .frame(width: 520, height: isStealthMode ? 420 : 520)
+        .preferredColorScheme(.dark)
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
@@ -1430,6 +1431,7 @@ struct SkeletonShape: View {
     }
 }
 
+#if canImport(PreviewsMacros)
 #Preview {
     ResultsWindow(
         results: [
@@ -1449,3 +1451,4 @@ struct SkeletonShape: View {
     .preferredColorScheme(.dark)
     .frame(width: 600, height: 580)
 }
+#endif

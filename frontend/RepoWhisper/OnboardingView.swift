@@ -135,6 +135,8 @@ struct FeatureRow: View {
     }
 }
 
+#if canImport(PreviewsMacros)
 #Preview {
     OnboardingView(onComplete: {})
 }
+#endif

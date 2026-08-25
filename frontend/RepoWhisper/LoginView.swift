@@ -179,7 +179,9 @@ struct LoginView: View {
     }
 }
 
+#if canImport(PreviewsMacros)
 #Preview {
     LoginView()
         .environmentObject(AuthManager.shared)
 }
+#endif

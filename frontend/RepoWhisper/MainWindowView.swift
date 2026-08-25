@@ -312,10 +312,10 @@ struct SearchView: View {
 
                 HStack(spacing: 8) {
                     Image(systemName: "folder")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                     Text("Search in")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                     Picker("Repository", selection: $selectedRepoPath) {
                         Text("All repositories").tag(nil as String?)
                         ForEach(bookmarkManager.approvedPaths, id: \.self) { path in
@@ -376,19 +376,19 @@ struct SearchView: View {
 
                     Image(systemName: searchQuery.isEmpty ? "magnifyingglass" : "doc.text.magnifyingglass")
                         .font(.system(size: 60))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
 
                     Text(searchQuery.isEmpty ? "Search Your Code" : "No Results Found")
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textPrimary)
 
                     Text(searchQuery.isEmpty ?
                          "Type a query or use voice search to find code" :
                          "Try a different search query"
                     )
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
 
@@ -712,7 +712,9 @@ struct StatBadge: View {
     }
 }
 
+#if canImport(PreviewsMacros)
 #Preview {
     MainWindowView()
         .environmentObject(AuthManager.shared)
 }
+#endif
