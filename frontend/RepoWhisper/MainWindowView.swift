@@ -135,19 +135,18 @@ struct SearchView: View {
         VStack(spacing: 0) {
             // Header with search bar
             VStack(spacing: 16) {
-                HStack {
-                    Image(systemName: "magnifyingglass.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.purple, .blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Text("Search")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                HStack(spacing: 10) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(OverlayTheme.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ask RepoWhisper")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(OverlayTheme.textPrimary)
+                        Text("Search code, explain context, or listen live")
+                            .font(.system(size: 11))
+                            .foregroundStyle(OverlayTheme.textSecondary)
+                    }
                     Spacer()
 
                     Button {
@@ -161,8 +160,9 @@ struct SearchView: View {
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(8)
+                        .foregroundStyle(OverlayTheme.textSecondary)
+                        .background(OverlayTheme.elevated)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .help("Open and center the floating display (⌘⇧Space)")
@@ -182,8 +182,9 @@ struct SearchView: View {
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.purple.opacity(0.1))
-                        .cornerRadius(8)
+                        .foregroundStyle(OverlayTheme.accent)
+                        .background(OverlayTheme.accent.opacity(0.10))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .disabled(explainCoordinator.isWorking)
@@ -209,8 +210,9 @@ struct SearchView: View {
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.primary.opacity(0.05))
-                        .cornerRadius(8)
+                        .foregroundStyle(OverlayTheme.textSecondary)
+                        .background(OverlayTheme.elevated)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .disabled(isTranscribing)
@@ -253,8 +255,8 @@ struct SearchView: View {
                             Image(systemName: audioCapture.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                                 .foregroundStyle(
                                     audioCapture.isRecording ?
-                                    LinearGradient(colors: [.red], startPoint: .top, endPoint: .bottom) :
-                                    LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                    LinearGradient(colors: [OverlayTheme.danger], startPoint: .top, endPoint: .bottom) :
+                                    LinearGradient(colors: [OverlayTheme.accent], startPoint: .top, endPoint: .bottom)
                                 )
                             Text(audioCapture.isRecording ? "Stop" : "Voice")
                                 .font(.caption)
@@ -262,25 +264,28 @@ struct SearchView: View {
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.primary.opacity(0.05))
-                        .cornerRadius(8)
+                        .foregroundStyle(audioCapture.isRecording ? OverlayTheme.danger : OverlayTheme.textSecondary)
+                        .background(audioCapture.isRecording ? OverlayTheme.danger.opacity(0.12) : OverlayTheme.elevated)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
 
                 // Search bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
+                HStack(spacing: 10) {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(OverlayTheme.accent)
 
-                    TextField("Search your code...", text: $searchQuery)
+                    TextField("Ask anything about your repository…", text: $searchQuery)
                         .textFieldStyle(.plain)
+                        .font(.system(size: 14))
+                        .foregroundStyle(OverlayTheme.textPrimary)
                         .onSubmit { performSearch() }
 
                     if !searchQuery.isEmpty {
                         Button(action: { searchQuery = "" }) {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(OverlayTheme.textSecondary)
                         }
                         .buttonStyle(.plain)
                     }
@@ -291,14 +296,19 @@ struct SearchView: View {
                     } else if !searchQuery.isEmpty {
                         Button(action: performSearch) {
                             Image(systemName: "arrow.right.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(OverlayTheme.accent)
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(12)
-                .background(Color.primary.opacity(0.05))
-                .cornerRadius(10)
+                .padding(.horizontal, 14)
+                .frame(height: 44)
+                .background(OverlayTheme.elevated)
+                .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: OverlayTheme.controlRadius, style: .continuous)
+                        .stroke(OverlayTheme.border, lineWidth: 1)
+                )
 
                 HStack(spacing: 8) {
                     Image(systemName: "folder")
@@ -355,14 +365,8 @@ struct SearchView: View {
                     }
                 }
             }
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: [Color.purple.opacity(0.1), Color.blue.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .padding(20)
+            .background(OverlayTheme.canvas)
 
             // Results or empty state
             if searchResults.isEmpty && !isSearching {
