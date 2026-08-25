@@ -27,17 +27,11 @@ struct IndexingView: View {
             VStack(spacing: 12) {
                 HStack {
                     Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.green, .blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(OverlayTheme.accent)
                     Text("Index Repository")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(OverlayTheme.textPrimary)
                     Spacer()
                 }
 
@@ -48,7 +42,7 @@ struct IndexingView: View {
                             .foregroundColor(.orange)
                         Text("Backend not ready. Please wait...")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(OverlayTheme.textSecondary)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
@@ -56,14 +50,8 @@ struct IndexingView: View {
                     .cornerRadius(8)
                 }
             }
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: [Color.green.opacity(0.1), Color.blue.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .padding(20)
+            .background(OverlayTheme.canvas)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -71,14 +59,14 @@ struct IndexingView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("Select Repository", systemImage: "folder")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundStyle(OverlayTheme.textPrimary)
 
                         if bookmarkManager.approvedPaths.isEmpty {
                             // Empty state
                             VStack(spacing: 12) {
                                 Image(systemName: "folder.badge.questionmark")
                                     .font(.system(size: 40))
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(OverlayTheme.textSecondary)
 
                                 Text("No repositories approved")
                                     .font(.subheadline)
@@ -110,23 +98,23 @@ struct IndexingView: View {
                             if !selectedRepoPath.isEmpty {
                                 HStack {
                                     Image(systemName: "folder.fill")
-                                        .foregroundColor(.blue)
+                                        .foregroundStyle(OverlayTheme.accent)
                                     Text(selectedRepoPath)
                                         .font(.system(.caption, design: .monospaced))
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(OverlayTheme.textSecondary)
                                         .lineLimit(1)
                                         .truncationMode(.middle)
                                 }
                                 .padding(10)
-                                .background(Color.primary.opacity(0.05))
-                                .cornerRadius(8)
+                                .background(OverlayTheme.canvas.opacity(0.72))
+                                .clipShape(RoundedRectangle(cornerRadius: 9))
                             }
                         }
                     }
                     .padding()
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .background(OverlayTheme.elevated)
+                    .clipShape(RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // Index Mode Selection
                     VStack(alignment: .leading, spacing: 12) {
@@ -150,20 +138,20 @@ struct IndexingView: View {
                         // Mode info
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "info.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(OverlayTheme.accent)
                             Text(selectedIndexMode.detailedDescription)
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(OverlayTheme.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(10)
-                        .background(Color.blue.opacity(0.05))
-                        .cornerRadius(8)
+                        .background(OverlayTheme.accent.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 9))
                     }
                     .padding()
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .background(OverlayTheme.elevated)
+                    .clipShape(RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // Index Button
                     Button(action: startIndexing) {
@@ -180,16 +168,10 @@ struct IndexingView: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                colors: canStartIndexing ? [.green, .blue] : [.gray, .gray],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .padding(.vertical, 13)
+                        .background(canStartIndexing ? OverlayTheme.accent : Color.gray)
                         .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius))
                     }
                     .buttonStyle(.plain)
                     .disabled(!canStartIndexing)
@@ -203,16 +185,16 @@ struct IndexingView: View {
 
                             HStack {
                                 Image(systemName: "gearshape.2.fill")
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(OverlayTheme.accent)
                                 Text(statusMessage)
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(OverlayTheme.textSecondary)
                             }
                         }
                         .padding()
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .cornerRadius(12)
-                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        .background(OverlayTheme.elevated)
+                        .clipShape(RoundedRectangle(cornerRadius: 13))
+                        .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
                     }
 
                     // Completion stats
@@ -220,7 +202,7 @@ struct IndexingView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Label("Indexing Complete", systemImage: "checkmark.circle.fill")
                                 .font(.headline)
-                                .foregroundColor(.green)
+                                .foregroundStyle(OverlayTheme.success)
 
                             HStack(spacing: 20) {
                                 StatBadge(
@@ -237,9 +219,9 @@ struct IndexingView: View {
                             }
                         }
                         .padding()
-                        .background(Color.green.opacity(0.05))
-                        .cornerRadius(12)
-                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        .background(OverlayTheme.success.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 13))
+                        .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.success.opacity(0.22)))
                     }
                 }
                 .padding()
