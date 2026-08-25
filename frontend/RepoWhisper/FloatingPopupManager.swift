@@ -279,10 +279,10 @@ class FloatingPopupManager: ObservableObject {
         print("✅ [POPUP] Got main screen: \(screen.frame)")
         let screenFrame = screen.visibleFrame
 
-        // Window size (premium glassmorphism)
-        let windowWidth: CGFloat = 580
-        let windowHeight: CGFloat = isStealthMode ? 460 : 560
-        let padding: CGFloat = 20
+        // Compact assistant geometry, synchronized with ResultsWindow.
+        let windowWidth: CGFloat = 520
+        let windowHeight: CGFloat = isStealthMode ? 420 : 520
+        let padding: CGFloat = 16
 
         // Use saved position if available, otherwise default to top-right (or bottom-right in stealth)
         let xPos: CGFloat
@@ -452,10 +452,10 @@ class FloatingPopupManager: ObservableObject {
         guard let screen = NSScreen.main else { return }
         let screenFrame = screen.visibleFrame
 
-        // Window size
-        let windowWidth: CGFloat = 580
-        let windowHeight: CGFloat = isStealthMode ? 460 : 560
-        let padding: CGFloat = 20
+        // Compact assistant geometry, synchronized with ResultsWindow.
+        let windowWidth: CGFloat = 520
+        let windowHeight: CGFloat = isStealthMode ? 420 : 520
+        let padding: CGFloat = 16
 
         // Use saved position if available
         let xPos: CGFloat
