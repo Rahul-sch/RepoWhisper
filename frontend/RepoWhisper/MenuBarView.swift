@@ -316,37 +316,20 @@ struct MenuBarView: View {
                 }
             }
         } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            audioCapture.isRecording ?
-                            LinearGradient(
-                                colors: [Color.red.opacity(0.2), Color.red.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ) :
-                            LinearGradient(
-                                colors: [Color.purple.opacity(0.2), Color.blue.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 56, height: 56)
-                    
-                    Image(systemName: audioCapture.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                        .font(.system(size: 28, weight: .medium))
-                        .foregroundStyle(
-                            audioCapture.isRecording ?
-                            LinearGradient(colors: [.red], startPoint: .top, endPoint: .bottom) :
-                            LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        )
-                }
+            HStack(spacing: 12) {
+                Image(systemName: audioCapture.isRecording ? "stop.fill" : "mic.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(audioCapture.isRecording ? OverlayTheme.danger : OverlayTheme.accent)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        audioCapture.isRecording ? OverlayTheme.danger.opacity(0.14) : OverlayTheme.accent.opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: 10)
+                    )
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(audioCapture.isRecording ? "Stop Listening" : "Start Listening")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(.primary)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(OverlayTheme.textPrimary)
                     
                     HStack(spacing: 4) {
                         Image(systemName: "keyboard")
@@ -354,7 +337,7 @@ struct MenuBarView: View {
                         Text("⌘⇧R")
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
                     }
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                 }
                 
                 Spacer()
@@ -366,7 +349,7 @@ struct MenuBarView: View {
                             RoundedRectangle(cornerRadius: 1.5)
                                 .fill(
                                     Float(i) / 5.0 < audioCapture.audioLevel ?
-                                    LinearGradient(colors: [.purple, .blue], startPoint: .top, endPoint: .bottom) :
+                                    LinearGradient(colors: [OverlayTheme.accent], startPoint: .top, endPoint: .bottom) :
                                     LinearGradient(colors: [.gray.opacity(0.2)], startPoint: .top, endPoint: .bottom)
                                 )
                                 .frame(width: 3, height: CGFloat(6 + i * 3))
@@ -375,23 +358,14 @@ struct MenuBarView: View {
                     }
                 }
             }
-            .padding(18)
+            .padding(12)
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(OverlayTheme.elevated)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(
-                        audioCapture.isRecording ?
-                        LinearGradient(
-                            colors: [Color.red.opacity(0.3), Color.red.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ) :
-                        LinearGradient(colors: [Color.clear], startPoint: .top, endPoint: .bottom),
-                        lineWidth: 0.5
-                    )
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .stroke(audioCapture.isRecording ? OverlayTheme.danger.opacity(0.45) : OverlayTheme.border, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -404,27 +378,27 @@ struct MenuBarView: View {
             if audioCapture.isRecording {
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(.red)
+                        .fill(OverlayTheme.danger)
                         .frame(width: 8, height: 8)
-                        .shadow(color: .red.opacity(0.5), radius: 4)
+                        .shadow(color: OverlayTheme.danger.opacity(0.45), radius: 4)
                     
                     Text("Listening...")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                 }
             }
             
             if !lastTranscription.isEmpty {
                 Text("\"" + lastTranscription + "\"")
                     .font(.system(size: 12, weight: .regular, design: .rounded))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(OverlayTheme.textPrimary)
                     .italic()
                     .lineLimit(2)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color.white.opacity(0.05))
+                            .fill(OverlayTheme.elevated)
                     )
             }
         }
