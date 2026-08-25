@@ -21,27 +21,15 @@ struct SettingsView: View {
             // Header
             HStack {
                 Image(systemName: "gearshape.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.gray, .blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(OverlayTheme.accent)
                 Text("Settings")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(OverlayTheme.textPrimary)
                 Spacer()
             }
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: [Color.gray.opacity(0.1), Color.blue.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .padding(20)
+            .background(OverlayTheme.canvas)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -56,16 +44,16 @@ struct SettingsView: View {
                                     .font(.body)
                                 Text("Automatically start the search backend when app opens")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(OverlayTheme.textSecondary)
                             }
                         }
                         .toggleStyle(.switch)
                         .padding(.vertical, 8)
                     }
                     .padding()
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .background(OverlayTheme.elevated)
+                    .clipShape(RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // Backend Status
                     VStack(alignment: .leading, spacing: 12) {
@@ -83,7 +71,7 @@ struct SettingsView: View {
                             if backendManager.isHealthy {
                                 statusRow(
                                     icon: "doc.text.fill",
-                                    iconColor: .blue,
+                                    iconColor: OverlayTheme.accent,
                                     title: "Indexed Chunks",
                                     value: "\(backendManager.indexCount)"
                                 )
@@ -98,9 +86,9 @@ struct SettingsView: View {
                         }
                     }
                     .padding()
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .background(OverlayTheme.elevated)
+                    .clipShape(RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // Diagnostics
                     VStack(alignment: .leading, spacing: 12) {
@@ -110,16 +98,16 @@ struct SettingsView: View {
                         Button(action: openLogs) {
                             HStack {
                                 Image(systemName: "doc.text.fill")
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(OverlayTheme.accent)
                                 Text("Open Logs Directory")
                                     .fontWeight(.medium)
                                 Spacer()
                                 Image(systemName: "arrow.up.right.square")
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(OverlayTheme.textSecondary)
                             }
                             .padding()
-                            .background(Color.primary.opacity(0.03))
-                            .cornerRadius(8)
+                            .background(OverlayTheme.canvas.opacity(0.72))
+                            .clipShape(RoundedRectangle(cornerRadius: 9))
                         }
                         .buttonStyle(.plain)
 
@@ -131,25 +119,25 @@ struct SettingsView: View {
                                         .frame(width: 20, height: 20)
                                 } else {
                                     Image(systemName: "checkmark.shield.fill")
-                                        .foregroundColor(.green)
+                                        .foregroundStyle(OverlayTheme.success)
                                 }
                                 Text(isRunningAudit ? "Running Audit..." : "Run Security Audit")
                                     .fontWeight(.medium)
                                 Spacer()
                                 Image(systemName: "play.circle")
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(OverlayTheme.textSecondary)
                             }
                             .padding()
-                            .background(Color.primary.opacity(0.03))
-                            .cornerRadius(8)
+                            .background(OverlayTheme.canvas.opacity(0.72))
+                            .clipShape(RoundedRectangle(cornerRadius: 9))
                         }
                         .buttonStyle(.plain)
                         .disabled(isRunningAudit)
                     }
                     .padding()
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .background(OverlayTheme.elevated)
+                    .clipShape(RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // App Info
                     VStack(alignment: .leading, spacing: 12) {
@@ -163,9 +151,9 @@ struct SettingsView: View {
                         }
                     }
                     .padding()
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .background(OverlayTheme.elevated)
+                    .clipShape(RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
                 }
                 .padding()
             }
@@ -187,7 +175,7 @@ struct SettingsView: View {
 
             Text(title)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(OverlayTheme.textSecondary)
 
             Spacer()
 
@@ -205,13 +193,13 @@ struct SettingsView: View {
         HStack {
             Text(label)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(OverlayTheme.textSecondary)
 
             Spacer()
 
             Text(value)
                 .font(.system(.subheadline, design: .monospaced))
-                .foregroundColor(.primary)
+                .foregroundStyle(OverlayTheme.textPrimary)
         }
         .padding(.vertical, 4)
     }
@@ -249,13 +237,13 @@ struct SettingsView: View {
     private var statusColor: Color {
         switch backendManager.status {
         case .healthy:
-            return .green
+            return OverlayTheme.success
         case .starting:
             return .yellow
         case .stopped:
             return .gray
         case .error:
-            return .red
+            return OverlayTheme.danger
         }
     }
 
