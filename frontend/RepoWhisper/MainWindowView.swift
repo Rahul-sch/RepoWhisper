@@ -426,18 +426,19 @@ struct SearchView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "doc.text.fill")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(OverlayTheme.accent)
 
                     Text(URL(fileURLWithPath: result.filePath).lastPathComponent)
                         .font(.subheadline)
                         .fontWeight(.semibold)
+                        .foregroundStyle(OverlayTheme.textPrimary)
 
                     Text("•")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
 
                     Text("Lines \(result.lineStart)-\(result.lineEnd)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                 }
 
                 Spacer()
@@ -450,23 +451,23 @@ struct SearchView: View {
                         .font(.caption)
                         .fontWeight(.medium)
                 }
-                .foregroundColor(.orange)
+                .foregroundStyle(OverlayTheme.success)
             }
 
             // Code snippet
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(result.chunk)
                     .font(.system(.caption, design: .monospaced))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(OverlayTheme.textPrimary.opacity(0.86))
                     .padding(10)
-                    .background(Color.primary.opacity(0.03))
-                    .cornerRadius(6)
+                    .background(OverlayTheme.canvas.opacity(0.72))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
 
             // File path
             Text(result.filePath)
                 .font(.system(.caption2, design: .monospaced))
-                .foregroundColor(.secondary)
+                .foregroundStyle(OverlayTheme.textSecondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
 
@@ -481,11 +482,11 @@ struct SearchView: View {
                             .font(.caption)
                             .fontWeight(.medium)
                     }
-                    .foregroundColor(copiedResultId == result.id ? .green : .blue)
+                    .foregroundStyle(copiedResultId == result.id ? OverlayTheme.success : OverlayTheme.accent)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.primary.opacity(0.05))
-                    .cornerRadius(6)
+                    .background(OverlayTheme.hover)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
                 .buttonStyle(.plain)
 
@@ -496,11 +497,11 @@ struct SearchView: View {
                         Image(systemName: "sparkles").font(.caption)
                         Text("Explain").font(.caption).fontWeight(.medium)
                     }
-                    .foregroundColor(.purple)
+                    .foregroundStyle(OverlayTheme.accent)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.purple.opacity(0.08))
-                    .cornerRadius(6)
+                    .background(OverlayTheme.accent.opacity(0.10))
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
                 .buttonStyle(.plain)
 
@@ -513,11 +514,11 @@ struct SearchView: View {
                             .font(.caption)
                             .fontWeight(.medium)
                     }
-                    .foregroundColor(.blue)
+                    .foregroundStyle(OverlayTheme.textSecondary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.primary.opacity(0.05))
-                    .cornerRadius(6)
+                    .background(OverlayTheme.hover)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
                 .buttonStyle(.plain)
 
@@ -530,11 +531,11 @@ struct SearchView: View {
                             .font(.caption)
                             .fontWeight(.medium)
                     }
-                    .foregroundColor(.blue)
+                    .foregroundStyle(OverlayTheme.textSecondary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.primary.opacity(0.05))
-                    .cornerRadius(6)
+                    .background(OverlayTheme.hover)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
                 .buttonStyle(.plain)
 
@@ -542,9 +543,12 @@ struct SearchView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
+        .background(OverlayTheme.elevated)
+        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(OverlayTheme.border, lineWidth: 1)
+        )
     }
 
     // MARK: - Actions
