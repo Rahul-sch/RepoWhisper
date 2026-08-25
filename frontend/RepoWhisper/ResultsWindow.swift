@@ -471,11 +471,11 @@ struct PremiumResultCard: View {
             HStack(spacing: 10) {
                 // Rank badge
                 Text("#\(rank)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(rank == 1 ? OverlayTheme.accent : OverlayTheme.textSecondary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(rankBadgeColor)
+                    .background(rank == 1 ? OverlayTheme.accent.opacity(0.12) : OverlayTheme.hover)
                     .clipShape(Capsule())
 
                 // File info
@@ -486,7 +486,7 @@ struct PremiumResultCard: View {
 
                     Text(fileName)
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundColor(.primary)
+                        .foregroundStyle(OverlayTheme.textPrimary)
                         .lineLimit(1)
                 }
 
@@ -499,7 +499,7 @@ struct PremiumResultCard: View {
                         .font(.system(size: 10, weight: .medium, design: .rounded))
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.purple)
+                .foregroundStyle(OverlayTheme.accent)
 
                 // Copy button (appears on hover)
                 if isHovered || isHoveringCopy {
@@ -510,12 +510,12 @@ struct PremiumResultCard: View {
                             Text(showCopied ? "Copied!" : "Copy")
                                 .font(.system(size: 10, weight: .medium, design: .rounded))
                         }
-                        .foregroundColor(showCopied ? .green : (isHoveringCopy ? .primary : .secondary))
+                        .foregroundStyle(showCopied ? OverlayTheme.success : (isHoveringCopy ? OverlayTheme.textPrimary : OverlayTheme.textSecondary))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(
                             Capsule()
-                                .fill(showCopied ? Color.green.opacity(0.15) : Color.white.opacity(isHoveringCopy ? 0.15 : 0.08))
+                                .fill(showCopied ? OverlayTheme.success.opacity(0.14) : OverlayTheme.hover)
                         )
                     }
                     .buttonStyle(.plain)
@@ -527,7 +527,7 @@ struct PremiumResultCard: View {
                 HStack(spacing: 12) {
                     Text("L\(result.lineStart)-\(result.lineEnd)")
                         .font(.system(size: 11, weight: .regular, design: .monospaced))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
 
                     // Score badge
                     Text("\(Int(result.score * 100))%")
@@ -546,42 +546,24 @@ struct PremiumResultCard: View {
             // File path
             Text(result.filePath)
                 .font(.system(size: 11, weight: .regular, design: .monospaced))
-                .foregroundColor(.secondary.opacity(0.6))
+                .foregroundStyle(OverlayTheme.textSecondary.opacity(0.72))
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
-        .padding(16)
+        .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(
-                    isSelected || isHovered ?
-                    Color.white.opacity(0.08) :
-                    Color.white.opacity(0.03)
-                )
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(isSelected || isHovered ? OverlayTheme.hover : OverlayTheme.elevated.opacity(0.62))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(
-                    isSelected ?
-                    Color.white.opacity(0.15) :
-                    Color.clear,
-                    lineWidth: 0.5
-                )
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(isSelected ? OverlayTheme.accent.opacity(0.55) : OverlayTheme.border, lineWidth: 1)
         )
         .animation(.easeOut(duration: 0.15), value: isHovered)
     }
     
     private var fileName: String {
         URL(fileURLWithPath: result.filePath).lastPathComponent
-    }
-    
-    private var rankBadgeColor: Color {
-        switch rank {
-        case 1: return Color(red: 0.98, green: 0.80, blue: 0.36) // Gold
-        case 2: return Color(red: 0.70, green: 0.70, blue: 0.70) // Silver
-        case 3: return Color(red: 0.96, green: 0.65, blue: 0.38) // Bronze
-        default: return Color.secondary.opacity(0.6)
-        }
     }
     
     private var fileTypeColor: Color {
