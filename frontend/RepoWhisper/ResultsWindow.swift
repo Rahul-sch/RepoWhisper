@@ -232,7 +232,7 @@ struct ResultsWindow: View {
     @State private var isHoveringClearBtn = false
 
     private var controlBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             // Filter toggle (left side)
             FilterToggle(mode: $searchMode)
 
@@ -1216,13 +1216,14 @@ struct AskBar: View {
         HStack(spacing: 12) {
             // Text field
             HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(OverlayTheme.accent)
 
-                TextField("What code are you searching for?", text: $query)
+                TextField("Ask about your code…", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(OverlayTheme.textPrimary)
                     .focused($textFieldFocused)
                     .onSubmit {
                         if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -1237,24 +1238,24 @@ struct AskBar: View {
                     Button(action: { query = "" }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(.secondary.opacity(0.6))
+                            .foregroundStyle(OverlayTheme.textSecondary)
                     }
                     .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 9)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.06))
+                RoundedRectangle(cornerRadius: OverlayTheme.controlRadius, style: .continuous)
+                    .fill(OverlayTheme.elevated)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: OverlayTheme.controlRadius, style: .continuous)
                     .stroke(
                         isFocused || isRecording
-                            ? (isRecording ? Color.red.opacity(0.5) : Color.blue.opacity(0.4))
-                            : Color.white.opacity(0.1),
-                        lineWidth: isFocused || isRecording ? 1.5 : 0.5
+                            ? (isRecording ? OverlayTheme.danger.opacity(0.65) : OverlayTheme.accent.opacity(0.65))
+                            : OverlayTheme.border,
+                        lineWidth: 1
                     )
             )
 
@@ -1265,8 +1266,8 @@ struct AskBar: View {
                 action: onToggleRecording
             )
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
     }
 }
 
@@ -1285,8 +1286,8 @@ struct AskBarMicButton: View {
                 // Outer pulse ring (when recording)
                 if isRecording {
                     Circle()
-                        .stroke(Color.red.opacity(0.3), lineWidth: 2)
-                        .frame(width: 36 + CGFloat(audioLevel) * 15, height: 36 + CGFloat(audioLevel) * 15)
+                        .stroke(OverlayTheme.danger.opacity(0.35), lineWidth: 1)
+                        .frame(width: 34 + CGFloat(audioLevel) * 12, height: 34 + CGFloat(audioLevel) * 12)
                         .animation(.easeOut(duration: 0.1), value: audioLevel)
                 }
 
@@ -1294,15 +1295,15 @@ struct AskBarMicButton: View {
                 Circle()
                     .fill(
                         isRecording
-                            ? Color.red.opacity(0.2 + Double(audioLevel) * 0.3)
-                            : (isHovering ? Color.white.opacity(0.12) : Color.white.opacity(0.08))
+                            ? OverlayTheme.danger.opacity(0.18 + Double(audioLevel) * 0.25)
+                            : (isHovering ? OverlayTheme.hover : OverlayTheme.elevated)
                     )
-                    .frame(width: 36, height: 36)
+                    .frame(width: 34, height: 34)
 
                 // Mic icon
                 Image(systemName: isRecording ? "waveform" : "mic.fill")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(isRecording ? .red : (isHovering ? .primary : .secondary))
+                    .foregroundStyle(isRecording ? OverlayTheme.danger : (isHovering ? OverlayTheme.textPrimary : OverlayTheme.textSecondary))
                     .scaleEffect(isRecording ? 1.0 + CGFloat(audioLevel) * 0.15 : 1.0)
                     .animation(.easeOut(duration: 0.1), value: audioLevel)
 
