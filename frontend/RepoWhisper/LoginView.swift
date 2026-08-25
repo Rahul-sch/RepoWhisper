@@ -16,39 +16,26 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            // Gradient background
-            LinearGradient(
-                colors: [
-                    Color(red: 0.05, green: 0.05, blue: 0.12),
-                    Color(red: 0.08, green: 0.06, blue: 0.18)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            OverlayTheme.canvas.ignoresSafeArea()
 
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                 // Logo and title
-                VStack(spacing: 12) {
-                    Image(systemName: "waveform.circle.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.purple, .blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                VStack(spacing: 10) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(OverlayTheme.accent)
+                        .frame(width: 48, height: 48)
+                        .background(OverlayTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
 
                     Text("RepoWhisper")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(OverlayTheme.textPrimary)
 
-                    Text("Voice-powered code search")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                    Text("Your private, real-time code assistant")
+                        .font(.system(size: 12))
+                        .foregroundStyle(OverlayTheme.textSecondary)
                 }
-                .padding(.top, 40)
+                .padding(.top, 28)
 
                 // Form fields (hide when authenticated)
                 if !authManager.isAuthenticated {
@@ -57,28 +44,30 @@ struct LoginView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Email")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(OverlayTheme.textSecondary)
 
                         TextField("you@example.com", text: $email)
                             .textFieldStyle(.plain)
                             .padding(12)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(10)
-                            .foregroundColor(.white)
+                            .background(OverlayTheme.elevated)
+                            .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius))
+                            .overlay(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius).stroke(OverlayTheme.border))
+                            .foregroundStyle(OverlayTheme.textPrimary)
                     }
 
                     // Password field
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Password")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(OverlayTheme.textSecondary)
 
                         SecureField("••••••••", text: $password)
                             .textFieldStyle(.plain)
                             .padding(12)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(10)
-                            .foregroundColor(.white)
+                            .background(OverlayTheme.elevated)
+                            .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius))
+                            .overlay(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius).stroke(OverlayTheme.border))
+                            .foregroundStyle(OverlayTheme.textPrimary)
                     }
                     }
                     .padding(.horizontal, 24)
@@ -89,7 +78,7 @@ struct LoginView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 48))
-                            .foregroundColor(.green)
+                            .foregroundStyle(OverlayTheme.success)
 
                         Text("Account Created!")
                             .font(.headline)
@@ -137,14 +126,10 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(
-                                LinearGradient(
-                                    colors: [.purple, .blue],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                                OverlayTheme.accent
                             )
                             .foregroundColor(.white)
-                            .cornerRadius(10)
+                            .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius))
                         }
                         .buttonStyle(.plain)
                         .disabled(authManager.isLoading || email.isEmpty || password.isEmpty)
@@ -163,7 +148,7 @@ struct LoginView: View {
                         } label: {
                             Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
                                 .font(.caption)
-                                .foregroundColor(.purple)
+                                .foregroundStyle(OverlayTheme.accent)
                         }
                         .buttonStyle(.plain)
                     }
