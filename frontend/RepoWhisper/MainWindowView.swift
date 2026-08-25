@@ -651,25 +651,30 @@ struct SearchView: View {
 
 struct BossModeView: View {
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "crown.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.yellow)
+        VStack(spacing: 14) {
+            Image(systemName: "person.wave.2.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(OverlayTheme.accent)
+                .frame(width: 48, height: 48)
+                .background(OverlayTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
             
             Text("Boss Mode")
-                .font(.title)
-                .fontWeight(.bold)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(OverlayTheme.textPrimary)
             
-            Text("Meeting intelligence and screen awareness")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            Text("Live meeting intelligence and screen-aware answers")
+                .font(.system(size: 13))
+                .foregroundStyle(OverlayTheme.textSecondary)
             
-            Text("Coming soon...")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.top, 20)
+            Label("Configure and start from the menu bar", systemImage: "menubar.rectangle")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(OverlayTheme.textSecondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(OverlayTheme.elevated, in: RoundedRectangle(cornerRadius: 9))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(OverlayTheme.canvas)
     }
 }
 
@@ -689,16 +694,20 @@ struct StatBadge: View {
                     .font(.title2)
                     .fontWeight(.bold)
             }
-            .foregroundColor(.primary)
+            .foregroundStyle(OverlayTheme.textPrimary)
             
             Text(label)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(OverlayTheme.textSecondary)
         }
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.primary.opacity(0.05))
+                .fill(OverlayTheme.elevated)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(OverlayTheme.border, lineWidth: 1)
         )
     }
 }
