@@ -48,22 +48,16 @@ struct MainWindowView: View {
                 Label("Settings", systemImage: "gearshape")
                     .tag(4)
             }
-            .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 250)
+            .foregroundStyle(OverlayTheme.textSecondary)
+            .tint(OverlayTheme.accent)
+            .scrollContentBackground(.hidden)
+            .background(OverlayTheme.canvas)
+            .navigationSplitViewColumnWidth(min: 176, ideal: 192, max: 220)
             .listStyle(.sidebar)
         } detail: {
             // Main content area
             ZStack {
-                // Background gradient
-                LinearGradient(
-                    colors: [
-                        Color.purple.opacity(0.05),
-                        Color.blue.opacity(0.02),
-                        Color.clear
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                OverlayTheme.canvas.ignoresSafeArea()
                 
                 // Content based on selected tab
                 Group {
@@ -91,11 +85,11 @@ struct MainWindowView: View {
                 // Connection status
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(backendManager.isHealthy ? Color.green : Color.red)
+                        .fill(backendManager.isHealthy ? OverlayTheme.success : OverlayTheme.danger)
                         .frame(width: 8, height: 8)
                     Text(backendManager.isHealthy ? "Connected" : backendManager.statusMessage)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                         .lineLimit(1)
                 }
                 
@@ -104,7 +98,7 @@ struct MainWindowView: View {
                 // User info - local mode
                 Text("Local User")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(OverlayTheme.textSecondary)
                 
                 // Sign out button
                 Button(action: {
