@@ -395,20 +395,23 @@ struct ResultsWindow: View {
     // MARK: - Empty State with Waveform
     
     private var emptyStateView: some View {
-        VStack(spacing: 24) {
-            // Animated waveform
+        VStack(spacing: 16) {
             WaveformAnimation(isActive: true)
-                .frame(height: 60)
+                .frame(height: 44)
             
-            VStack(spacing: 8) {
-                Text("No results found")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
+            VStack(spacing: 5) {
+                Text(query.isEmpty ? "Ask anything about this repository" : "No matching context")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(OverlayTheme.textPrimary)
                 
                 if !query.isEmpty {
-                    Text("Try rephrasing your query")
-                        .font(.system(size: 13, weight: .regular, design: .rounded))
-                        .foregroundColor(.secondary)
+                    Text("Try a file name, symbol, or broader question.")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(OverlayTheme.textSecondary)
+                } else {
+                    Text("Search by voice or type above.")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(OverlayTheme.textSecondary)
                 }
             }
         }
