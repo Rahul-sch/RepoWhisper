@@ -116,37 +116,25 @@ struct ResultsWindow: View {
             // Bottom control bar
             controlBar
         }
-        .frame(width: 580, height: isStealthMode ? 460 : 560)
+        .frame(width: 520, height: isStealthMode ? 420 : 520)
         .background(
-            // Premium glassmorphism background (more subtle in stealth)
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .opacity(isStealthMode ? 0.6 : 1.0)
+            ZStack {
+                RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
+                    .fill(OverlayTheme.canvas.opacity(isStealthMode ? 0.72 : 0.90))
+            }
         )
         .overlay(
-            // Hairline border (0.5px, 20% opacity white)
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(
-                    Color.white.opacity(0.2),
-                    lineWidth: 0.5
-                )
+            RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
+                .stroke(OverlayTheme.borderStrong, lineWidth: 1)
         )
         .overlay(
             // Pulsating border when recording
             Group {
                 if isRecording {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color.purple.opacity(0.6),
-                                    Color.blue.opacity(0.4)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1.5
-                        )
+                    RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
+                        .stroke(OverlayTheme.accent, lineWidth: 1)
                         .opacity(pulsatingOpacity)
                         .animation(
                             .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
@@ -156,10 +144,10 @@ struct ResultsWindow: View {
             }
         )
         .shadow(
-            color: .black.opacity(isStealthMode ? 0 : 0.4),
-            radius: isStealthMode ? 0 : 50,
+            color: .black.opacity(isStealthMode ? 0 : 0.55),
+            radius: isStealthMode ? 0 : 32,
             x: 0,
-            y: isStealthMode ? 0 : 25
+            y: isStealthMode ? 0 : 18
         )
         .onAppear {
             if isRecording {
