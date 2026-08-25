@@ -24,17 +24,11 @@ struct RepoManagerView: View {
             VStack(spacing: 12) {
                 HStack {
                     Image(systemName: "folder.badge.gearshape")
-                        .font(.title2)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.blue, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(OverlayTheme.accent)
                     Text("Repositories")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(OverlayTheme.textPrimary)
                     Spacer()
                 }
 
@@ -46,7 +40,7 @@ struct RepoManagerView: View {
                             .frame(width: 8, height: 8)
                         Text(backendManager.statusMessage)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(OverlayTheme.textSecondary)
                     }
 
                     if backendManager.isHealthy && backendManager.indexCount > 0 {
@@ -59,24 +53,18 @@ struct RepoManagerView: View {
                             Text("\(backendManager.indexCount) chunks")
                                 .font(.caption)
                         }
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                     }
 
                     Spacer()
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color.primary.opacity(0.05))
-                .cornerRadius(8)
+                .background(OverlayTheme.elevated)
+                .clipShape(RoundedRectangle(cornerRadius: 9))
             }
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .padding(20)
+            .background(OverlayTheme.canvas)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -88,16 +76,10 @@ struct RepoManagerView: View {
                                 .fontWeight(.semibold)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                colors: [.blue, .purple],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .padding(.vertical, 13)
+                        .background(OverlayTheme.accent)
                         .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius))
                     }
                     .buttonStyle(.plain)
 
@@ -107,15 +89,15 @@ struct RepoManagerView: View {
                         VStack(spacing: 16) {
                             Image(systemName: "folder.badge.questionmark")
                                 .font(.system(size: 50))
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(OverlayTheme.textSecondary)
 
                             Text("No Repositories Added")
                                 .font(.headline)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(OverlayTheme.textSecondary)
 
                             Text("Add a repository to start indexing and searching your code")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(OverlayTheme.textSecondary)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 40)
                         }
@@ -125,16 +107,16 @@ struct RepoManagerView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Label("Approved Repositories", systemImage: "checkmark.shield.fill")
                                 .font(.headline)
-                                .foregroundColor(.primary)
+                                .foregroundStyle(OverlayTheme.textPrimary)
 
                             ForEach(bookmarkManager.approvedPaths, id: \.self) { path in
                                 repositoryRow(path: path)
                             }
                         }
                         .padding()
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .cornerRadius(12)
-                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        .background(OverlayTheme.elevated)
+                        .clipShape(RoundedRectangle(cornerRadius: 13))
+                        .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
                     }
                 }
                 .padding()
@@ -167,7 +149,7 @@ struct RepoManagerView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "folder.fill")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(OverlayTheme.accent)
                     .font(.title3)
                     .frame(width: 24)
 
@@ -175,10 +157,11 @@ struct RepoManagerView: View {
                     Text(URL(fileURLWithPath: path).lastPathComponent)
                         .fontWeight(.medium)
                         .font(.body)
+                        .foregroundStyle(OverlayTheme.textPrimary)
 
                     Text(path)
                         .font(.system(.caption, design: .monospaced))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
@@ -187,15 +170,15 @@ struct RepoManagerView: View {
 
                 Button(action: { confirmRemove(path: path) }) {
                     Image(systemName: "minus.circle.fill")
-                        .foregroundColor(.red)
+                        .foregroundStyle(OverlayTheme.danger)
                         .font(.title3)
                 }
                 .buttonStyle(.plain)
                 .help("Remove repository")
             }
             .padding()
-            .background(Color.primary.opacity(0.03))
-            .cornerRadius(8)
+            .background(OverlayTheme.canvas.opacity(0.72))
+            .clipShape(RoundedRectangle(cornerRadius: 9))
 
             // Warning for overly broad paths
             if isOverlyBroadPath(path) {
@@ -229,13 +212,13 @@ struct RepoManagerView: View {
     private var statusColor: Color {
         switch backendManager.status {
         case .healthy:
-            return .green
+            return OverlayTheme.success
         case .starting:
             return .yellow
         case .stopped:
             return .gray
         case .error:
-            return .red
+            return OverlayTheme.danger
         }
     }
 
@@ -296,4 +279,3 @@ struct RepoManagerView: View {
 #Preview {
     RepoManagerView()
 }
-
