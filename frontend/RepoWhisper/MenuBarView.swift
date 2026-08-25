@@ -410,8 +410,8 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("Repository", systemImage: "folder.fill")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(OverlayTheme.textSecondary)
                 
                 Spacer()
                 
@@ -419,10 +419,10 @@ struct MenuBarView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 10))
-                            .foregroundColor(.green)
+                            .foregroundStyle(OverlayTheme.success)
                         Text("\(apiClient.indexCount)")
                             .font(.system(size: 11, weight: .semibold, design: .rounded))
-                            .foregroundColor(.green)
+                            .foregroundStyle(OverlayTheme.success)
                     }
                 }
             }
@@ -438,18 +438,16 @@ struct MenuBarView: View {
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.6))
+                        .foregroundStyle(OverlayTheme.textSecondary)
                 }
-                .foregroundColor(.white)
-                .padding(14)
-                .background(
-                    LinearGradient(
-                        colors: [.blue, .purple],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
+                .foregroundStyle(OverlayTheme.textPrimary)
+                .padding(12)
+                .background(OverlayTheme.elevated)
+                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .stroke(OverlayTheme.border, lineWidth: 1)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .buttonStyle(.plain)
             .sheet(isPresented: $showingRepoManager) {
@@ -466,14 +464,14 @@ struct MenuBarView: View {
                 HStack(spacing: 10) {
                     Image(systemName: bossModeEnabled ? "crown.fill" : "crown")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(bossModeEnabled ? Color(red: 0.98, green: 0.80, blue: 0.36) : .secondary)
+                        .foregroundStyle(bossModeEnabled ? OverlayTheme.accent : OverlayTheme.textSecondary)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Boss Mode")
                             .font(.system(size: 13, weight: .semibold, design: .rounded))
                         Text("Meeting intelligence")
                             .font(.system(size: 11, weight: .regular, design: .rounded))
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(OverlayTheme.textSecondary)
                     }
                 }
             }
@@ -494,7 +492,11 @@ struct MenuBarView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.03))
+                .fill(OverlayTheme.elevated.opacity(0.74))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(OverlayTheme.border, lineWidth: 1)
         )
     }
     
@@ -504,22 +506,13 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.98, green: 0.80, blue: 0.36).opacity(0.3),
-                                    Color(red: 0.96, green: 0.65, blue: 0.38).opacity(0.2)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(OverlayTheme.accent.opacity(0.14))
                         .frame(width: 24, height: 24)
                     
                     Image(systemName: "lightbulb.fill")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(red: 0.98, green: 0.80, blue: 0.36))
+                        .foregroundStyle(OverlayTheme.accent)
                 }
                 
                 Text("Talking Point")
@@ -535,25 +528,18 @@ struct MenuBarView: View {
             
             Text(latestTalkingPoint)
                 .font(.system(size: 12, weight: .regular, design: .rounded))
-                .foregroundColor(.primary)
+                .foregroundStyle(OverlayTheme.textPrimary)
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.98, green: 0.80, blue: 0.36).opacity(0.12),
-                                    Color(red: 0.96, green: 0.65, blue: 0.38).opacity(0.08)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                            OverlayTheme.elevated
                         )
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color(red: 0.98, green: 0.80, blue: 0.36).opacity(0.2), lineWidth: 0.5)
+                        .stroke(OverlayTheme.border, lineWidth: 1)
                 )
         }
     }
