@@ -295,13 +295,13 @@ struct ResultsWindow: View {
 
             Spacer()
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
         .background(
             // Glassmorphism separator
             VStack(spacing: 0) {
                 Rectangle()
-                    .fill(Color.white.opacity(0.1))
+                    .fill(OverlayTheme.border)
                     .frame(height: 0.5)
                 Spacer()
             }
@@ -897,37 +897,32 @@ struct ControlBarButton: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 ZStack {
-                    // Glassmorphism circle background
-                    Circle()
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(
                             isActive
-                                ? activeColor.opacity(0.25)
-                                : (isHovering ? Color.white.opacity(0.15) : Color.white.opacity(0.08))
+                                ? OverlayTheme.accent.opacity(0.16)
+                                : (isHovering ? OverlayTheme.hover : OverlayTheme.elevated)
                         )
-                        .frame(width: 40, height: 40)
+                        .frame(width: 32, height: 32)
 
                     // Icon
                     Image(systemName: icon)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(
                             isActive
-                                ? activeColor
-                                : (isHovering ? .primary : .primary.opacity(0.6))
+                                ? OverlayTheme.accent
+                                : (isHovering ? OverlayTheme.textPrimary : OverlayTheme.textSecondary)
                         )
                 }
 
                 // Label
                 Text(label)
                     .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundColor(
-                        isActive
-                            ? activeColor
-                            : .secondary.opacity(0.8)
-                    )
+                    .foregroundStyle(isActive ? OverlayTheme.accent : OverlayTheme.textSecondary)
             }
         }
         .buttonStyle(.plain)
-        .scaleEffect(isHovering ? 1.05 : 1.0)
+        .scaleEffect(isHovering ? 1.02 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isHovering)
         .animation(.easeOut(duration: 0.15), value: isActive)
     }
@@ -944,12 +939,12 @@ struct FilterToggle: View {
                 Button(action: { mode = option }) {
                     Text(option == .fullRepo ? "Repo" : "File")
                         .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(mode == option ? .white : .secondary)
+                        .foregroundStyle(mode == option ? OverlayTheme.textPrimary : OverlayTheme.textSecondary)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(
                             Capsule()
-                                .fill(mode == option ? Color.blue.opacity(0.7) : Color.clear)
+                                .fill(mode == option ? OverlayTheme.hover : Color.clear)
                         )
                 }
                 .buttonStyle(.plain)
@@ -958,7 +953,7 @@ struct FilterToggle: View {
         .padding(3)
         .background(
             Capsule()
-                .fill(Color.white.opacity(0.08))
+                .fill(OverlayTheme.elevated)
         )
     }
 }
