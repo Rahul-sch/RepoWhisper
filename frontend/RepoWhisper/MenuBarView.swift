@@ -171,44 +171,42 @@ struct MenuBarView: View {
             premiumHeader
             
             Divider()
-                .background(Color.white.opacity(0.1))
-                .padding(.horizontal, 20)
+                .background(OverlayTheme.border)
+                .padding(.horizontal, 16)
             
             // Content
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 12) {
                     // Recording control (premium)
                     premiumRecordingButton
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 14)
                     
                     // Status section
                     if audioCapture.isRecording || !lastTranscription.isEmpty {
                         statusSection
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 14)
                     }
                     
                     // Repository section
                     repositorySection
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 14)
                     
                     // Boss Mode
                     bossModeSection
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 14)
                     
                     // Talking point (if available)
                     if bossModeEnabled && !latestTalkingPoint.isEmpty {
                         talkingPointCard
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 14)
                     }
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, 14)
             }
         }
         .background(
-            // Premium glassmorphism background
-            RoundedRectangle(cornerRadius: 0)
-                .fill(.ultraThinMaterial)
+            OverlayTheme.canvas
         )
     }
     
@@ -218,9 +216,9 @@ struct MenuBarView: View {
     /// green = ready to record.
     private var statusColor: Color {
         if bookmarkManager.approvedPaths.isEmpty { return .orange }
-        if !apiClient.isConnected { return .red }
+        if !apiClient.isConnected { return OverlayTheme.danger }
         if apiClient.modelsLoading || !apiClient.modelsReady { return .yellow }
-        return .green
+        return OverlayTheme.success
     }
 
     /// One-line description that mirrors the dot color.
@@ -236,36 +234,16 @@ struct MenuBarView: View {
 
     private var premiumHeader: some View {
         HStack(spacing: 12) {
-            // Logo
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.purple.opacity(0.2),
-                                Color.blue.opacity(0.15)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 32, height: 32)
-                
-                Image(systemName: "waveform.circle.fill")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.purple, .blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            }
+            Image(systemName: "sparkles")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(OverlayTheme.accent)
+                .frame(width: 28, height: 28)
+                .background(OverlayTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("RepoWhisper")
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(OverlayTheme.textPrimary)
                 
                 HStack(spacing: 6) {
                     Circle()
@@ -274,7 +252,7 @@ struct MenuBarView: View {
 
                     Text(statusLabel)
                         .font(.system(size: 11, weight: .regular, design: .rounded))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(OverlayTheme.textSecondary)
 
                     if apiClient.modelsLoading {
                         ProgressView()
@@ -287,7 +265,7 @@ struct MenuBarView: View {
                         // hidden from screen sharing (toggled via ⌘⇧H).
                         Image(systemName: "eye.slash.fill")
                             .font(.system(size: 10))
-                            .foregroundColor(.purple)
+                            .foregroundStyle(OverlayTheme.accent)
                             .help("Stealth mode ON — overlay is hidden from screen sharing")
                     }
                 }
@@ -300,15 +278,15 @@ struct MenuBarView: View {
             } label: {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(OverlayTheme.textSecondary)
                     .frame(width: 28, height: 28)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(Circle())
+                    .background(OverlayTheme.elevated)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
     }
     
     // MARK: - Premium Recording Button
