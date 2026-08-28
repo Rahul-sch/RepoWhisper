@@ -20,7 +20,7 @@ cp .env.minimal .env
 cat > .env << 'EOF'
 SUPABASE_URL=https://kjpxpppaeydireznlzwe.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqcHhwcHBhZXlkaXJlem5sendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDIwNTIsImV4cCI6MjA4MzQ3ODA1Mn0.YAHTxLc8ThKtbqOtvKU2yda_eZv2q91-gUHnMX-laVc
-SUPABASE_JWT_SECRET=e77ca237-27bf-4863-924f-22a13d135d40
+SUPABASE_JWT_SECRET=your-jwt-secret
 
 # Optional: Add Groq API key for Boss 
 EOF
@@ -164,4 +164,3 @@ Make it executable: `chmod +x test.sh`
 ---
 
 **That's it! You should be up and running in ~5 minutes.** 🎉
-
