@@ -1,45 +1,19 @@
 # RepoWhisper
 
-> Voice-powered code search for your local repositories. Speak your query, find code instantly.
+> A native macOS assistant for voice-powered code search and contextual meeting support.
 
-A Mac menu bar app that listens to your voice, transcribes it in real-time, and searches your local code repositories using semantic vector search—all in under 500ms. Features a stealth overlay that's invisible to screen sharing.
+A Mac menu bar app that transcribes speech, searches local repositories with semantic vector search, and turns meeting audio, screenshots, and code context into concise talking points.
 
 ![RepoWhisper](https://img.shields.io/badge/version-0.1.0-blue)
 ![Python](https://img.shields.io/badge/python-3.12+-green)
 ![Swift](https://img.shields.io/badge/swift-5.9+-orange)
-![License](https://img.shields.io/badge/license-MIT-lightgrey)
-
-## Screenshots
-
-### Main Interface - Voice Search Results
-![Voice Search Results](assets/screenshots/main-results.png)
-*Glass morphism overlay showing semantic search results with code previews*
-
-### Ask Bar - Typed & Voice Input
-![Ask Bar](assets/screenshots/ask-bar.png)
-*Combined text input and voice recording with hotkey hints*
-
-### Search History
-![Search History](assets/screenshots/search-history.png)
-*Collapsible recent searches for quick re-runs*
-
-### Stealth Mode
-![Stealth Mode](assets/screenshots/stealth-mode.png)
-*Invisible to screen sharing - perfect for interviews*
-
-### Menu Bar
-![Menu Bar](assets/screenshots/menu-bar.png)
-*Compact menu bar interface with quick actions*
-
-### Repository Indexing
-![Indexing](assets/screenshots/indexing.png)
-*Smart indexing with progress indicator*
 
 ## Features
 
 - **Real-time Voice Transcription** - Speak naturally, get instant results
 - **Semantic Code Search** - Find code by meaning, not just keywords
-- **Sub-500ms Latency** - Optimized for speed with Faster-Whisper and LanceDB
+- **Meeting Intelligence** - Generate talking points from transcripts, screenshots, and relevant code
+- **Explain Visible** - Use on-screen context in the floating assistant workflow
 - **Stealth Mode** - Overlay invisible to Zoom/Teams screen sharing
 - **M2/Apple Silicon Optimized** - MPS acceleration for embeddings, float16 Whisper
 - **Glass Morphism UI** - Beautiful semi-transparent floating window
@@ -77,6 +51,7 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+cp env.template .env  # Add your Supabase credentials
 python main.py
 ```
 
@@ -98,14 +73,14 @@ Open `frontend/RepoWhisper.xcodeproj` in Xcode and press `Cmd+R` to build and ru
 
 ## Stealth Mode
 
-When stealth mode is enabled (`Cmd+Shift+H`):
+When stealth mode is enabled (`Cmd+Shift+H`), the overlay uses macOS screen-sharing exclusion. Normal mode remains shareable.
 
 - **Screen-share invisible** - Window won't appear in Zoom, Teams, or OBS
 - **Mission Control hidden** - Won't show in desktop overview
 - **Cmd+Tab skipped** - Won't appear in app switcher
 - **Reduced opacity** - Subtle 70% transparency
 
-Perfect for coding interviews, pair programming, or keeping your workflow private.
+Useful when you need to keep the assistant overlay out of a presentation or recording.
 
 ## Architecture
 
@@ -147,16 +122,6 @@ RepoWhisper is optimized for Apple Silicon:
 | Whisper | float16 compute type, 8 threads |
 | Window | Native NSPanel with hardware compositing |
 
-## Performance
-
-| Stage | Latency |
-|-------|---------|
-| Audio Capture | ~100ms |
-| Transcription | ~120ms (M2) |
-| Embedding | ~20ms (MPS) |
-| Vector Search | ~5ms |
-| **Total** | **<300ms** |
-
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -166,6 +131,9 @@ RepoWhisper is optimized for Apple Silicon:
 | `POST` | `/transcribe` | Transcribe audio |
 | `GET` | `/health` | Health check |
 | `GET` | `/repos` | List repositories |
+| `DELETE` | `/repos/{id}` | Delete a repository |
+| `POST` | `/advise` | Generate a contextual talking point |
+| `POST` | `/screenshot` | Process screenshot context |
 
 ### Example: Search Code
 
@@ -202,8 +170,10 @@ RepoWhisper/
 │       ├── ResultsWindow.swift        # Glass UI
 │       ├── AudioCapture.swift         # Microphone
 │       └── APIClient.swift            # Backend communication
+│   └── Tests/                          # Swift tests
+├── scripts/             # Maintenance scripts
 ├── run.sh               # One-click build script
-└── CLAUDE.md            # AI assistant workflow
+└── README.md            # Project overview
 ```
 
 ## Configuration
@@ -221,6 +191,18 @@ Settings are persisted via UserDefaults:
 - [backend/ENV_SETUP.md](backend/ENV_SETUP.md) - Environment configuration
 - [frontend/XCODE_SETUP.md](frontend/XCODE_SETUP.md) - Xcode project setup
 - [QUICKSTART.md](QUICKSTART.md) - Quick start guide
+- [BOSS_MODE.md](BOSS_MODE.md) - Meeting intelligence setup
+- [TESTING_STATUS.md](TESTING_STATUS.md) - Verification notes
+
+## Testing
+
+```bash
+# Backend unit tests
+cd backend && pytest
+
+# Frontend unit tests
+cd frontend && swift test
+```
 
 ## Contributing
 
@@ -229,10 +211,6 @@ Settings are persisted via UserDefaults:
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
