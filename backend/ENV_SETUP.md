@@ -4,9 +4,9 @@ Create a `.env` file in the `backend/` directory with the following variables:
 
 ```bash
 # Supabase Configuration
-SUPABASE_URL=https://kjpxpppaeydireznlzwe.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqcHhwcHBhZXlkaXJlem5sendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDIwNTIsImV4cCI6MjA4MzQ3ODA1Mn0.YAHTxLc8ThKtbqOtvKU2yda_eZv2q91-gUHnMX-laVc
-SUPABASE_JWT_SECRET=e77ca237-27bf-4863-924f-22a13d135d40
+SUPABASE_JWT_SECRET=your-jwt-secret
 
 # Server Configuration
 HOST=127.0.0.1
@@ -43,4 +43,3 @@ GROQ_API_KEY=your-groq-api-key-here
 5. Copy the key → `GROQ_API_KEY`
 
 **Note:** If not set, Boss Mode will use rule-based fallback talking points.
-
