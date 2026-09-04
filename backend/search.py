@@ -163,7 +163,20 @@ class VectorStore:
             return 0
 
         table = self.get_table(table_name)
-        indexed = 0
+        records = self.prepare_records(chunks, user_id, repo_id, batch_size)
+        if records:
+            table.add(records)
+        return len(records)
+
+    def prepare_records(
+        self,
+        chunks: list[CodeChunk],
+        user_id: str,
+        repo_id: str,
+        batch_size: int = 100,
+    ) -> list[dict]:
+        """Generate all embeddings before mutating the vector table."""
+        records: list[dict] = []
 
         # Process in batches
         for i in range(0, len(chunks), batch_size):
@@ -174,7 +187,6 @@ class VectorStore:
             embeddings = embed_batch(texts)
 
             # Prepare records — include user_id/repo_id so search filtering works
-            records = []
             for chunk, embedding in zip(batch, embeddings):
                 records.append({
                     "user_id": user_id,
@@ -187,11 +199,7 @@ class VectorStore:
                     "vector": embedding
                 })
 
-            # Add to table
-            table.add(records)
-            indexed += len(records)
-
-        return indexed
+        return records
     
     def search(
         self,
