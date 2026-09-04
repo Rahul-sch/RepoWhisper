@@ -20,7 +20,12 @@ from config import get_settings, IndexMode
 from auth import get_current_user, get_user_id, get_optional_user, get_local_user_id
 from indexer import index_repository as index_repo, CodeChunk
 from search import get_vector_store, SearchResult as VectorSearchResult
-from transcribe import transcribe_audio as whisper_transcribe, get_whisper_model, is_whisper_available
+from transcribe import (
+    transcribe_audio as whisper_transcribe,
+    transcribe_encoded_audio,
+    get_whisper_model,
+    is_whisper_available,
+)
 from search import get_embedding_model
 from logger import setup_logging, get_logger
 from advise import get_advisor, AdvisorContext, process_screenshot
@@ -632,6 +637,39 @@ async def transcribe_audio_endpoint(
     except Exception as e:
         logger.error("transcription_failed", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Transcription failed. Please try again.")
+
+
+@app.post("/transcribe-file", response_model=TranscribeResponse)
+@limiter.limit("20/minute")
+async def transcribe_audio_file_endpoint(
+    request: Request,
+    user_id: str = Depends(get_local_user_id),
+):
+    """Transcribe an encoded audio file without treating its bytes as raw PCM."""
+    del user_id
+    if not is_whisper_available():
+        raise HTTPException(
+            status_code=503,
+            detail="Transcription unavailable: faster-whisper is not installed on the backend.",
+        )
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].lower()
+    if not (content_type.startswith("audio/") or content_type == "application/octet-stream"):
+        raise HTTPException(status_code=415, detail="An audio file is required")
+    audio_data = await request.body()
+    if not audio_data:
+        raise HTTPException(status_code=400, detail="Audio file cannot be empty")
+    if len(audio_data) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Audio file too large (max 50MB)")
+    try:
+        result = transcribe_encoded_audio(audio_data)
+    except Exception:
+        get_logger().error("audio_file_transcription_failed", exc_info=True)
+        raise HTTPException(status_code=400, detail="Unsupported or invalid audio file")
+    return TranscribeResponse(
+        text=result.text,
+        confidence=result.confidence,
+        latency_ms=result.latency_ms,
+    )
 
 
 # ============ Additional Endpoints ============
