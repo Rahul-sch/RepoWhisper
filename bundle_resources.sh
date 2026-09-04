@@ -34,15 +34,17 @@ if [[ ! -d "$DEST_RESOURCES" ]]; then
 fi
 
 # ---- Backend binary ----
-BINARY="$SOURCE_RESOURCES/repowhisper-backend-arm64"
+TARGET_ARCH="$(uname -m)"
+BINARY_NAME="repowhisper-backend-$TARGET_ARCH"
+BINARY="$SOURCE_RESOURCES/$BINARY_NAME"
 if [[ ! -x "$BINARY" ]]; then
     echo "❌ Backend binary missing at $BINARY"
     echo "   Run ./build_binaries.sh first."
     exit 1
 fi
 cp "$BINARY" "$DEST_RESOURCES/"
-chmod +x "$DEST_RESOURCES/repowhisper-backend-arm64"
-BIN_SIZE=$(du -h "$DEST_RESOURCES/repowhisper-backend-arm64" | awk '{print $1}')
+chmod +x "$DEST_RESOURCES/$BINARY_NAME"
+BIN_SIZE=$(du -h "$DEST_RESOURCES/$BINARY_NAME" | awk '{print $1}')
 echo "✅ Backend binary copied ($BIN_SIZE)"
 
 # ---- Bundled models (optional) ----
