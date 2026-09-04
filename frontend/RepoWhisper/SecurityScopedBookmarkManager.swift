@@ -155,13 +155,9 @@ class SecurityScopedBookmarkManager: ObservableObject {
 
     // MARK: - Allowlist File
 
-    /// Write allowlist.json to Application Support
-    /// FAILS if no repos are approved (fail-closed)
+    /// Write allowlist.json to Application Support. An empty array is a valid
+    /// revocation state and causes the running backend to deny every path.
     func writeAllowlistFile() throws {
-        guard !approvedPaths.isEmpty else {
-            throw BookmarkError.noApprovedPaths
-        }
-
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
