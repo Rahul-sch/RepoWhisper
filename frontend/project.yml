@@ -16,6 +16,9 @@ targets:
       MACOSX_DEPLOYMENT_TARGET: "14.0"
       ENABLE_HARDENED_RUNTIME: true
       CODE_SIGN_ENTITLEMENTS: RepoWhisper/RepoWhisper.entitlements
+    postBuildScripts:
+      - name: Embed Local Backend
+        script: "${SRCROOT}/scripts/embed_backend.sh"
     dependencies:
       - package: supabase-swift
         product: Supabase
@@ -23,4 +26,3 @@ packages:
   supabase-swift:
     url: https://github.com/supabase/supabase-swift
     from: 2.0.0
-
