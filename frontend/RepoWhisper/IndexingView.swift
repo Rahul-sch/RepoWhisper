@@ -266,7 +266,7 @@ struct IndexingView: View {
                 indexProgress = 0.4
 
                 print("📡 [INDEXING] Calling API client...")
-                try await apiClient.indexRepository(
+                let response = try await apiClient.indexRepository(
                     repoPath: selectedRepoPath,
                     mode: selectedIndexMode
                 )
@@ -281,7 +281,7 @@ struct IndexingView: View {
                 indexProgress = 1.0
 
                 // Get updated count from backend
-                lastIndexedCount = backendManager.indexCount
+                lastIndexedCount = response.chunksCreated
 
                 // Reset after delay
                 try await Task.sleep(nanoseconds: 2_000_000_000) // 2s
