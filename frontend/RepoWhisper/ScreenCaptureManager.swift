@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import ScreenCaptureKit
-import AVFoundation
+@preconcurrency import ScreenCaptureKit
+@preconcurrency import AVFoundation
 import AppKit
 
 /// Manages system audio capture for voice search and meeting mode.
