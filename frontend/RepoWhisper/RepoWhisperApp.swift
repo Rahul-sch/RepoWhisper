@@ -303,6 +303,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationWillTerminate(_ notification: Notification) {
         print("🛑 [APP] Application will terminate")
+        BackendProcessManager.shared.stop()
     }
 
     // MARK: - Silent Background Mode
