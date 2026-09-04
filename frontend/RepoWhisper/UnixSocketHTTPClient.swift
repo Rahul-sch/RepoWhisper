@@ -36,6 +36,9 @@ class UnixSocketHTTPClient {
         }
         defer { close(sock) }
 
+        var noSigPipe: Int32 = 1
+        setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
+
         // Set timeout
         var tv = timeval()
         tv.tv_sec = Int(timeout)
@@ -91,12 +94,19 @@ class UnixSocketHTTPClient {
             requestData.append(body)
         }
 
-        let sentBytes = requestData.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) -> Int in
-            return send(sock, ptr.baseAddress, requestData.count, 0)
-        }
-
-        guard sentBytes > 0 else {
-            throw HTTPError.sendFailed
+        var sentBytes = 0
+        while sentBytes < requestData.count {
+            let result = requestData.withUnsafeBytes { buffer -> Int in
+                guard let baseAddress = buffer.baseAddress else { return -1 }
+                return Darwin.send(
+                    sock,
+                    baseAddress.advanced(by: sentBytes),
+                    requestData.count - sentBytes,
+                    0
+                )
+            }
+            guard result > 0 else { throw HTTPError.sendFailed }
+            sentBytes += result
         }
 
         // Read response
@@ -105,9 +115,8 @@ class UnixSocketHTTPClient {
 
         while true {
             let bytesRead = recv(sock, &buffer, buffer.count, 0)
-            if bytesRead <= 0 {
-                break
-            }
+            if bytesRead == 0 { break }
+            if bytesRead < 0 { throw HTTPError.receiveFailed }
             responseData.append(contentsOf: buffer[0..<bytesRead])
         }
 
@@ -120,19 +129,16 @@ class UnixSocketHTTPClient {
     }
 
     /// Parse HTTP/1.1 response
-    private func parseHTTPResponse(_ data: Data) throws -> HTTPResponse {
-        guard let responseString = String(data: data, encoding: .utf8) else {
+    func parseHTTPResponse(_ data: Data) throws -> HTTPResponse {
+        let separator = Data("\r\n\r\n".utf8)
+        guard let separatorRange = data.range(of: separator),
+              let headerSection = String(
+                  data: data[..<separatorRange.lowerBound],
+                  encoding: .utf8
+              ) else {
             throw HTTPError.invalidResponse
         }
-
-        // Split headers and body
-        let parts = responseString.components(separatedBy: "\r\n\r\n")
-        guard parts.count >= 1 else {
-            throw HTTPError.invalidResponse
-        }
-
-        let headerSection = parts[0]
-        let bodySection = parts.count > 1 ? parts[1...].joined(separator: "\r\n\r\n") : ""
+        let rawBody = Data(data[separatorRange.upperBound...])
 
         // Parse status line
         let lines = headerSection.components(separatedBy: "\r\n")
@@ -149,18 +155,52 @@ class UnixSocketHTTPClient {
         // Parse headers
         var headers: [String: String] = [:]
         for line in lines.dropFirst() {
-            let headerParts = line.components(separatedBy: ": ")
-            if headerParts.count >= 2 {
-                let key = headerParts[0]
-                let value = headerParts[1...].joined(separator: ": ")
+            if let colon = line.firstIndex(of: ":") {
+                let key = String(line[..<colon]).lowercased()
+                let value = line[line.index(after: colon)...]
+                    .trimmingCharacters(in: .whitespaces)
                 headers[key] = value
             }
         }
 
-        // Body as Data
-        let bodyData = bodySection.data(using: .utf8) ?? Data()
+        let bodyData: Data
+        if headers["transfer-encoding"]?.lowercased().contains("chunked") == true {
+            bodyData = try decodeChunkedBody(rawBody)
+        } else if let lengthText = headers["content-length"],
+                  let expectedLength = Int(lengthText) {
+            guard rawBody.count >= expectedLength else { throw HTTPError.incompleteResponse }
+            bodyData = rawBody.prefix(expectedLength)
+        } else {
+            bodyData = rawBody
+        }
 
         return HTTPResponse(statusCode: statusCode, headers: headers, body: bodyData)
+    }
+
+    private func decodeChunkedBody(_ data: Data) throws -> Data {
+        var cursor = data.startIndex
+        var decoded = Data()
+        let lineEnding = Data("\r\n".utf8)
+
+        while true {
+            guard let sizeLineRange = data[cursor...].range(of: lineEnding),
+                  let sizeLine = String(data: data[cursor..<sizeLineRange.lowerBound], encoding: .utf8),
+                  let sizeText = sizeLine.split(separator: ";", maxSplits: 1).first,
+                  let size = Int(sizeText.trimmingCharacters(in: .whitespaces), radix: 16) else {
+                throw HTTPError.invalidResponse
+            }
+            cursor = sizeLineRange.upperBound
+            if size == 0 { return decoded }
+            guard data.distance(from: cursor, to: data.endIndex) >= size + lineEnding.count else {
+                throw HTTPError.incompleteResponse
+            }
+            let chunkEnd = data.index(cursor, offsetBy: size)
+            decoded.append(data[cursor..<chunkEnd])
+            guard data[chunkEnd..<data.index(chunkEnd, offsetBy: lineEnding.count)] == lineEnding else {
+                throw HTTPError.invalidResponse
+            }
+            cursor = data.index(chunkEnd, offsetBy: lineEnding.count)
+        }
     }
 }
 
@@ -181,8 +221,10 @@ enum HTTPError: Error, LocalizedError {
     case socketPathTooLong
     case connectionFailed
     case sendFailed
+    case receiveFailed
     case emptyResponse
     case invalidResponse
+    case incompleteResponse
 
     var errorDescription: String? {
         switch self {
@@ -194,10 +236,14 @@ enum HTTPError: Error, LocalizedError {
             return "Failed to connect to socket"
         case .sendFailed:
             return "Failed to send request"
+        case .receiveFailed:
+            return "Failed to receive response"
         case .emptyResponse:
             return "Received empty response"
         case .invalidResponse:
             return "Invalid HTTP response"
+        case .incompleteResponse:
+            return "Received an incomplete HTTP response"
         }
     }
 }
