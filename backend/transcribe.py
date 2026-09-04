@@ -9,7 +9,7 @@ import io
 import wave
 import struct
 import platform
-from typing import Optional
+from typing import Any, Optional
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -163,9 +163,18 @@ def transcribe_audio(
     # Convert raw PCM to WAV format for Whisper
     wav_buffer = _pcm_to_wav(audio_data, sample_rate)
     
-    # Transcribe
+    return _transcribe_source(model, wav_buffer, language, start_time)
+
+
+def _transcribe_source(
+    model: Any,
+    source: Any,
+    language: str,
+    start_time: float,
+) -> TranscriptionResult:
+    """Run Whisper for either a WAV buffer or an encoded audio stream."""
     segments, info = model.transcribe(
-        wav_buffer,
+        source,
         language=language,
         beam_size=1,           # Fastest
         best_of=1,             # No sampling
@@ -331,4 +340,3 @@ class StreamingTranscriber:
     def reset(self):
         """Clear the audio buffer."""
         self.buffer.clear()
-
