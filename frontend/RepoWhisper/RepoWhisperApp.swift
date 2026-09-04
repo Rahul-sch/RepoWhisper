@@ -12,10 +12,7 @@ import ServiceManagement
 
 @main
 struct RepoWhisperApp: App {
-    @StateObject private var authManager = AuthManager.shared
-    @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @AppStorage("launchAtLogin") private var launchAtLogin = false
 
     init() {
         // Print to console so we know app launched
@@ -40,7 +37,6 @@ struct RepoWhisperApp: App {
         // LoginView still exists in the bundle but is unreachable.
         WindowGroup("RepoWhisper", id: "main") {
             MainWindowView()
-                .environmentObject(authManager)
                 .preferredColorScheme(.dark)
                 .frame(minWidth: 800, minHeight: 600)
                 .onAppear {
@@ -62,7 +58,6 @@ struct RepoWhisperApp: App {
         // Full menu-bar experience, including voice and meeting controls.
         MenuBarExtra {
             MenuBarView()
-                .environmentObject(authManager)
         } label: {
             Image(systemName: "waveform.circle.fill")
         }
@@ -71,7 +66,6 @@ struct RepoWhisperApp: App {
         // Settings window
         Settings {
             SettingsView()
-                .environmentObject(authManager)
                 .preferredColorScheme(.dark)
         }
     }
@@ -168,7 +162,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("✅ RepoWhisper app finished launching")
         print("📌 Look for the menu bar icon (waveform.circle.fill) in the top menu bar")
-        print("🔍 [APP] Auth state: authenticated=\(AuthManager.shared.isAuthenticated)")
 
         // Bring up the backend. If a repo is already approved, start now;
         // otherwise wait for the user to approve one and start then.
@@ -443,7 +436,6 @@ extension Notification.Name {
 
 // Container for ResultsWindow that manages state
 struct ResultsWindowContainer: View {
-    @EnvironmentObject var authManager: AuthManager
     @StateObject private var apiClient = APIClient.shared
     @State private var results: [SearchResultItem] = []
     @State private var query: String = ""
