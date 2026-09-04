@@ -175,7 +175,7 @@ class SecurityScopedBookmarkManager: ObservableObject {
 
         // Write JSON
         let jsonData = try JSONEncoder().encode(approvedPaths)
-        try jsonData.write(to: allowlistFile)
+        try jsonData.write(to: allowlistFile, options: .atomic)
 
         // Set permissions
         try FileManager.default.setAttributes(
