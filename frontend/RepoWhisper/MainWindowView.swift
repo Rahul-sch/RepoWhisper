@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct MainWindowView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -625,7 +626,12 @@ struct SearchView: View {
                 print("🎙️ [AUDIO] Transcribing audio file: \(audioURL.lastPathComponent)")
 
                 // Call transcribe endpoint
-                let result = try await apiClient.transcribe(audioData: audioData)
+                let contentType = try audioURL.resourceValues(forKeys: [.contentTypeKey])
+                    .contentType?.preferredMIMEType ?? "application/octet-stream"
+                let result = try await apiClient.transcribeFile(
+                    audioData: audioData,
+                    contentType: contentType
+                )
 
                 print("✅ [AUDIO] Transcription complete: \(result.text)")
 
