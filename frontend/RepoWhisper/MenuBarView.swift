@@ -114,56 +114,6 @@ struct MenuBarView: View {
         }
     }
     
-    private func transcribeAndSearch(_ audioData: Data) async {
-        do {
-            let transcription = try await apiClient.transcribe(audioData: audioData)
-            
-            await MainActor.run {
-                lastTranscription = transcription.text
-            }
-            
-            if !transcription.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                await MainActor.run {
-                    isSearching = true
-                    popupManager.showLoadingPopup(query: transcription.text, isRecording: audioCapture.isRecording)
-                    NotificationCenter.default.post(name: NSNotification.Name("SearchStarted"), object: nil)
-                }
-                
-                let searchResponse = try await apiClient.search(query: transcription.text)
-                
-                await MainActor.run {
-                    searchResults = searchResponse.results
-                    searchLatency = searchResponse.latencyMs
-                    isSearching = false
-                    showResults = true
-                    
-                    popupManager.showPopup(
-                        results: searchResponse.results,
-                        query: transcription.text,
-                        latency: searchResponse.latencyMs,
-                        isRecording: audioCapture.isRecording
-                    )
-                    
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("SearchResults"),
-                        object: nil,
-                        userInfo: [
-                            "results": searchResponse.results,
-                            "query": transcription.text,
-                            "latency": searchResponse.latencyMs
-                        ]
-                    )
-                }
-                
-                if bossModeEnabled {
-                    await generateAdvice()
-                }
-            }
-        } catch {
-            print("Error: \(error)")
-        }
-    }
-    
     // MARK: - Authenticated View (Premium)
     
     private var authenticatedView: some View {
