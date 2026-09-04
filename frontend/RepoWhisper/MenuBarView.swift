@@ -76,6 +76,41 @@ struct MenuBarView: View {
             }
         }
     }
+
+    private func startBossMode() async {
+        guard !bookmarkManager.approvedPaths.isEmpty else {
+            popupManager.showErrorToast("Add and index a repository before starting Boss Mode.")
+            bossModeEnabled = false
+            return
+        }
+        if !backendManager.isRunning {
+            do {
+                try await backendManager.start()
+            } catch {
+                popupManager.showErrorToast("Backend failed: \(error.localizedDescription)")
+                bossModeEnabled = false
+                return
+            }
+        }
+        if !audioCapture.isRecording {
+            guard await audioCapture.requestPermission() else {
+                popupManager.showErrorToast("Microphone permission is required for Boss Mode.")
+                bossModeEnabled = false
+                return
+            }
+            audioCapture.startRecording()
+            bossModeStartedRecording = true
+        }
+        await screenshotCapture.startCapture()
+    }
+
+    private func stopBossMode() {
+        screenshotCapture.stopCapture()
+        if bossModeStartedRecording {
+            audioCapture.stopRecording()
+            bossModeStartedRecording = false
+        }
+    }
     
     private func processScreenshot(_ screenshotData: Data) async {
         do {
@@ -436,14 +471,9 @@ struct MenuBarView: View {
             .toggleStyle(.switch)
             .onChange(of: bossModeEnabled) { oldValue, newValue in
                 if newValue {
-                    Task {
-                        let screenGranted = await screenshotCapture.requestPermission()
-                        if screenGranted {
-                            await screenshotCapture.startCapture()
-                        }
-                    }
+                    Task { await startBossMode() }
                 } else {
-                    screenshotCapture.stopCapture()
+                    stopBossMode()
                 }
             }
         }
