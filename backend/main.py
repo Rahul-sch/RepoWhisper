@@ -386,17 +386,18 @@ async def index_repository(
         # Get user-specific vector store
         store = get_vector_store(user_id)
         
-        # Drop any prior rows for this (user, repo) so re-indexing replaces
-        # rather than accumulates duplicates.
-        store.clear_repo(user_id, repo_id)
-        
-        # Collect chunks
-        chunks = list(index_repo(
-            repo_path=repo_path_normalized,
-            mode=index_request.mode,
-            file_paths=index_request.file_paths,
-            patterns=index_request.patterns
-        ))
+        def rebuild_index():
+            chunks = list(index_repo(
+                repo_path=repo_path_normalized,
+                mode=index_request.mode,
+                file_paths=index_request.file_paths,
+                patterns=index_request.patterns,
+            ))
+            indexed_count = store.replace_repo(chunks, user_id, repo_id)
+            unique_files = len({chunk.file_path for chunk in chunks})
+            return chunks, indexed_count, unique_files
+
+        chunks, indexed_count, unique_files = await asyncio.to_thread(rebuild_index)
         
         if not chunks:
             logger.warning("no_files_found", repo_path=index_request.repo_path)
@@ -406,12 +407,6 @@ async def index_repository(
                 chunks_created=0,
                 message="No files found to index"
             )
-        
-        # Index chunks with user and repo isolation
-        indexed_count = store.index_chunks(chunks, user_id, repo_id)
-        
-        # Count unique files
-        unique_files = len(set(c.file_path for c in chunks))
         
         logger.info("indexing_complete", files=unique_files, chunks=indexed_count)
         
