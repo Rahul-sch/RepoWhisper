@@ -5,6 +5,7 @@ Enforces fail-closed security: refuses to start if allowlist is missing/empty.
 
 import os
 import json
+import threading
 from typing import List, Optional
 from pathlib import Path
 
@@ -29,20 +30,62 @@ class PathValidator:
                 "Please approve at least one repository folder in the app."
             )
 
-        with open(allowlist_file, "r") as f:
-            self.allowed_paths: List[str] = json.load(f)
+        self.allowlist_file = os.path.abspath(allowlist_file)
+        self._lock = threading.RLock()
+        self._allowed_paths: List[str] = []
+        self._allowlist_mtime_ns = -1
+        self._reload(require_nonempty=True)
 
-        if not self.allowed_paths:
+        if not self._allowed_paths:
             raise ValueError(
                 "Allowlist is empty. Please approve at least one repository folder in the app."
             )
 
-        # Normalize all paths to absolute
-        self.allowed_paths = [os.path.abspath(p) for p in self.allowed_paths]
-
-        print(f"✅ [VALIDATOR] Loaded {len(self.allowed_paths)} allowed paths")
-        for path in self.allowed_paths:
+        print(f"✅ [VALIDATOR] Loaded {len(self._allowed_paths)} allowed paths")
+        for path in self._allowed_paths:
             print(f"  ✓ {path}")
+
+    @property
+    def allowed_paths(self) -> List[str]:
+        """Return a fresh snapshot of the current on-disk allowlist."""
+        self.refresh_if_changed()
+        with self._lock:
+            return list(self._allowed_paths)
+
+    def _reload(self, require_nonempty: bool = False) -> None:
+        with open(self.allowlist_file, "r", encoding="utf-8") as handle:
+            decoded = json.load(handle)
+        if not isinstance(decoded, list) or not all(isinstance(path, str) for path in decoded):
+            raise ValueError("Allowlist must be a JSON array of paths")
+        normalized = [os.path.abspath(path) for path in decoded if path.strip()]
+        if require_nonempty and not normalized:
+            raise ValueError(
+                "Allowlist is empty. Please approve at least one repository folder in the app."
+            )
+        stat_result = os.stat(self.allowlist_file)
+        with self._lock:
+            self._allowed_paths = normalized
+            self._allowlist_mtime_ns = stat_result.st_mtime_ns
+
+    def refresh_if_changed(self) -> None:
+        """Reload an atomically replaced allowlist when its mtime changes."""
+        try:
+            current_mtime = os.stat(self.allowlist_file).st_mtime_ns
+        except OSError:
+            with self._lock:
+                self._allowed_paths = []
+                self._allowlist_mtime_ns = -1
+            return
+        with self._lock:
+            if current_mtime == self._allowlist_mtime_ns:
+                return
+        try:
+            self._reload()
+        except (OSError, ValueError, json.JSONDecodeError):
+            # Fail closed if the file is missing, malformed, or mid-update.
+            with self._lock:
+                self._allowed_paths = []
+                self._allowlist_mtime_ns = current_mtime
 
     def is_path_allowed(self, path: str) -> bool:
         """
