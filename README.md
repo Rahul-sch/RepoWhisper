@@ -1,224 +1,81 @@
 # RepoWhisper
 
-> A native macOS assistant for voice-powered code search and contextual meeting support.
+RepoWhisper is a local-first macOS menu-bar assistant for voice-powered semantic code search. The SwiftUI app owns repository approval, microphone and screen permissions, launches a bundled FastAPI sidecar over a private Unix-domain socket, and stores embeddings locally in LanceDB.
 
-A Mac menu bar app that transcribes speech, searches local repositories with semantic vector search, and turns meeting audio, screenshots, and code context into concise talking points.
+## What works
 
-![RepoWhisper](https://img.shields.io/badge/version-0.1.0-blue)
-![Python](https://img.shields.io/badge/python-3.12+-green)
-![Swift](https://img.shields.io/badge/swift-5.9+-orange)
+- Manual, glob-based, and full-repository indexing
+- Live microphone transcription and encoded audio-file transcription
+- Semantic search scoped to approved repositories
+- A floating results overlay with global keyboard shortcuts
+- Boss Mode meeting context and optional Groq-generated talking points
+- Local OCR plus source-grounded explanation of visible code
+- Runtime allowlist updates when repositories are added or removed
 
-## Features
+Source files larger than 2 MiB, binary files, and symlinks that escape an approved repository are not indexed. Requests are authenticated with a per-launch token and travel only through a user-private Unix socket.
 
-- **Real-time Voice Transcription** - Speak naturally, get instant results
-- **Semantic Code Search** - Find code by meaning, not just keywords
-- **Meeting Intelligence** - Generate talking points from transcripts, screenshots, and relevant code
-- **Explain Visible** - Use on-screen context in the floating assistant workflow
-- **Stealth Mode** - Overlay invisible to Zoom/Teams screen sharing
-- **M2/Apple Silicon Optimized** - MPS acceleration for embeddings, float16 Whisper
-- **Glass Morphism UI** - Beautiful semi-transparent floating window
-- **Global Hotkeys** - Control everything from keyboard
-- **Launch at Login** - Auto-start with macOS
-- **Silent Background Mode** - Lives in menu bar, never quits
+## Requirements
 
-### Indexing Modes
+- macOS 14 or newer
+- Xcode 15 or newer
+- Python 3.12 for backend development or packaging
+- Microphone permission; Screen Recording permission for Boss Mode and Explain Visible
 
-- **Manual** - Select specific files (fastest)
-- **Smart** - Use file patterns like `*.py, *.swift` (balanced)
-- **Full** - Index entire repository (comprehensive)
-
-## Quick Start
-
-### One-Click Build & Run
+## Run from source
 
 ```bash
-# Clone the repository
 git clone https://github.com/Rahul-sch/RepoWhisper.git
-cd RepoWhisper
-
-# Build and run (includes backend option)
-./run.sh              # Build and launch frontend only
-./run.sh --backend    # Also start Python backend
-./run.sh --clean      # Clean build (removes DerivedData)
-```
-
-### Manual Setup
-
-#### Backend
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
+cd RepoWhisper/backend
+python3.12 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-cp env.template .env  # Add your Supabase credentials
-python main.py
+cd ../frontend
+./setup_xcode.sh
+swift build
 ```
 
-Backend starts at `http://127.0.0.1:8000`
+Open `frontend/RepoWhisper.xcodeproj` and run the `RepoWhisper` scheme. The app launches the backend itself after the first repository is approved; do not start a TCP server separately.
 
-#### Frontend
+## Keyboard shortcuts
 
-Open `frontend/RepoWhisper.xcodeproj` in Xcode and press `Cmd+R` to build and run.
-
-## Hotkeys
-
-| Hotkey | Action |
-|--------|--------|
+| Shortcut | Action |
+| --- | --- |
 | `Cmd+Shift+R` | Toggle voice recording |
-| `Cmd+Shift+Space` | Show/center overlay |
-| `Cmd+B` | Toggle visibility |
+| `Cmd+Shift+E` | Explain visible code |
+| `Cmd+Shift+Space` | Center the overlay |
+| `Cmd+B` | Toggle overlay visibility |
 | `Cmd+Shift+H` | Toggle stealth mode |
-| `Cmd+Arrow Keys` | Move window |
+| `Cmd+Arrow` | Move the overlay |
 
-## Stealth Mode
+## Configuration and packaging
 
-When stealth mode is enabled (`Cmd+Shift+H`), the overlay uses macOS screen-sharing exclusion. Normal mode remains shareable.
-
-- **Screen-share invisible** - Window won't appear in Zoom, Teams, or OBS
-- **Mission Control hidden** - Won't show in desktop overview
-- **Cmd+Tab skipped** - Won't appear in app switcher
-- **Reduced opacity** - Subtle 70% transparency
-
-Useful when you need to keep the assistant overlay out of a presentation or recording.
-
-## Architecture
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌──────────────┐
-│  SwiftUI App   │────▶│   FastAPI        │────▶│   LanceDB    │
-│  (MenuBar)     │     │   Backend        │     │   Vector DB  │
-│                │     │                  │     │              │
-│  • AudioCapture│     │  • Whisper       │     │  • Embeddings│
-│  • Stealth UI  │     │  • MPS Accel     │     │  • Search    │
-│  • Hotkeys     │     │  • Indexing      │     │              │
-└─────────────────┘     └──────────────────┘     └──────────────┘
-```
-
-## Tech Stack
-
-### Backend
-- **Python 3.12+** - Core runtime
-- **FastAPI** - High-performance web framework
-- **Faster-Whisper** - Speech-to-text (float16 on M2)
-- **LanceDB** - Vector database for semantic search
-- **Sentence-Transformers** - MiniLM-L6-v2 embeddings (MPS accelerated)
-- **Supabase** - Authentication & database
-
-### Frontend
-- **SwiftUI** - Native macOS interface
-- **AVAudioEngine** - Real-time microphone capture
-- **NSPanel** - Stealth overlay with `sharingType = .none`
-- **MenuBarExtra** - Menu bar integration
-- **ServiceManagement** - Launch at Login
-
-## M2/Apple Silicon Optimization
-
-RepoWhisper is optimized for Apple Silicon:
-
-| Component | Optimization |
-|-----------|-------------|
-| Embeddings | MPS (Metal) - 2-3x faster than CPU |
-| Whisper | float16 compute type, 8 threads |
-| Window | Native NSPanel with hardware compositing |
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/index` | Index a repository |
-| `POST` | `/search` | Search indexed code |
-| `POST` | `/transcribe` | Transcribe audio |
-| `GET` | `/health` | Health check |
-| `GET` | `/repos` | List repositories |
-| `DELETE` | `/repos/{id}` | Delete a repository |
-| `POST` | `/advise` | Generate a contextual talking point |
-| `POST` | `/screenshot` | Process screenshot context |
-
-### Example: Search Code
+The core application requires no cloud account. Optional environment variables are documented in [backend/ENV_SETUP.md](backend/ENV_SETUP.md).
 
 ```bash
-curl -X POST http://127.0.0.1:8000/search \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "authentication function", "top_k": 5}'
+source backend/.venv/bin/activate
+./build_binaries.sh
+./prebake_models.sh       # optional offline model bundle
 ```
 
-## UI Features
+Release builds fail when the architecture-matched backend executable is missing. The Xcode build phase embeds the staged backend and optional model cache automatically. See [DEPLOYMENT.md](DEPLOYMENT.md) for signing, notarization, and DMG steps.
 
-- **Glass Morphism** - Blurred transparent background with shimmer effect
-- **Copy Button** - One-click copy code snippets to clipboard
-- **Filter Toggle** - Switch between Full Repo and Active File search
-- **Voice Pulse** - Real-time audio level visualization
-- **Clear All** - Reset results with one click
-- **Toast Notifications** - Non-intrusive error/success messages
-
-## Project Structure
-
-```
-RepoWhisper/
-├── backend/              # Python FastAPI backend
-│   ├── main.py          # FastAPI app & endpoints
-│   ├── search.py        # Vector search (MPS optimized)
-│   ├── transcribe.py    # Whisper (M2 optimized)
-│   ├── indexer.py       # Code indexing
-│   └── config.py        # Settings
-├── frontend/            # SwiftUI macOS app
-│   └── RepoWhisper/
-│       ├── RepoWhisperApp.swift       # App entry, hotkeys
-│       ├── FloatingPopupManager.swift # Stealth overlay
-│       ├── ResultsWindow.swift        # Glass UI
-│       ├── AudioCapture.swift         # Microphone
-│       └── APIClient.swift            # Backend communication
-│   └── Tests/                          # Swift tests
-├── scripts/             # Maintenance scripts
-├── run.sh               # One-click build script
-└── README.md            # Project overview
-```
-
-## Configuration
-
-Settings are persisted via UserDefaults:
-
-- **Stealth Mode** - Remembered across sessions
-- **Window Position** - Restored on launch
-- **Launch at Login** - Toggle in menu bar
-- **Index Mode** - Manual/Smart/Full preference
-
-## Documentation
-
-- [SETUP.md](SETUP.md) - Complete setup guide
-- [backend/ENV_SETUP.md](backend/ENV_SETUP.md) - Environment configuration
-- [frontend/XCODE_SETUP.md](frontend/XCODE_SETUP.md) - Xcode project setup
-- [QUICKSTART.md](QUICKSTART.md) - Quick start guide
-- [BOSS_MODE.md](BOSS_MODE.md) - Meeting intelligence setup
-- [TESTING_STATUS.md](TESTING_STATUS.md) - Verification notes
-
-## Testing
+## Verify
 
 ```bash
-# Backend unit tests
-cd backend && pytest
-
-# Frontend unit tests
-cd frontend && swift test
+./test.sh
 ```
 
-## Contributing
+CI performs the supported Python 3.12 and macOS checks on every push and pull request.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+```text
+SwiftUI app
+  ├─ approved-folder bookmarks and allowlist
+  ├─ microphone / local OCR / floating overlay
+  └─ private Unix-domain socket + launch token
+       └─ FastAPI sidecar
+            ├─ Faster-Whisper
+            ├─ sentence-transformers
+            └─ per-user LanceDB storage
+```
 
-## Acknowledgments
-
-- [Faster-Whisper](https://github.com/guillaumekln/faster-whisper) - Fast Whisper implementation
-- [LanceDB](https://lancedb.github.io/lancedb/) - Vector database
-- [Sentence-Transformers](https://www.sbert.net/) - Embedding models
-- [free-cluely](https://github.com/m13v/free-cluely) - Stealth overlay inspiration
-
----
-
-**Made with care for developers who want to search code with their voice**
+See [backend/README.md](backend/README.md), [BOSS_MODE.md](BOSS_MODE.md), and [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for focused details.
