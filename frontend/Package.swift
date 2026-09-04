@@ -18,7 +18,7 @@ let package = Package(
         .executableTarget(
             name: "RepoWhisper",
             path: "RepoWhisper",
-            exclude: ["Info.plist", "RepoWhisper.entitlements"]
+            exclude: ["Info.plist", "RepoWhisper.entitlements", "Resources"]
         ),
         .testTarget(
             name: "RepoWhisperTests",
