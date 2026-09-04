@@ -6,6 +6,7 @@ Optimized for sub-50ms query latency.
 
 import os
 import time
+import threading
 import platform
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -120,6 +121,7 @@ class VectorStore:
         self.db_path.mkdir(parents=True, exist_ok=True)
         self.db = lancedb.connect(str(self.db_path))
         self._table: Optional[lancedb.table.Table] = None
+        self._lock = threading.RLock()
     
     def get_table(self, table_name: str = "code_chunks") -> lancedb.table.Table:
         """Get or create the code chunks table."""
