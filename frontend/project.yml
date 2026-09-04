@@ -19,10 +19,3 @@ targets:
     postBuildScripts:
       - name: Embed Local Backend
         script: "${SRCROOT}/scripts/embed_backend.sh"
-    dependencies:
-      - package: supabase-swift
-        product: Supabase
-packages:
-  supabase-swift:
-    url: https://github.com/supabase/supabase-swift
-    from: 2.0.0
