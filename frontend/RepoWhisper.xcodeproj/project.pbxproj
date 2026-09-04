@@ -120,6 +120,7 @@
 			buildPhases = (
 				E387A0412F7B4E6B26AA23F9 /* Sources */,
 				2804D18E4DD7427E07772CB6 /* Frameworks */,
+				AABBCCDDEEFF001122334455 /* Embed Local Backend */,
 			);
 			buildRules = (
 			);
@@ -191,6 +192,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		AABBCCDDEEFF001122334455 /* Embed Local Backend */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Embed Local Backend";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\"${SRCROOT}/scripts/embed_backend.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		65D936F60477F54EDFFDEFAA /* Debug */ = {
