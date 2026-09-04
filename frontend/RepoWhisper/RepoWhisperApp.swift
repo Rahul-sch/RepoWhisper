@@ -320,12 +320,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
     
-    // Handle OAuth callback URLs (disabled for local-first mode)
-    func application(_ application: NSApplication, open urls: [URL]) {
-        // TODO: Remove in Phase D when removing auth completely
-        print("📥 URL handling disabled in local-first mode")
-    }
-
     // MARK: - Backend Lifecycle
 
     /// Try to spawn the backend if (a) we haven't already this session and
@@ -367,6 +361,7 @@ final class VoiceSearchCoordinator {
     private var isInstalled = false
     private var pendingAudio: [Data] = []
     private var isProcessing = false
+    private let maximumPendingChunks = 8
 
     private init() {}
 
@@ -381,6 +376,10 @@ final class VoiceSearchCoordinator {
     }
 
     private func enqueue(_ audioData: Data) {
+        if pendingAudio.count >= maximumPendingChunks {
+            pendingAudio.removeFirst(pendingAudio.count - maximumPendingChunks + 1)
+            print("⚠️ [VOICE] Transcription is behind; dropped the oldest audio chunk")
+        }
         pendingAudio.append(audioData)
         guard !isProcessing else { return }
         isProcessing = true
