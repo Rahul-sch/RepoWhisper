@@ -78,13 +78,14 @@ class ScreenshotCapture: ObservableObject {
     }
     
     /// Start capturing screenshots every 5 seconds
-    func startCapture() async {
-        guard !isCapturing else { return }
+    @discardableResult
+    func startCapture() async -> Bool {
+        guard !isCapturing else { return true }
         
         // Request permission
         guard await requestPermission() else {
             print("⚠️ Screen recording permission denied")
-            return
+            return false
         }
         
         // Take initial screenshot
@@ -103,6 +104,7 @@ class ScreenshotCapture: ObservableObject {
         
         isCapturing = true
         print("📸 Screenshot capture started (every 5s)")
+        return true
     }
     
     /// Stop capturing screenshots

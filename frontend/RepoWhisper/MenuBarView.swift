@@ -101,7 +101,12 @@ struct MenuBarView: View {
             audioCapture.startRecording()
             bossModeStartedRecording = true
         }
-        await screenshotCapture.startCapture()
+        guard await screenshotCapture.startCapture() else {
+            popupManager.showErrorToast("Screen Recording permission is required for Boss Mode.")
+            stopBossMode()
+            bossModeEnabled = false
+            return
+        }
     }
 
     private func stopBossMode() {
