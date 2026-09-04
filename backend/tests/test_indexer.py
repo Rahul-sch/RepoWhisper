@@ -7,6 +7,14 @@ from indexer import discover_files
 
 
 class IndexerDiscoveryTests(unittest.TestCase):
+    def test_oversized_file_is_not_discovered(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            oversized = repo / "generated.py"
+            oversized.write_bytes(b"x" * (2 * 1024 * 1024 + 1))
+
+            self.assertNotIn(str(oversized.resolve()), discover_files(str(repo), IndexMode.FULL))
+
     def test_symlinked_file_outside_repo_is_not_discovered(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
