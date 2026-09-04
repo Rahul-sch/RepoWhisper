@@ -1,85 +1,31 @@
-# Troubleshooting Guide
+# Troubleshooting
 
-> **Backend startup is automatic.** The macOS app spawns the backend
-> as a subprocess once you've approved at least one repo folder.
-> There is no manual `./START_BACKEND.sh` step anymore — that script
-> was removed because the backend now binds a Unix Domain Socket
-> at `~/Library/Application Support/RepoWhisper/backend.sock`, not TCP port 8000.
+## Backend does not start
 
-## Stale UDS socket
+- Add at least one repository; startup intentionally waits for an approved path.
+- For source builds, install `backend/requirements.txt` with Python 3.12.
+- For Release builds, run `build_binaries.sh` before archiving.
+- Inspect the app console for the backend log and Unix socket paths.
 
-**Symptom**: app shows "Backend offline" after a crash.
+## No transcription
 
-**Fix**: the backend deletes any stale `backend.sock` on startup
-([BackendProcessManager.swift](frontend/RepoWhisper/BackendProcessManager.swift)).
-If for some reason that fails, remove it manually:
-```bash
-rm -f "$HOME/Library/Application Support/RepoWhisper/backend.sock"
-```
-Then quit and relaunch RepoWhisper.
+- Enable RepoWhisper under System Settings → Privacy & Security → Microphone.
+- Confirm Faster-Whisper is installed or included in the packaged backend.
+- Allow model downloads on first launch, or run `prebake_models.sh` before packaging.
 
-## "Not Found" Error
+## Explain Visible or Boss Mode cannot capture
 
-**Error**: `{"detail": "Not Found"}`
+Enable RepoWhisper under System Settings → Privacy & Security → Screen Recording, then relaunch the app.
 
-**Causes**:
-1. Wrong endpoint URL
-2. Backend not fully started yet
-3. Missing trailing slash
+## Search returns no results
 
-**Fix**:
-```bash
-# Wait a few seconds after starting
-sleep 3
+Open the main window, select an approved repository, and index it. Re-index after substantial source changes. Removed repository permissions take effect immediately and intentionally block search/index access.
 
-# Test health endpoint first
-curl http://127.0.0.1:8000/health
-
-# Check available endpoints
-curl http://127.0.0.1:8000/docs  # Swagger UI
-```
-
-## Backend Won't Start
-
-**Check**:
-1. Virtual environment activated?
-   ```bash
-   cd backend
-   source venv/bin/activate  # Should see (venv) in prompt
-   ```
-
-2. Dependencies installed?
-   ```bash
-   pip list | grep fastapi
-   ```
-
-3. .env file exists?
-   ```bash
-   ls backend/.env
-   ```
-
-## Common Endpoints
-
-- `GET /health` - Health check (no auth)
-- `GET /docs` - API documentation
-- `POST /index` - Index repository (requires auth)
-- `POST /search` - Search code (requires auth)
-- `POST /transcribe` - Transcribe audio (requires auth)
-- `POST /advise` - Boss Mode advice (requires auth)
-
-## Quick Test Commands
+## Build diagnostics
 
 ```bash
-# 1. Check if backend is running
-curl http://127.0.0.1:8000/health
-
-# 2. View API docs in browser
-open http://127.0.0.1:8000/docs
-
-# 3. Check what's on port 8000
-lsof -i:8000
-
-# 4. Kill backend
-pkill -f "python.*main.py"
+./test.sh
+cd frontend && swift build
 ```
 
+The sidecar is not a normal TCP web server. Test it through the app or use `test_backend.sh` with the socket and launch token supplied by a running app instance.
