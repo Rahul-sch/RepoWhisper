@@ -125,20 +125,20 @@ class VectorStore:
     
     def get_table(self, table_name: str = "code_chunks") -> lancedb.table.Table:
         """Get or create the code chunks table."""
-        if self._table is not None:
+        with self._lock:
+            if self._table is not None:
+                return self._table
+
+            if table_name in self.db.table_names():
+                self._table = self.db.open_table(table_name)
+            else:
+                self._table = self.db.create_table(
+                    table_name,
+                    schema=CodeEmbedding,
+                    mode="overwrite"
+                )
+
             return self._table
-        
-        if table_name in self.db.table_names():
-            self._table = self.db.open_table(table_name)
-        else:
-            # Create empty table with schema
-            self._table = self.db.create_table(
-                table_name,
-                schema=CodeEmbedding,
-                mode="overwrite"
-            )
-        
-        return self._table
     
     def index_chunks(
         self,
