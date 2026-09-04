@@ -31,6 +31,7 @@ struct MenuBarView: View {
     @State private var latestTalkingPoint: String = ""
     @State private var isGeneratingAdvice = false
     @State private var latestScreenshotBase64: String? = nil
+    @State private var bossModeStartedRecording = false
     
     var body: some View {
         VStack(spacing: 0) {
