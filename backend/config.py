@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     
     # Index Configuration
     default_index_mode: IndexMode = IndexMode.GUIDED
+    max_index_file_bytes: int = 2 * 1024 * 1024
     supported_extensions: list[str] = [
         ".py", ".swift", ".js", ".ts", ".tsx", ".jsx",
         ".go", ".rs", ".java", ".kt", ".cpp", ".c", ".h",
@@ -49,4 +50,3 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()
-
