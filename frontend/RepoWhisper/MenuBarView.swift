@@ -46,6 +46,18 @@ struct MenuBarView: View {
                 await apiClient.checkHealth()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .searchResults)) { notification in
+            guard let info = notification.userInfo,
+                  let query = info["query"] as? String,
+                  let results = info["results"] as? [SearchResultItem],
+                  let latency = info["latency"] as? Double else { return }
+            lastTranscription = query
+            searchResults = results
+            searchLatency = latency
+            if bossModeEnabled {
+                Task { await generateAdvice() }
+            }
+        }
     }
     
     // MARK: - Boss Mode Setup
