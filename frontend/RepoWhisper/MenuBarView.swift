@@ -9,7 +9,6 @@
 import SwiftUI
 
 struct MenuBarView: View {
-    @EnvironmentObject var authManager: AuthManager
     @StateObject private var audioCapture = AudioCapture.shared
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var screenshotCapture = ScreenshotCapture.shared
@@ -270,18 +269,6 @@ struct MenuBarView: View {
             }
             
             Spacer()
-            
-            Button {
-                Task { await authManager.signOut() }
-            } label: {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(OverlayTheme.textSecondary)
-                    .frame(width: 28, height: 28)
-                    .background(OverlayTheme.elevated)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -577,6 +564,5 @@ struct MenuBarView: View {
 #if canImport(PreviewsMacros)
 #Preview {
     MenuBarView()
-        .environmentObject(AuthManager.shared)
 }
 #endif
