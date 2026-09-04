@@ -12,11 +12,24 @@ else
     echo "Skipping backend tests: Python 3.12+ is required (set PYTHON_BIN)."
 fi
 
-(cd "$REPO_ROOT/frontend" && swift build)
-if (cd "$REPO_ROOT/frontend" && swift test); then
-    true
+DEVELOPER_PATH="${DEVELOPER_DIR:-}"
+if [[ -z "$DEVELOPER_PATH" && -d /Applications/Xcode.app/Contents/Developer ]]; then
+    DEVELOPER_PATH=/Applications/Xcode.app/Contents/Developer
+fi
+
+if [[ -n "$DEVELOPER_PATH" ]]; then
+    (cd "$REPO_ROOT/frontend" && DEVELOPER_DIR="$DEVELOPER_PATH" swift test)
+    DEVELOPER_DIR="$DEVELOPER_PATH" xcodebuild \
+        -project "$REPO_ROOT/frontend/RepoWhisper.xcodeproj" \
+        -scheme RepoWhisper \
+        -configuration Debug \
+        -derivedDataPath "$REPO_ROOT/.build/xcode" \
+        CODE_SIGNING_ALLOWED=NO \
+        SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
+        build
 else
-    echo "Swift tests require a full Xcode XCTest toolchain; build already passed." >&2
+    (cd "$REPO_ROOT/frontend" && swift build)
+    echo "Skipping XCTest and Xcode target checks: full Xcode is not installed."
 fi
 
 while IFS= read -r script; do
