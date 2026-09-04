@@ -3,7 +3,24 @@ set -euo pipefail
 
 resources_dir="${SRCROOT}/RepoWhisper/Resources"
 destination="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
-binary_name="repowhisper-backend-${CURRENT_ARCH}"
+
+backend_arch="${CURRENT_ARCH:-}"
+if [[ -z "${backend_arch}" || "${backend_arch}" == "undefined_arch" ]]; then
+    backend_arch="${ARCHS:-}"
+    backend_arch="${backend_arch%% *}"
+fi
+if [[ -z "${backend_arch}" || "${backend_arch}" == "undefined_arch" ]]; then
+    backend_arch="${NATIVE_ARCH_ACTUAL:-$(uname -m)}"
+fi
+case "${backend_arch}" in
+    arm64|x86_64) ;;
+    *)
+        echo "error: Unsupported backend architecture '${backend_arch}'."
+        exit 1
+        ;;
+esac
+
+binary_name="repowhisper-backend-${backend_arch}"
 binary_path="${resources_dir}/${binary_name}"
 
 if [[ ! -x "${binary_path}" ]]; then
