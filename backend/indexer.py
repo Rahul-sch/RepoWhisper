@@ -68,10 +68,10 @@ def _discover_manual(repo: Path, file_paths: list[str]) -> list[str]:
     
     for path in file_paths:
         full_path = repo / path if not Path(path).is_absolute() else Path(path)
-        if full_path.exists() and full_path.is_file():
+        if full_path.exists() and full_path.is_file() and _should_index(full_path):
             discovered.append(str(full_path.resolve()))
     
-    return discovered
+    return sorted(set(discovered))
 
 
 def _discover_guided(repo: Path, patterns: list[str]) -> list[str]:
@@ -83,7 +83,7 @@ def _discover_guided(repo: Path, patterns: list[str]) -> list[str]:
             if _should_index(file_path):
                 discovered.append(str(file_path.resolve()))
     
-    return list(set(discovered))  # Remove duplicates
+    return sorted(set(discovered))  # Remove duplicates deterministically
 
 
 def _discover_full(repo: Path, extensions: list[str]) -> list[str]:
@@ -96,7 +96,7 @@ def _discover_full(repo: Path, extensions: list[str]) -> list[str]:
             if _should_index(file_path):
                 discovered.append(str(file_path.resolve()))
     
-    return discovered
+    return sorted(set(discovered))
 
 
 def _should_index(file_path: Path) -> bool:
@@ -220,7 +220,7 @@ def _split_into_chunks(
             
             # Start new chunk
             current_chunk_lines = [line] if is_boundary else []
-            current_start = i
+            current_start = i if is_boundary else i + 1
     
     # Don't forget the last chunk
     if current_chunk_lines:
