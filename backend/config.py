@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Server Configuration
     host: str = "127.0.0.1"
     port: int = 8000
-    debug: bool = True
+    debug: bool = False
     
     # Model Configuration
     whisper_model: str = "tiny.en"
