@@ -9,7 +9,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct MainWindowView: View {
-    @EnvironmentObject var authManager: AuthManager
     @StateObject private var audioCapture = AudioCapture.shared
     @StateObject private var apiClient = APIClient.shared
     @StateObject private var popupManager = FloatingPopupManager.shared
@@ -77,7 +76,6 @@ struct MainWindowView: View {
                         SearchView()
                     }
                 }
-                .environmentObject(authManager)
             }
         }
         .navigationTitle("RepoWhisper")
@@ -94,20 +92,6 @@ struct MainWindowView: View {
                         .lineLimit(1)
                 }
                 
-                Divider()
-                
-                // User info - local mode
-                Text("Local User")
-                    .font(.caption)
-                    .foregroundStyle(OverlayTheme.textSecondary)
-                
-                // Sign out button
-                Button(action: {
-                    Task { await authManager.signOut() }
-                }) {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                }
-                .help("Sign Out")
             }
         }
     }
@@ -728,6 +712,5 @@ struct StatBadge: View {
 #if canImport(PreviewsMacros)
 #Preview {
     MainWindowView()
-        .environmentObject(AuthManager.shared)
 }
 #endif
