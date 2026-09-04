@@ -48,6 +48,15 @@ class PathValidatorTests(unittest.TestCase):
         self.assertEqual(validator.allowed_paths, [])
         self.assertFalse(validator.is_path_allowed(str(self.repo_a)))
 
+    def test_path_must_belong_to_selected_repository(self):
+        self.write_allowlist([self.repo_a, self.repo_b])
+        validator = PathValidator(str(self.allowlist))
+        file_in_b = self.repo_b / "secret.py"
+        file_in_b.write_text("secret = True", encoding="utf-8")
+
+        with self.assertRaises(PermissionError):
+            validator.validate_path_within(str(file_in_b), str(self.repo_a))
+
 
 if __name__ == "__main__":
     unittest.main()
