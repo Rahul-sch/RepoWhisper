@@ -226,6 +226,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // otherwise wait for the user to approve one and start then.
         Task { @MainActor in
             self.observeRepoApprovals()
+            VoiceSearchCoordinator.shared.install()
             await self.ensureBackendStartup()
         }
 
@@ -413,6 +414,66 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
     }
+}
+
+/// Owns the application-wide microphone -> transcription -> search pipeline.
+/// Installing this from AppDelegate keeps voice search working regardless of
+/// which SwiftUI scene or menu is currently visible.
+@MainActor
+final class VoiceSearchCoordinator {
+    static let shared = VoiceSearchCoordinator()
+
+    private var isInstalled = false
+
+    private init() {}
+
+    func install() {
+        guard !isInstalled else { return }
+        isInstalled = true
+        AudioCapture.shared.onAudioChunk = { audioData in
+            Task { @MainActor in
+                await VoiceSearchCoordinator.shared.process(audioData)
+            }
+        }
+    }
+
+    private func process(_ audioData: Data) async {
+        do {
+            let transcription = try await APIClient.shared.transcribe(audioData: audioData)
+            let query = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !query.isEmpty else { return }
+
+            FloatingPopupManager.shared.showLoadingPopup(
+                query: query,
+                isRecording: AudioCapture.shared.isRecording
+            )
+            NotificationCenter.default.post(name: .searchStarted, object: nil)
+
+            let response = try await APIClient.shared.search(query: query)
+            FloatingPopupManager.shared.showPopup(
+                results: response.results,
+                query: query,
+                latency: response.latencyMs,
+                isRecording: AudioCapture.shared.isRecording
+            )
+            NotificationCenter.default.post(
+                name: .searchResults,
+                object: nil,
+                userInfo: [
+                    "results": response.results,
+                    "query": query,
+                    "latency": response.latencyMs,
+                ]
+            )
+        } catch {
+            FloatingPopupManager.shared.showErrorToast(error.localizedDescription)
+        }
+    }
+}
+
+extension Notification.Name {
+    static let searchStarted = Notification.Name("SearchStarted")
+    static let searchResults = Notification.Name("SearchResults")
 }
 
 // Container for ResultsWindow that manages state
