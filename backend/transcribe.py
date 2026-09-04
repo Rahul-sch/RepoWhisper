@@ -79,9 +79,7 @@ def get_whisper_model() -> Optional[WhisperModel]:
     Uses 'tiny.en' for fastest inference (~100-200ms).
     For better accuracy, use 'base.en' or 'small.en'.
 
-    M2 Optimized:
-    - float16 compute type (faster than int8 on ARM)
-    - 8 CPU threads (leverages efficiency cores)
+    Apple Silicon optimized with int8 CPU inference and 8 worker threads.
 
     Returns None if faster-whisper is not installed.
     """
