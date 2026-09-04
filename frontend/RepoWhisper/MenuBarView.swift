@@ -41,20 +41,9 @@ struct MenuBarView: View {
         }
         .frame(width: 360)
         .onAppear {
-            setupAudioCallback()
             setupBossMode()
             Task { @MainActor in
                 await apiClient.checkHealth()
-            }
-        }
-    }
-    
-    // MARK: - Audio Callback Setup
-    
-    private func setupAudioCallback() {
-        audioCapture.onAudioChunk = { audioData in
-            Task {
-                await transcribeAndSearch(audioData)
             }
         }
     }
