@@ -58,6 +58,12 @@ struct MenuBarView: View {
                 Task { await generateAdvice() }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .searchStarted)) { _ in
+            isSearching = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .searchFinished)) { _ in
+            isSearching = false
+        }
     }
     
     // MARK: - Boss Mode Setup
