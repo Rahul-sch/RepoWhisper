@@ -179,6 +179,39 @@ final class BackendStartupCoordinatorTests: XCTestCase {
     }
 }
 
+final class BackendPythonResolverTests: XCTestCase {
+    func testPrefersExplicitOverride() {
+        let resolved = BackendPythonResolver.resolve(
+            backendDirectory: "/repo/backend",
+            environment: ["REPOWHISPER_PYTHON_PATH": "/custom/python3.12"],
+            fileExists: { $0 == "/custom/python3.12" }
+        )
+        XCTAssertEqual(resolved, "/custom/python3.12")
+    }
+
+    func testFindsDocumentedDotVenvBeforeLegacyVenv() {
+        let existing = Set([
+            "/repo/backend/.venv/bin/python3",
+            "/repo/backend/venv/bin/python3",
+        ])
+        let resolved = BackendPythonResolver.resolve(
+            backendDirectory: "/repo/backend",
+            environment: [:],
+            fileExists: { existing.contains($0) }
+        )
+        XCTAssertEqual(resolved, "/repo/backend/.venv/bin/python3")
+    }
+
+    func testRejectsUnsupportedSystemPythonFallback() {
+        let resolved = BackendPythonResolver.resolve(
+            backendDirectory: "/repo/backend",
+            environment: [:],
+            fileExists: { $0 == "/usr/bin/python3" }
+        )
+        XCTAssertNil(resolved)
+    }
+}
+
 @MainActor
 private final class ExplainVisibleBackendManagerStub: ExplainVisibleBackendManaging {
     var isRunning: Bool

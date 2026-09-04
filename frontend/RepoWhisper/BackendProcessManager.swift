@@ -8,6 +8,26 @@
 import Foundation
 import AppKit
 
+struct BackendPythonResolver {
+    static func resolve(
+        backendDirectory: String,
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        fileExists: (String) -> Bool = FileManager.default.fileExists(atPath:)
+    ) -> String? {
+        var candidates: [String] = []
+        if let override = environment["REPOWHISPER_PYTHON_PATH"], !override.isEmpty {
+            candidates.append(override)
+        }
+        candidates.append(contentsOf: [
+            (backendDirectory as NSString).appendingPathComponent(".venv/bin/python3"),
+            (backendDirectory as NSString).appendingPathComponent("venv/bin/python3"),
+            "/opt/homebrew/bin/python3.12",
+            "/usr/local/bin/python3.12",
+        ])
+        return candidates.first(where: fileExists)
+    }
+}
+
 /// Manages the backend Python process lifecycle
 @MainActor
 class BackendProcessManager: ObservableObject {
@@ -109,12 +129,7 @@ class BackendProcessManager: ObservableObject {
         }
 
         let backendDir = (binaryPath as NSString).deletingLastPathComponent
-        let venvPython = (backendDir as NSString).appendingPathComponent("venv/bin/python3")
-        if FileManager.default.fileExists(atPath: venvPython) {
-            return venvPython
-        }
-
-        return "/usr/bin/python3"
+        return BackendPythonResolver.resolve(backendDirectory: backendDir)
     }
 
     /// Path to allowlist file
