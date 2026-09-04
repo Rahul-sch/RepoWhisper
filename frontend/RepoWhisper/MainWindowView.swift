@@ -620,6 +620,10 @@ struct SearchView: View {
 
         Task {
             do {
+                let hasScopedAccess = audioURL.startAccessingSecurityScopedResource()
+                defer {
+                    if hasScopedAccess { audioURL.stopAccessingSecurityScopedResource() }
+                }
                 let values = try audioURL.resourceValues(forKeys: [.fileSizeKey, .contentTypeKey])
                 if let fileSize = values.fileSize, fileSize > 50 * 1024 * 1024 {
                     throw APIError.serverError("Audio files must be 50 MB or smaller.")
