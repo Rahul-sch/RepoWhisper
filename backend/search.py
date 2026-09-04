@@ -200,6 +200,14 @@ class VectorStore:
                 })
 
         return records
+
+    def replace_repo(self, chunks: list[CodeChunk], user_id: str, repo_id: str) -> int:
+        """Replace a repository only after every new embedding is ready."""
+        records = self.prepare_records(chunks, user_id, repo_id)
+        self.clear_repo(user_id, repo_id)
+        if records:
+            self.get_table().add(records)
+        return len(records)
     
     def search(
         self,
