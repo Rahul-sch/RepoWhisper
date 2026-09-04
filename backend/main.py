@@ -362,8 +362,10 @@ async def index_repository(
         # Validate file_paths if in manual mode
         if index_request.file_paths:
             try:
-                # Validate each file path against allowlist
-                validated_file_paths = validator.validate_paths(index_request.file_paths)
+                validated_file_paths = [
+                    validator.validate_path_within(path, repo_path_normalized)
+                    for path in index_request.file_paths
+                ]
                 # Replace with validated paths
                 index_request.file_paths = validated_file_paths
             except PermissionError as e:
