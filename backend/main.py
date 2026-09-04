@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator, model_v
 from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
+import asyncio
 import os
 import hmac
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -522,7 +523,8 @@ async def search_code(
 
         # Get user-specific vector store
         store = get_vector_store(user_id)
-        results, latency_ms = store.search(
+        results, latency_ms = await asyncio.to_thread(
+            store.search,
             query=search_request.query,
             user_id=user_id,
             repo_id=scoped_repo_id,
@@ -898,7 +900,6 @@ if __name__ == "__main__":
         )
         server = uvicorn.Server(config)
 
-        import asyncio
         import signal
 
         async def secure_socket_permissions():
