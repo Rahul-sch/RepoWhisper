@@ -19,9 +19,6 @@ class IndexMode(str, Enum):
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    # JWT Configuration
-    jwt_secret: str = ""
-
     # Server Configuration
     host: str = "127.0.0.1"
     port: int = 8000
