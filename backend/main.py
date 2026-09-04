@@ -255,8 +255,7 @@ async def health_check(request: Request):
         # Get index count from default local store
         index_count = 0
         try:
-            # Use default local store path (no user_id for local-first)
-            store = get_vector_store(user_id="local", db_path=".repowhisper/local")
+            store = get_vector_store(user_id="local")
             index_count = store.count()
         except Exception as count_error:
             # If count fails, return 0 (store might not exist yet)
