@@ -15,7 +15,9 @@ targets:
       SWIFT_VERSION: "5.9"
       MACOSX_DEPLOYMENT_TARGET: "14.0"
       ENABLE_HARDENED_RUNTIME: true
+      ENABLE_USER_SCRIPT_SANDBOXING: false
       CODE_SIGN_ENTITLEMENTS: RepoWhisper/RepoWhisper.entitlements
     postBuildScripts:
       - name: Embed Local Backend
         script: "${SRCROOT}/scripts/embed_backend.sh"
+        basedOnDependencyAnalysis: false
