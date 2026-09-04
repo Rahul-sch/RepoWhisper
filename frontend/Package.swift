@@ -14,15 +14,9 @@ let package = Package(
             targets: ["RepoWhisper"]
         )
     ],
-    dependencies: [
-        .package(url: "https://github.com/supabase/supabase-swift", from: "2.0.0")
-    ],
     targets: [
         .executableTarget(
             name: "RepoWhisper",
-            dependencies: [
-                .product(name: "Supabase", package: "supabase-swift")
-            ],
             path: "RepoWhisper",
             exclude: ["Info.plist", "RepoWhisper.entitlements"]
         ),
