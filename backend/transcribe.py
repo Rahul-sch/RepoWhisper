@@ -214,6 +214,23 @@ def _transcribe_source(
     )
 
 
+def transcribe_encoded_audio(
+    audio_data: bytes,
+    language: str = "en",
+) -> TranscriptionResult:
+    """Transcribe a complete WAV, MP3, M4A, FLAC, or other PyAV-supported file."""
+    start_time = time.perf_counter()
+    model = get_whisper_model()
+    if model is None:
+        return TranscriptionResult(
+            text="",
+            confidence=0.0,
+            latency_ms=(time.perf_counter() - start_time) * 1000,
+            language=language,
+        )
+    return _transcribe_source(model, io.BytesIO(audio_data), language, start_time)
+
+
 def _pcm_to_wav(pcm_data: bytes, sample_rate: int) -> io.BytesIO:
     """Convert raw PCM bytes to WAV format."""
     buffer = io.BytesIO()
