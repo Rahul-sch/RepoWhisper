@@ -411,6 +411,7 @@ final class VoiceSearchCoordinator {
                 isRecording: AudioCapture.shared.isRecording
             )
             NotificationCenter.default.post(name: .searchStarted, object: nil)
+            defer { NotificationCenter.default.post(name: .searchFinished, object: nil) }
 
             let response = try await APIClient.shared.search(query: query)
             FloatingPopupManager.shared.showPopup(
@@ -436,6 +437,7 @@ final class VoiceSearchCoordinator {
 
 extension Notification.Name {
     static let searchStarted = Notification.Name("SearchStarted")
+    static let searchFinished = Notification.Name("SearchFinished")
     static let searchResults = Notification.Name("SearchResults")
 }
 
