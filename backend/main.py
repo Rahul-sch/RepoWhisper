@@ -4,8 +4,9 @@ Main application entry point with all API endpoints.
 """
 
 from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
@@ -70,7 +71,7 @@ async def lifespan(app: FastAPI):
     # Preload models for faster first request
     if settings.debug:
         logger.info("preloading_models")
-        get_whisper_model()
+        await asyncio.to_thread(get_whisper_model)
         logger.info("models_loaded")
 
     yield
@@ -125,8 +126,8 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error", "error": str(exc) if settings.debug else "An error occurred"}
     )
 
-@app.exception_handler(ValidationError)
-async def validation_exception_handler(request: Request, exc: ValidationError):
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={"detail": exc.errors()}
@@ -233,7 +234,7 @@ async def health_check(request: Request):
         index_count = 0
         try:
             store = get_vector_store(user_id="local")
-            index_count = store.count()
+            index_count = await asyncio.to_thread(store.count)
         except Exception as count_error:
             # If count fails, return 0 (store might not exist yet)
             logger = get_logger()
@@ -281,13 +282,13 @@ async def warmup(request: Request):
         if is_whisper_available():
             # get_whisper_model returns None if faster-whisper isn't installed,
             # so check explicitly rather than truthiness on a heavy object.
-            model = get_whisper_model()
+            model = await asyncio.to_thread(get_whisper_model)
             whisper_loaded = model is not None
     except Exception as e:
         logger.error("warmup_whisper_failed", error=str(e))
 
     try:
-        _ = get_embedding_model()
+        _ = await asyncio.to_thread(get_embedding_model)
         embedding_loaded = True
     except Exception as e:
         logger.error("warmup_embedding_failed", error=str(e))
@@ -440,7 +441,7 @@ async def clear_index(
         repo_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{user_id}:{repo_path}"))
 
         # Clear the repo data
-        deleted = store.clear_repo(user_id, repo_id)
+        deleted = await asyncio.to_thread(store.clear_repo, user_id, repo_id)
 
         logger.info("clear_index_success", user_id=user_id, repo_id=repo_id, deleted=deleted)
 
@@ -679,7 +680,7 @@ async def list_repos(
                 "id": repo_id,
                 "name": os.path.basename(normalized_path),
                 "repo_path": normalized_path,
-                "chunks_indexed": store.count_repo(user_id, repo_id),
+                "chunks_indexed": await asyncio.to_thread(store.count_repo, user_id, repo_id),
             })
 
         logger.info("repos_listed", user_id=user_id, count=len(repos))
@@ -701,7 +702,7 @@ async def delete_repo(
     try:
         # Clear repo data from vector store
         store = get_vector_store(user_id)
-        store.clear_repo(user_id, repo_id)
+        await asyncio.to_thread(store.clear_repo, user_id, repo_id)
         logger.info("repo_deleted", user_id=user_id, repo_id=repo_id)
         return {"success": True, "message": "Repository deleted"}
     except HTTPException:
@@ -763,7 +764,7 @@ async def get_advice(
         
         # Get advisor and generate talking point
         advisor = get_advisor()
-        talking_point = advisor.generate_talking_point(context)
+        talking_point = await asyncio.to_thread(advisor.generate_talking_point, context)
         
         logger.info("advice_generated", user_id=user_id, confidence=talking_point.confidence)
         
@@ -805,7 +806,7 @@ async def upload_screenshot(
             raise HTTPException(status_code=400, detail="Screenshot too large (max 20MB)")
         
         # Process screenshot
-        screenshot_base64 = process_screenshot(image_data)
+        screenshot_base64 = await asyncio.to_thread(process_screenshot, image_data)
         
         logger.info("screenshot_processed", user_id=user_id, size_bytes=len(image_data))
         

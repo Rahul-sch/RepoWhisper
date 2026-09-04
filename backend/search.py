@@ -164,10 +164,10 @@ class VectorStore:
         if not chunks:
             return 0
 
-        table = self.get_table(table_name)
         records = self.prepare_records(chunks, user_id, repo_id, batch_size)
-        if records:
-            table.add(records)
+        with self._lock:
+            if records:
+                self.get_table(table_name).add(records)
         return len(records)
 
     def prepare_records(
@@ -305,20 +305,19 @@ class VectorStore:
     
     def count(self, table_name: str = "code_chunks") -> int:
         """Get the number of indexed chunks."""
-        table = self.get_table(table_name)
-        return table.count_rows()
+        with self._lock:
+            return self.get_table(table_name).count_rows()
 
     def count_repo(self, user_id: str, repo_id: str, table_name: str = "code_chunks") -> int:
         """Get the number of indexed chunks for one authenticated repository."""
-        if table_name not in self.db.table_names():
-            return 0
-
-        table = self.get_table(table_name)
-        escaped_user = user_id.replace("'", "''")
-        escaped_repo = repo_id.replace("'", "''")
-        return table.count_rows(
-            f"user_id = '{escaped_user}' AND repo_id = '{escaped_repo}'"
-        )
+        with self._lock:
+            if table_name not in self.db.table_names():
+                return 0
+            escaped_user = user_id.replace("'", "''")
+            escaped_repo = repo_id.replace("'", "''")
+            return self.get_table(table_name).count_rows(
+                f"user_id = '{escaped_user}' AND repo_id = '{escaped_repo}'"
+            )
 
     def list_chunks(
         self,
@@ -365,6 +364,7 @@ _store: Optional[VectorStore] = None
 
 # Per-user store cache
 _user_stores: dict[str, VectorStore] = {}
+_user_stores_lock = threading.Lock()
 
 
 def get_vector_store(user_id: str, db_path: str | None = None) -> VectorStore:
@@ -378,13 +378,14 @@ def get_vector_store(user_id: str, db_path: str | None = None) -> VectorStore:
     Returns:
         VectorStore instance for this user
     """
-    if user_id not in _user_stores:
-        if db_path is None:
-            # Use REPOWHISPER_DATA_DIR if set, otherwise fall back to .repowhisper
-            data_dir = os.getenv("REPOWHISPER_DATA_DIR", ".repowhisper")
-            db_path = f"{data_dir}/{user_id}/lancedb"
-        _user_stores[user_id] = VectorStore(db_path)
-    return _user_stores[user_id]
+    with _user_stores_lock:
+        if user_id not in _user_stores:
+            if db_path is None:
+                # Use REPOWHISPER_DATA_DIR if set, otherwise fall back to .repowhisper
+                data_dir = os.getenv("REPOWHISPER_DATA_DIR", ".repowhisper")
+                db_path = f"{data_dir}/{user_id}/lancedb"
+            _user_stores[user_id] = VectorStore(db_path)
+        return _user_stores[user_id]
 
 
 def search_code(user_id: str, query: str, top_k: int = 5) -> tuple[list[SearchResult], float]:
