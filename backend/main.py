@@ -18,7 +18,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from config import get_settings, IndexMode
-from auth import get_current_user, get_user_id, get_optional_user, get_local_user_id
+from auth import get_local_user_id
 from indexer import index_repository as index_repo, CodeChunk
 from search import get_vector_store, SearchResult as VectorSearchResult
 from transcribe import (
