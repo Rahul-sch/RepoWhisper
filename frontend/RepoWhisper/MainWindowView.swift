@@ -620,14 +620,17 @@ struct SearchView: View {
 
         Task {
             do {
+                let values = try audioURL.resourceValues(forKeys: [.fileSizeKey, .contentTypeKey])
+                if let fileSize = values.fileSize, fileSize > 50 * 1024 * 1024 {
+                    throw APIError.serverError("Audio files must be 50 MB or smaller.")
+                }
                 // Read audio file data
                 let audioData = try Data(contentsOf: audioURL)
 
                 print("🎙️ [AUDIO] Transcribing audio file: \(audioURL.lastPathComponent)")
 
                 // Call transcribe endpoint
-                let contentType = try audioURL.resourceValues(forKeys: [.contentTypeKey])
-                    .contentType?.preferredMIMEType ?? "application/octet-stream"
+                let contentType = values.contentType?.preferredMIMEType ?? "application/octet-stream"
                 let result = try await apiClient.transcribeFile(
                     audioData: audioData,
                     contentType: contentType
