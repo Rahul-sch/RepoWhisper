@@ -2,7 +2,7 @@
 //  ScreenCaptureManager.swift
 //  RepoWhisper
 //
-//  Boss Mode: Captures system audio and screenshots using ScreenCaptureKit.
+//  Captures system audio using ScreenCaptureKit.
 //
 
 import Foundation
@@ -10,7 +10,7 @@ import ScreenCaptureKit
 import AVFoundation
 import AppKit
 
-/// Manages system audio capture and screenshot capture for Boss Mode
+/// Manages system audio capture for voice search and meeting mode.
 @MainActor
 class ScreenCaptureManager: ObservableObject {
     /// Shared singleton instance
@@ -19,12 +19,6 @@ class ScreenCaptureManager: ObservableObject {
     /// Whether currently capturing system audio
     @Published var isCapturingSystemAudio: Bool = false
     
-    /// Whether currently capturing screenshots
-    @Published var isCapturingScreenshots: Bool = false
-    
-    /// Latest screenshot data
-    @Published var latestScreenshot: Data?
-    
     /// Error message if capture fails
     @Published var errorMessage: String?
     
@@ -32,14 +26,8 @@ class ScreenCaptureManager: ObservableObject {
     private var systemAudioStream: SCStream?
     private var systemAudioBuffer: Data = Data()
     
-    /// Screenshot timer
-    private var screenshotTimer: Timer?
-    
     /// Callback for system audio chunks
     var onSystemAudioChunk: ((Data) -> Void)?
-    
-    /// Callback for screenshots
-    var onScreenshot: ((Data) -> Void)?
     
     private init() {}
     
@@ -362,4 +350,3 @@ private class SystemAudioStreamDelegate: NSObject, SCStreamDelegate, SCStreamOut
         }
     }
 }
-
