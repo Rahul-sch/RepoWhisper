@@ -175,10 +175,10 @@ class IndexResponse(BaseModel):
 
 class SearchRequest(BaseModel):
     """Request model for searching the index."""
-    query: str
-    top_k: int = 5
-    repo_id: Optional[str] = None
-    repo_path: Optional[str] = None
+    query: str = Field(min_length=1, max_length=500)
+    top_k: int = Field(default=5, ge=1, le=50)
+    repo_id: Optional[str] = Field(default=None, max_length=64)
+    repo_path: Optional[str] = Field(default=None, max_length=4096)
 
 
 class SearchResultItem(BaseModel):
