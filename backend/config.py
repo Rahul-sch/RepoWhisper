@@ -6,7 +6,7 @@ Handles environment variables and settings for the application.
 import os
 from enum import Enum
 from functools import lru_cache
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class IndexMode(str, Enum):
@@ -18,6 +18,12 @@ class IndexMode(str, Enum):
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # Server Configuration
     host: str = "127.0.0.1"
@@ -37,12 +43,6 @@ class Settings(BaseSettings):
         ".md", ".txt", ".json", ".yaml", ".yml"
     ]
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"  # Ignore extra env vars (like GROQ_API_KEY which is handled separately)
-
-
 @lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance."""
