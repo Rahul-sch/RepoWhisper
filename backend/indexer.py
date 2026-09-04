@@ -124,7 +124,10 @@ def _should_index(file_path: Path) -> bool:
     if not file_path.is_file():
         return False
     try:
-        return file_path.stat().st_size <= get_settings().max_index_file_bytes
+        if file_path.stat().st_size > get_settings().max_index_file_bytes:
+            return False
+        with file_path.open("rb") as handle:
+            return b"\x00" not in handle.read(4096)
     except OSError:
         return False
 
