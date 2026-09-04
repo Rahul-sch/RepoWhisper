@@ -49,11 +49,17 @@ def discover_files(
         raise ValueError(f"Repository path does not exist: {repo_path}")
     
     if mode == IndexMode.MANUAL:
-        return _discover_manual(repo, file_paths or [])
+        discovered = _discover_manual(repo, file_paths or [])
     elif mode == IndexMode.GUIDED:
-        return _discover_guided(repo, patterns or ["*.py", "*.swift", "*.ts"])
+        discovered = _discover_guided(repo, patterns or ["*.py", "*.swift", "*.ts"])
     else:  # FULL mode
-        return _discover_full(repo, settings.supported_extensions)
+        discovered = _discover_full(repo, settings.supported_extensions)
+
+    # Never follow a matching symlink to a file outside the selected repo.
+    return [
+        path for path in discovered
+        if Path(path).resolve() == repo or repo in Path(path).resolve().parents
+    ]
 
 
 def _discover_manual(repo: Path, file_paths: list[str]) -> list[str]:
@@ -249,4 +255,3 @@ def index_repository(
         chunks = chunk_file(file_path)
         for chunk in chunks:
             yield chunk
-
