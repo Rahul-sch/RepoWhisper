@@ -675,7 +675,7 @@ class FloatingPopupManager: ObservableObject {
                 let isConnected = await MainActor.run { APIClient.shared.isConnected }
                 guard isConnected else {
                     await MainActor.run {
-                        showErrorToast("Backend offline - check localhost:8000")
+                        showErrorToast("Local backend is offline — reopen the app or re-add the repository.")
                         hidePopup()
                     }
                     return
