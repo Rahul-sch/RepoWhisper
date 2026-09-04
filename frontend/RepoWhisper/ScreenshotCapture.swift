@@ -8,6 +8,7 @@
 import Foundation
 import AppKit
 import CoreGraphics
+import ScreenCaptureKit
 
 /// Handles silent screenshot capture
 @MainActor
@@ -117,57 +118,51 @@ class ScreenshotCapture: ObservableObject {
     
     /// Capture the active window
     private func captureActiveWindow() async {
-        // Get the frontmost application
-        guard let frontmostApp = NSWorkspace.shared.frontmostApplication,
-              let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else {
-            // Fallback to main display
-            captureMainDisplay()
-            return
-        }
-        
-        // Find the frontmost window from the active app
-        let activeWindow = windows.first { window in
-            guard let ownerName = window[kCGWindowOwnerName as String] as? String,
-                  let bounds = window[kCGWindowBounds as String] as? [String: Any],
-                  let width = bounds["Width"] as? CGFloat,
-                  let height = bounds["Height"] as? CGFloat else {
-                return false
-            }
-            
-            return ownerName == frontmostApp.localizedName && width > 100 && height > 100
-        }
-        
-        if let window = activeWindow,
-           let windowID = window[kCGWindowNumber as String] as? CGWindowID,
-           let bounds = window[kCGWindowBounds as String] as? [String: Any],
-           let x = bounds["X"] as? CGFloat,
-           let y = bounds["Y"] as? CGFloat,
-           let width = bounds["Width"] as? CGFloat,
-           let height = bounds["Height"] as? CGFloat {
-            
-            // Capture specific window
-            if let image = CGWindowListCreateImage(
-                CGRect(x: x, y: y, width: width, height: height),
-                .optionIncludingWindow,
-                windowID,
-                .bestResolution
-            ) {
-                let screenshotData = convertToPNG(image)
-                latestScreenshot = screenshotData
-                onScreenshot?(screenshotData)
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(
+                true,
+                onScreenWindowsOnly: true
+            )
+            let processID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+            if let processID,
+               let window = content.windows.first(where: {
+                   $0.owningApplication?.processID == processID &&
+                   $0.frame.width > 100 && $0.frame.height > 100
+               }) {
+                let filter = SCContentFilter(desktopIndependentWindow: window)
+                let configuration = SCStreamConfiguration()
+                configuration.width = max(1, Int(window.frame.width * 2))
+                configuration.height = max(1, Int(window.frame.height * 2))
+                configuration.showsCursor = false
+                let image = try await SCScreenshotManager.captureImage(
+                    contentFilter: filter,
+                    configuration: configuration
+                )
+                store(image)
                 return
             }
+
+            guard let display = content.displays.first(where: {
+                $0.displayID == CGMainDisplayID()
+            }) ?? content.displays.first else { return }
+            let filter = SCContentFilter(display: display, excludingWindows: [])
+            let configuration = SCStreamConfiguration()
+            configuration.width = display.width
+            configuration.height = display.height
+            configuration.showsCursor = false
+            let image = try await SCScreenshotManager.captureImage(
+                contentFilter: filter,
+                configuration: configuration
+            )
+            store(image)
+        } catch {
+            print("⚠️ Screenshot capture failed: \(error.localizedDescription)")
         }
-        
-        // Fallback to main display
-        captureMainDisplay()
     }
-    
-    /// Capture main display as fallback
-    private func captureMainDisplay() {
-        guard let image = CGDisplayCreateImage(CGMainDisplayID()) else { return }
-        
+
+    private func store(_ image: CGImage) {
         let screenshotData = convertToPNG(image)
+        guard !screenshotData.isEmpty else { return }
         latestScreenshot = screenshotData
         onScreenshot?(screenshotData)
     }
