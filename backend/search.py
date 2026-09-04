@@ -235,12 +235,10 @@ class VectorStore:
         """
         start_time = time.perf_counter()
 
-        # Get table
-        table = self.get_table(table_name)
-
-        # Empty table → nothing to search; avoid LanceDB error on empty index
-        if table.count_rows() == 0:
-            return [], (time.perf_counter() - start_time) * 1000
+        with self._lock:
+            table = self.get_table(table_name)
+            if table.count_rows() == 0:
+                return [], (time.perf_counter() - start_time) * 1000
 
         # Generate query embedding
         query_embedding = embed_text(query)
@@ -253,12 +251,13 @@ class VectorStore:
             escaped_repo = repo_id.replace("'", "''")
             where_clause += f" AND repo_id = '{escaped_repo}'"
 
-        filtered_results = (
-            table.search(query_embedding)
-            .where(where_clause, prefilter=True)
-            .limit(top_k)
-            .to_list()
-        )
+        with self._lock:
+            filtered_results = (
+                table.search(query_embedding)
+                .where(where_clause, prefilter=True)
+                .limit(top_k)
+                .to_list()
+            )
         
         # Convert to SearchResult objects
         search_results = [
