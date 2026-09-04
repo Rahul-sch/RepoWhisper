@@ -424,6 +424,8 @@ final class VoiceSearchCoordinator {
     static let shared = VoiceSearchCoordinator()
 
     private var isInstalled = false
+    private var pendingAudio: [Data] = []
+    private var isProcessing = false
 
     private init() {}
 
@@ -432,8 +434,21 @@ final class VoiceSearchCoordinator {
         isInstalled = true
         AudioCapture.shared.onAudioChunk = { audioData in
             Task { @MainActor in
-                await VoiceSearchCoordinator.shared.process(audioData)
+                VoiceSearchCoordinator.shared.enqueue(audioData)
             }
+        }
+    }
+
+    private func enqueue(_ audioData: Data) {
+        pendingAudio.append(audioData)
+        guard !isProcessing else { return }
+        isProcessing = true
+        Task { @MainActor in
+            while !pendingAudio.isEmpty {
+                let next = pendingAudio.removeFirst()
+                await process(next)
+            }
+            isProcessing = false
         }
     }
 
