@@ -14,11 +14,9 @@
 		EL9TTU4L5LJI9J1ZQCPP1PE5 /* SecurityScopedBookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED80T92YRYZV6HT4M4GDGKX /* SecurityScopedBookmarkManager.swift */; };
 		0352452F9BFF1A264CF67600 /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60D43AE79B98DA99C46DE86 /* ScreenCaptureManager.swift */; };
 		046F2E69329442D6F03F6BDC /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56794B25204A09A55F3A9ED8 /* MenuBarView.swift */; };
-		0E280D6318399B3E50671734 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37071BFB05CBC4EF18D008EA /* LoginView.swift */; };
 		3084E8BAF248811A2BECAA65 /* FloatingPopupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F785716971D242601F437E64 /* FloatingPopupManager.swift */; };
 		3454F3336749C798404C9BD7 /* AnimationHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82051857B3D32E1DE0EB6CAB /* AnimationHelpers.swift */; };
 		3AEE6B107A1F93D675E424B7 /* ResultsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0693029548C0A143A970956E /* ResultsWindow.swift */; };
-		488918DEF34681AEBFC7A4DE /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2C96FAA45299FB54994AE6 /* AuthManager.swift */; };
 		600A37313E65F0F18E109957 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CBDBEA81C4E961FC309E87 /* APIClient.swift */; };
 		65DA88E60D57364B4F0F4FF3 /* RepoManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D17F56AFD20E211D9DBA23 /* RepoManagerView.swift */; };
 		793E09011824C07AD8B20EB5 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACC49DB057A6532A21E9E57 /* AudioCapture.swift */; };
@@ -36,9 +34,7 @@
 		2LQ2PTKMLFB7HEILYPULC5RD /* BackendProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendProcessManager.swift; sourceTree = "<group>"; };
 		3ED80T92YRYZV6HT4M4GDGKX /* SecurityScopedBookmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedBookmarkManager.swift; sourceTree = "<group>"; };
 		0693029548C0A143A970956E /* ResultsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsWindow.swift; sourceTree = "<group>"; };
-		0E2C96FAA45299FB54994AE6 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		28CBDBEA81C4E961FC309E87 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
-		37071BFB05CBC4EF18D008EA /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		39D17F56AFD20E211D9DBA23 /* RepoManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoManagerView.swift; sourceTree = "<group>"; };
 		4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoWhisperApp.swift; sourceTree = "<group>"; };
 		56794B25204A09A55F3A9ED8 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -89,11 +85,9 @@
 				28CBDBEA81C4E961FC309E87 /* APIClient.swift */,
 				BACC49DB057A6532A21E9E57 /* AudioCapture.swift */,
 				2LQ2PTKMLFB7HEILYPULC5RD /* BackendProcessManager.swift */,
-				0E2C96FAA45299FB54994AE6 /* AuthManager.swift */,
 				F785716971D242601F437E64 /* FloatingPopupManager.swift */,
 				A1B2C3D4E5F60718293A4B5C /* ExplainVisibleFeature.swift */,
 				9CF68A2E300B00A5DC4B3ABC /* Info.plist */,
-				37071BFB05CBC4EF18D008EA /* LoginView.swift */,
 				9525BF6FA708784BB4732856 /* MainWindowView.swift */,
 				56794B25204A09A55F3A9ED8 /* MenuBarView.swift */,
 				XYZHDWHQAKJYMFB9HTO95EVU /* OnboardingView.swift */,
@@ -172,10 +166,8 @@
 				3454F3336749C798404C9BD7 /* AnimationHelpers.swift in Sources */,
 				793E09011824C07AD8B20EB5 /* AudioCapture.swift in Sources */,
 				QU50IXTUKBQSNRW85TZD1JV5 /* BackendProcessManager.swift in Sources */,
-				488918DEF34681AEBFC7A4DE /* AuthManager.swift in Sources */,
 				3084E8BAF248811A2BECAA65 /* FloatingPopupManager.swift in Sources */,
 				B1B2C3D4E5F60718293A4B5C /* ExplainVisibleFeature.swift in Sources */,
-				0E280D6318399B3E50671734 /* LoginView.swift in Sources */,
 				BD8C5F87BCF7A81A6112F627 /* MainWindowView.swift in Sources */,
 				046F2E69329442D6F03F6BDC /* MenuBarView.swift in Sources */,
 				WRKCCU9S6B00J0FQ93CMRH0U /* OnboardingView.swift in Sources */,
