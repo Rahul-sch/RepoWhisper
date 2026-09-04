@@ -6,7 +6,7 @@ Main application entry point with all API endpoints.
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
@@ -160,9 +160,9 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 class IndexRequest(BaseModel):
     """Request model for indexing a repository."""
     mode: IndexMode
-    repo_path: str
-    file_paths: Optional[list[str]] = None  # For manual mode
-    patterns: Optional[list[str]] = None    # For guided mode
+    repo_path: str = Field(min_length=1, max_length=4096)
+    file_paths: Optional[list[str]] = Field(default=None, max_length=10_000)
+    patterns: Optional[list[str]] = Field(default=None, max_length=100)
 
 
 class IndexResponse(BaseModel):
