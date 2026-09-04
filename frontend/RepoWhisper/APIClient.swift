@@ -169,6 +169,21 @@ class APIClient: ObservableObject {
         return try decode(TranscriptionResult.self, from: response)
     }
 
+    /// Transcribe bytes from an encoded audio file such as WAV, MP3, or M4A.
+    func transcribeFile(audioData: Data, contentType: String) async throws -> TranscriptionResult {
+        let response = try await send(
+            method: "POST",
+            path: "/transcribe-file",
+            body: audioData,
+            contentType: contentType,
+            timeout: 300.0
+        )
+        guard response.statusCode == 200 else {
+            throw mapError(response)
+        }
+        return try decode(TranscriptionResult.self, from: response)
+    }
+
     // MARK: - Search
 
     /// Search indexed code
