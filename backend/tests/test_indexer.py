@@ -7,6 +7,14 @@ from indexer import discover_files
 
 
 class IndexerDiscoveryTests(unittest.TestCase):
+    def test_binary_file_with_supported_extension_is_not_discovered(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            binary = repo / "payload.py"
+            binary.write_bytes(b"print('prefix')\x00binary")
+
+            self.assertNotIn(str(binary.resolve()), discover_files(str(repo), IndexMode.FULL))
+
     def test_oversized_file_is_not_discovered(self):
         with tempfile.TemporaryDirectory() as temporary:
             repo = Path(temporary)
