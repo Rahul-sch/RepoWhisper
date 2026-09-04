@@ -331,7 +331,19 @@ class VectorStore:
         if table_name not in self.db.table_names():
             return []
 
-        rows = self.get_table(table_name).to_arrow().to_pylist()
+        escaped_user = user_id.replace("'", "''")
+        where_clause = f"user_id = '{escaped_user}'"
+        if repo_id is not None:
+            escaped_repo = repo_id.replace("'", "''")
+            where_clause += f" AND repo_id = '{escaped_repo}'"
+        with self._lock:
+            rows = (
+                self.get_table(table_name)
+                .search()
+                .where(where_clause)
+                .limit(limit)
+                .to_list()
+            )
         return [
             {
                 "repo_id": row["repo_id"],
@@ -342,9 +354,7 @@ class VectorStore:
                 "chunk_type": row["chunk_type"],
             }
             for row in rows
-            if row["user_id"] == user_id
-            and (repo_id is None or row["repo_id"] == repo_id)
-        ][:limit]
+        ]
 
 
 # ============ Convenience Functions ============
