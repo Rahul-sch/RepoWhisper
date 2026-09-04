@@ -289,18 +289,19 @@ class VectorStore:
             Number of rows deleted (best-effort; LanceDB delete returns no count,
             so we compute via before/after row counts).
         """
-        if table_name not in self.db.table_names():
-            return 0
+        with self._lock:
+            if table_name not in self.db.table_names():
+                return 0
 
-        table = self.get_table(table_name)
-        before = table.count_rows()
+            table = self.get_table(table_name)
+            before = table.count_rows()
 
-        escaped_user = user_id.replace("'", "''")
-        escaped_repo = repo_id.replace("'", "''")
-        table.delete(f"user_id = '{escaped_user}' AND repo_id = '{escaped_repo}'")
+            escaped_user = user_id.replace("'", "''")
+            escaped_repo = repo_id.replace("'", "''")
+            table.delete(f"user_id = '{escaped_user}' AND repo_id = '{escaped_repo}'")
 
-        after = table.count_rows()
-        return max(0, before - after)
+            after = table.count_rows()
+            return max(0, before - after)
     
     def count(self, table_name: str = "code_chunks") -> int:
         """Get the number of indexed chunks."""
