@@ -6,7 +6,7 @@ Main application entry point with all API endpoints.
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
@@ -163,6 +163,14 @@ class IndexRequest(BaseModel):
     repo_path: str = Field(min_length=1, max_length=4096)
     file_paths: Optional[list[str]] = Field(default=None, max_length=10_000)
     patterns: Optional[list[str]] = Field(default=None, max_length=100)
+
+    @field_validator("patterns")
+    @classmethod
+    def validate_patterns(cls, patterns):
+        for pattern in patterns or []:
+            if len(pattern) > 128 or ".." in pattern or os.path.isabs(pattern):
+                raise ValueError("Index patterns must be short repository-relative globs")
+        return patterns
 
 
 class IndexResponse(BaseModel):
