@@ -121,7 +121,12 @@ def _should_index(file_path: Path) -> bool:
         if fnmatch.fnmatch(path_str, pattern):
             return False
     
-    return file_path.is_file()
+    if not file_path.is_file():
+        return False
+    try:
+        return file_path.stat().st_size <= get_settings().max_index_file_bytes
+    except OSError:
+        return False
 
 
 def chunk_file(file_path: str, max_chunk_size: int = 1000) -> list[CodeChunk]:
