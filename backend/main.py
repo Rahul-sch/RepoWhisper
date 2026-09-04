@@ -634,7 +634,7 @@ async def transcribe_audio_endpoint(
             raise HTTPException(status_code=400, detail="Audio data too large (max 10MB)")
 
         # Transcribe
-        result = whisper_transcribe(audio_data)
+        result = await asyncio.to_thread(whisper_transcribe, audio_data)
         
         logger.info("transcription_complete", text_length=len(result.text), latency_ms=result.latency_ms)
         
@@ -673,7 +673,7 @@ async def transcribe_audio_file_endpoint(
     if len(audio_data) > 50 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Audio file too large (max 50MB)")
     try:
-        result = transcribe_encoded_audio(audio_data)
+        result = await asyncio.to_thread(transcribe_encoded_audio, audio_data)
     except Exception:
         get_logger().error("audio_file_transcription_failed", exc_info=True)
         raise HTTPException(status_code=400, detail="Unsupported or invalid audio file")
