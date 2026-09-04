@@ -6,7 +6,7 @@ Main application entry point with all API endpoints.
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
@@ -732,10 +732,16 @@ async def delete_repo(
 
 class AdviseRequest(BaseModel):
     """Request model for Boss Mode advisor."""
-    transcript: str
-    screenshot_base64: Optional[str] = None
-    code_snippets: Optional[list[str]] = None
-    meeting_context: Optional[str] = None
+    transcript: str = Field(min_length=1, max_length=20_000)
+    screenshot_base64: Optional[str] = Field(default=None, max_length=30_000_000)
+    code_snippets: Optional[list[str]] = Field(default=None, max_length=10)
+    meeting_context: Optional[str] = Field(default=None, max_length=4_000)
+
+    @model_validator(mode="after")
+    def validate_snippet_budget(self):
+        if sum(len(snippet) for snippet in self.code_snippets or []) > 50_000:
+            raise ValueError("Code snippets exceed the 50,000 character limit")
+        return self
 
 
 class AdviseResponse(BaseModel):
