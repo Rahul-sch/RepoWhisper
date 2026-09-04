@@ -151,6 +151,14 @@ class PathValidator:
         """
         return [self.validate_path(p) for p in paths]
 
+    def validate_path_within(self, path: str, root: str) -> str:
+        """Validate a path against both the allowlist and a selected repo root."""
+        validated_root = Path(self.validate_path(root)).resolve()
+        validated_path = Path(self.validate_path(path)).resolve()
+        if validated_path != validated_root and validated_root not in validated_path.parents:
+            raise PermissionError(f"Path is outside the selected repository: {path}")
+        return str(validated_path)
+
 
 # Global validator instance
 _validator: Optional[PathValidator] = None
