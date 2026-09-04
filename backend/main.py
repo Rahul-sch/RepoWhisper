@@ -4,7 +4,6 @@ Main application entry point with all API endpoints.
 """
 
 from fastapi import FastAPI, Depends, HTTPException, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from typing import Optional
@@ -114,29 +113,7 @@ async def auth_token_middleware(request: Request, call_next):
 
     return await call_next(request)
 
-# Configure CORS - restrict to specific origins only
 settings = get_settings()
-allowed_origins = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "repowhisper://*",  # Swift app custom URL scheme
-]
-
-# In production, NEVER allow all origins
-# Add your actual frontend domain here:
-# allowed_origins.append("https://yourdomain.com")
-
-# Only allow * in debug mode AND if explicitly enabled
-if settings.debug and os.getenv("ALLOW_ALL_CORS", "false").lower() == "true":
-    allowed_origins.append("*")  # Only if explicitly enabled
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"],
-)
 
 # Global error handler
 @app.exception_handler(Exception)
