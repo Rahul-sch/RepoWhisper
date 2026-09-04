@@ -59,66 +59,14 @@ struct RepoWhisperApp: App {
             CommandGroup(replacing: .newItem) { }
         }
         
-        // Menu Bar Extra - simplified to prevent crashes
+        // Full menu-bar experience, including voice and meeting controls.
         MenuBarExtra {
-            VStack(spacing: 8) {
-                Text("RepoWhisper")
-                    .font(.headline)
-                Divider()
-
-                // Show Demo Popup for testing
-                Button("Show Demo Popup") {
-                    FloatingPopupManager.shared.showPopup(
-                        results: [
-                            SearchResultItem(
-                                filePath: "/demo/auth.swift",
-                                chunk: "func authenticate(user: String, password: String) -> Bool {\n    // Demo code for testing\n    return true\n}",
-                                score: 0.95,
-                                lineStart: 10,
-                                lineEnd: 14
-                            ),
-                            SearchResultItem(
-                                filePath: "/demo/login.swift",
-                                chunk: "struct LoginView: View {\n    @State var email = \"\"\n    @State var password = \"\"\n}",
-                                score: 0.82,
-                                lineStart: 1,
-                                lineEnd: 4
-                            )
-                        ],
-                        query: "authentication demo",
-                        latency: 42.0,
-                        isRecording: false
-                    )
-                }
-
-                Button("Open App") {
-                    // Open main window
-                    if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == "main" }) {
-                        window.makeKeyAndOrderFront(nil)
-                    }
-                }
-
-                Divider()
-
-                // Launch at Login toggle
-                Toggle("Launch at Login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, newValue in
-                        setLaunchAtLogin(enabled: newValue)
-                    }
-
-                Divider()
-
-                Button("Quit RepoWhisper") {
-                    NSApplication.shared.terminate(nil)
-                }
-                .keyboardShortcut("q")
-            }
-            .padding()
-            .frame(width: 200)
+            MenuBarView()
+                .environmentObject(authManager)
         } label: {
             Image(systemName: "waveform.circle.fill")
         }
-        .menuBarExtraStyle(.menu)
+        .menuBarExtraStyle(.window)
         
         // Settings window
         Settings {
