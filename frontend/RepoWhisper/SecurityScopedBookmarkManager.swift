@@ -231,7 +231,6 @@ class SecurityScopedBookmarkManager: ObservableObject {
 enum BookmarkError: LocalizedError {
     case failedToCreateBookmark(path: String)
     case failedToStartAccessing(path: String)
-    case noApprovedPaths
 
     var errorDescription: String? {
         switch self {
@@ -239,8 +238,6 @@ enum BookmarkError: LocalizedError {
             return "Failed to create security bookmark for: \(path)"
         case .failedToStartAccessing(let path):
             return "Failed to access folder: \(path)"
-        case .noApprovedPaths:
-            return "No repository folders approved. Please add a repository folder before starting."
         }
     }
 }
