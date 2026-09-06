@@ -15,7 +15,7 @@ struct MainWindowView: View {
     @StateObject private var bookmarkManager = SecurityScopedBookmarkManager.shared
     @StateObject private var backendManager = BackendProcessManager.shared
 
-    @State private var selectedTab = 0
+    @State private var selectedTab: RWNavigation = .search
     @State private var showingRepoManager = false
     @State private var showingOnboarding = false
 
@@ -37,16 +37,10 @@ struct MainWindowView: View {
         NavigationSplitView {
             // Sidebar
             List(selection: $selectedTab) {
-                Label("Search", systemImage: "magnifyingglass")
-                    .tag(0)
-                Label("Repositories", systemImage: "folder.badge.gearshape")
-                    .tag(1)
-                Label("Indexing", systemImage: "arrow.triangle.2.circlepath")
-                    .tag(2)
-                Label("Boss Mode", systemImage: "crown.fill")
-                    .tag(3)
-                Label("Settings", systemImage: "gearshape")
-                    .tag(4)
+                ForEach(RWNavigation.allCases) { item in
+                    RWSidebarRow(item: item, isSelected: selectedTab == item)
+                        .tag(item)
+                }
             }
             .foregroundStyle(OverlayTheme.textSecondary)
             .tint(OverlayTheme.accent)
@@ -62,18 +56,16 @@ struct MainWindowView: View {
                 // Content based on selected tab
                 Group {
                     switch selectedTab {
-                    case 0:
+                    case .search:
                         SearchView()
-                    case 1:
+                    case .repositories:
                         RepoManagerView()
-                    case 2:
+                    case .indexing:
                         IndexingView()
-                    case 3:
+                    case .live:
                         BossModeView()
-                    case 4:
+                    case .settings:
                         SettingsView()
-                    default:
-                        SearchView()
                     }
                 }
             }
