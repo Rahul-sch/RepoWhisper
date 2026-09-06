@@ -9,48 +9,75 @@
 /* Begin PBXBuildFile section */
 		0352452F9BFF1A264CF67600 /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60D43AE79B98DA99C46DE86 /* ScreenCaptureManager.swift */; };
 		046F2E69329442D6F03F6BDC /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56794B25204A09A55F3A9ED8 /* MenuBarView.swift */; };
+		0A72A200E352167D8F1FEE3F /* RWKeycap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038F1DA3D9DBE37F3B3EE924 /* RWKeycap.swift */; };
+		175CB1A3A864AE5BC1B4BC73 /* RWEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F247D2E75B578D09D46BAB /* RWEmptyState.swift */; };
 		21CD45C73695D0BF93F49BA5 /* ExplainVisibleFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183F69BE35C64D7829F817E6 /* ExplainVisibleFeature.swift */; };
+		23D6A7825D5F26D5633DAFC4 /* RWNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 085B348745B7D7F5C04B7463 /* RWNavigation.swift */; };
 		3084E8BAF248811A2BECAA65 /* FloatingPopupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F785716971D242601F437E64 /* FloatingPopupManager.swift */; };
 		3454F3336749C798404C9BD7 /* AnimationHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82051857B3D32E1DE0EB6CAB /* AnimationHelpers.swift */; };
 		3AEE6B107A1F93D675E424B7 /* ResultsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0693029548C0A143A970956E /* ResultsWindow.swift */; };
+		3C001B15C9262817DD97D831 /* RWPageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574952882B5985A2275C95F2 /* RWPageHeader.swift */; };
+		437B0A9F420C11289CE26DB5 /* RWBrandMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148571149D85EB4CF3649C63 /* RWBrandMark.swift */; };
+		5AF8A2609AE60A3945E56DB0 /* RWSectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2E5EFB24D907CA711E1DF8 /* RWSectionCard.swift */; };
 		600A37313E65F0F18E109957 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CBDBEA81C4E961FC309E87 /* APIClient.swift */; };
 		64113717B219738A9E2159A1 /* OverlayWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688EDF32CABBF45CA9EC49B0 /* OverlayWindow.swift */; };
 		65DA88E60D57364B4F0F4FF3 /* RepoManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D17F56AFD20E211D9DBA23 /* RepoManagerView.swift */; };
 		6C8C6644776345B85C959B23 /* IndexingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC467A101154F90C1DC53692 /* IndexingView.swift */; };
 		793E09011824C07AD8B20EB5 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACC49DB057A6532A21E9E57 /* AudioCapture.swift */; };
+		8A49CCBE533995F2394AB89E /* RWSidebarRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28359AD5C88CAE38AE2D6CF /* RWSidebarRow.swift */; };
+		8CE772D572A9A00A7C329E41 /* RWTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982DFA9FF657D3C1475D088D /* RWTheme.swift */; };
 		98506C5BBE0C2D8B3FE12007 /* ScreenshotCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */; };
 		99A16B4B26DCEC6C2B10020B /* SecurityScopedBookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E53D01F6B64A206067EE03 /* SecurityScopedBookmarkManager.swift */; };
+		A4B69F95AF3FD652E4163CD8 /* RWGlassSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5525A32BD3CB974DB15D5B3C /* RWGlassSurface.swift */; };
 		AD6A12BFB2DD979D64A395FC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */; };
+		B04C009BB523F86FDD5C7888 /* RWStatusPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02F5D2CCCBA9A88AE0EBA3A3 /* RWStatusPill.swift */; };
+		B2E08575F85B7F2C2A1AEA03 /* RWAmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1AB3A164594B0D81D3ADBC4 /* RWAmbientBackground.swift */; };
 		BD8C5F87BCF7A81A6112F627 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9525BF6FA708784BB4732856 /* MainWindowView.swift */; };
 		DFBC683EF1255A9532DEC304 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DE54A423A8E6C7D823E860 /* OnboardingView.swift */; };
+		E4945BA7852EBB01609FD116 /* RWButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74939B9600D3BEC305E2277E /* RWButtonStyles.swift */; };
 		E88BAB8B0102DBEB3674386C /* UnixSocketHTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5902967465A997065A1AB4 /* UnixSocketHTTPClient.swift */; };
 		EFAC2A2C04AA6028467F7DA8 /* BackendProcessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED268534F4DE6D9D72C2BDC8 /* BackendProcessManager.swift */; };
 		F10DAA4CBDDECE2B9BC04FB2 /* RepoWhisperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */; };
+		F37D2C56A3160DDDDB53850C /* RWMetricChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A6EA19FBA8AB19E30A9FDC /* RWMetricChip.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		02F5D2CCCBA9A88AE0EBA3A3 /* RWStatusPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWStatusPill.swift; sourceTree = "<group>"; };
+		038F1DA3D9DBE37F3B3EE924 /* RWKeycap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWKeycap.swift; sourceTree = "<group>"; };
 		0693029548C0A143A970956E /* ResultsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsWindow.swift; sourceTree = "<group>"; };
+		085B348745B7D7F5C04B7463 /* RWNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWNavigation.swift; sourceTree = "<group>"; };
+		148571149D85EB4CF3649C63 /* RWBrandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWBrandMark.swift; sourceTree = "<group>"; };
 		183F69BE35C64D7829F817E6 /* ExplainVisibleFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplainVisibleFeature.swift; sourceTree = "<group>"; };
 		28CBDBEA81C4E961FC309E87 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		39D17F56AFD20E211D9DBA23 /* RepoManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoManagerView.swift; sourceTree = "<group>"; };
 		3B5902967465A997065A1AB4 /* UnixSocketHTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnixSocketHTTPClient.swift; sourceTree = "<group>"; };
+		450AA2F5D22ECFD5F6A9EBFF /* repowhisper-backend-arm64 */ = {isa = PBXFileReference; path = "repowhisper-backend-arm64"; sourceTree = "<group>"; };
 		4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoWhisperApp.swift; sourceTree = "<group>"; };
 		50E53D01F6B64A206067EE03 /* SecurityScopedBookmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedBookmarkManager.swift; sourceTree = "<group>"; };
+		5525A32BD3CB974DB15D5B3C /* RWGlassSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWGlassSurface.swift; sourceTree = "<group>"; };
 		56794B25204A09A55F3A9ED8 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		574952882B5985A2275C95F2 /* RWPageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWPageHeader.swift; sourceTree = "<group>"; };
 		688EDF32CABBF45CA9EC49B0 /* OverlayWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindow.swift; sourceTree = "<group>"; };
+		74939B9600D3BEC305E2277E /* RWButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWButtonStyles.swift; sourceTree = "<group>"; };
+		76F247D2E75B578D09D46BAB /* RWEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWEmptyState.swift; sourceTree = "<group>"; };
 		82051857B3D32E1DE0EB6CAB /* AnimationHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationHelpers.swift; sourceTree = "<group>"; };
 		9525BF6FA708784BB4732856 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
+		982DFA9FF657D3C1475D088D /* RWTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWTheme.swift; sourceTree = "<group>"; };
 		9CF68A2E300B00A5DC4B3ABC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1AB3A164594B0D81D3ADBC4 /* RWAmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWAmbientBackground.swift; sourceTree = "<group>"; };
 		AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotCapture.swift; sourceTree = "<group>"; };
 		BACC49DB057A6532A21E9E57 /* AudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCapture.swift; sourceTree = "<group>"; };
 		C769A250D9E819F6A00C24FE /* RepoWhisper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RepoWhisper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D60D43AE79B98DA99C46DE86 /* ScreenCaptureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureManager.swift; sourceTree = "<group>"; };
 		EC467A101154F90C1DC53692 /* IndexingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingView.swift; sourceTree = "<group>"; };
 		ED268534F4DE6D9D72C2BDC8 /* BackendProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendProcessManager.swift; sourceTree = "<group>"; };
+		F28359AD5C88CAE38AE2D6CF /* RWSidebarRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWSidebarRow.swift; sourceTree = "<group>"; };
+		F3A6EA19FBA8AB19E30A9FDC /* RWMetricChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWMetricChip.swift; sourceTree = "<group>"; };
 		F3D9270A8D2D21F165255BB6 /* RepoWhisper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RepoWhisper.entitlements; sourceTree = "<group>"; };
 		F785716971D242601F437E64 /* FloatingPopupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPopupManager.swift; sourceTree = "<group>"; };
 		F7DE54A423A8E6C7D823E860 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		FD2E5EFB24D907CA711E1DF8 /* RWSectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RWSectionCard.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -89,13 +116,35 @@
 				F3D9270A8D2D21F165255BB6 /* RepoWhisper.entitlements */,
 				4AC794888F3A0A3EBABA3434 /* RepoWhisperApp.swift */,
 				0693029548C0A143A970956E /* ResultsWindow.swift */,
+				A1AB3A164594B0D81D3ADBC4 /* RWAmbientBackground.swift */,
+				148571149D85EB4CF3649C63 /* RWBrandMark.swift */,
+				74939B9600D3BEC305E2277E /* RWButtonStyles.swift */,
+				76F247D2E75B578D09D46BAB /* RWEmptyState.swift */,
+				5525A32BD3CB974DB15D5B3C /* RWGlassSurface.swift */,
+				038F1DA3D9DBE37F3B3EE924 /* RWKeycap.swift */,
+				F3A6EA19FBA8AB19E30A9FDC /* RWMetricChip.swift */,
+				085B348745B7D7F5C04B7463 /* RWNavigation.swift */,
+				574952882B5985A2275C95F2 /* RWPageHeader.swift */,
+				FD2E5EFB24D907CA711E1DF8 /* RWSectionCard.swift */,
+				F28359AD5C88CAE38AE2D6CF /* RWSidebarRow.swift */,
+				02F5D2CCCBA9A88AE0EBA3A3 /* RWStatusPill.swift */,
+				982DFA9FF657D3C1475D088D /* RWTheme.swift */,
 				D60D43AE79B98DA99C46DE86 /* ScreenCaptureManager.swift */,
 				AE9876FD745A7E371E4A8CC8 /* ScreenshotCapture.swift */,
 				50E53D01F6B64A206067EE03 /* SecurityScopedBookmarkManager.swift */,
 				9E7A9EDF2D1915E1F662F3AF /* SettingsView.swift */,
 				3B5902967465A997065A1AB4 /* UnixSocketHTTPClient.swift */,
+				FCB08881A0D6CA71774F2987 /* Resources */,
 			);
 			path = RepoWhisper;
+			sourceTree = "<group>";
+		};
+		FCB08881A0D6CA71774F2987 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				450AA2F5D22ECFD5F6A9EBFF /* repowhisper-backend-arm64 */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -187,6 +236,19 @@
 				046F2E69329442D6F03F6BDC /* MenuBarView.swift in Sources */,
 				DFBC683EF1255A9532DEC304 /* OnboardingView.swift in Sources */,
 				64113717B219738A9E2159A1 /* OverlayWindow.swift in Sources */,
+				B2E08575F85B7F2C2A1AEA03 /* RWAmbientBackground.swift in Sources */,
+				437B0A9F420C11289CE26DB5 /* RWBrandMark.swift in Sources */,
+				E4945BA7852EBB01609FD116 /* RWButtonStyles.swift in Sources */,
+				175CB1A3A864AE5BC1B4BC73 /* RWEmptyState.swift in Sources */,
+				A4B69F95AF3FD652E4163CD8 /* RWGlassSurface.swift in Sources */,
+				0A72A200E352167D8F1FEE3F /* RWKeycap.swift in Sources */,
+				F37D2C56A3160DDDDB53850C /* RWMetricChip.swift in Sources */,
+				23D6A7825D5F26D5633DAFC4 /* RWNavigation.swift in Sources */,
+				3C001B15C9262817DD97D831 /* RWPageHeader.swift in Sources */,
+				5AF8A2609AE60A3945E56DB0 /* RWSectionCard.swift in Sources */,
+				8A49CCBE533995F2394AB89E /* RWSidebarRow.swift in Sources */,
+				B04C009BB523F86FDD5C7888 /* RWStatusPill.swift in Sources */,
+				8CE772D572A9A00A7C329E41 /* RWTheme.swift in Sources */,
 				65DA88E60D57364B4F0F4FF3 /* RepoManagerView.swift in Sources */,
 				F10DAA4CBDDECE2B9BC04FB2 /* RepoWhisperApp.swift in Sources */,
 				3AEE6B107A1F93D675E424B7 /* ResultsWindow.swift in Sources */,
