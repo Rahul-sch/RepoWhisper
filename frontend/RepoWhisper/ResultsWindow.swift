@@ -28,6 +28,7 @@ struct ResultsWindow: View {
     @State private var toastMessage: String?
     @State private var showToast = false
     @State private var typedQuery: String = ""
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var audioCapture = AudioCapture.shared
     @ObservedObject private var popupManager = FloatingPopupManager.shared
 
@@ -138,7 +139,7 @@ struct ResultsWindow: View {
                         .stroke(RWTheme.accentBright, lineWidth: 1)
                         .opacity(pulsatingOpacity)
                         .animation(
-                            .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
+                            reduceMotion ? nil : .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
                             value: pulsatingOpacity
                         )
                 }
@@ -151,7 +152,7 @@ struct ResultsWindow: View {
             y: isStealthMode ? 0 : 18
         )
         .onAppear {
-            if isRecording {
+            if isRecording && !reduceMotion {
                 withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
                     pulsatingOpacity = 1.0
                 }
