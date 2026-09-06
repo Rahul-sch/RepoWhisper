@@ -320,20 +320,19 @@ struct SearchView: View {
             HStack {
                 HStack(spacing: 6) {
                     Image(systemName: "doc.text.fill")
-                        .font(.caption)
-                        .foregroundStyle(OverlayTheme.accent)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(RWTheme.accentBright)
+                        .frame(width: 26, height: 26)
+                        .background(RWTheme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
 
                     Text(URL(fileURLWithPath: result.filePath).lastPathComponent)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(OverlayTheme.textPrimary)
 
-                    Text("•")
-                        .foregroundStyle(OverlayTheme.textSecondary)
-
-                    Text("Lines \(result.lineStart)-\(result.lineEnd)")
+                    Text("L\(result.lineStart)–\(result.lineEnd)")
                         .font(.caption)
-                        .foregroundStyle(OverlayTheme.textSecondary)
+                        .foregroundStyle(RWTheme.textFaint)
                 }
 
                 Spacer()
@@ -346,17 +345,20 @@ struct SearchView: View {
                         .font(.caption)
                         .fontWeight(.medium)
                 }
-                .foregroundStyle(OverlayTheme.success)
+                .foregroundStyle(RWTheme.success)
+                .padding(.horizontal, 9)
+                .frame(height: 26)
+                .background(RWTheme.success.opacity(0.09), in: Capsule())
             }
 
             // Code snippet
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(result.chunk)
                     .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(OverlayTheme.textPrimary.opacity(0.86))
-                    .padding(10)
-                    .background(OverlayTheme.canvas.opacity(0.72))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .foregroundStyle(RWTheme.text.opacity(0.84))
+                    .padding(12)
+                    .background(Color.black.opacity(0.25))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
             // File path
@@ -437,13 +439,9 @@ struct SearchView: View {
                 Spacer()
             }
         }
-        .padding()
-        .background(OverlayTheme.elevated)
-        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(OverlayTheme.border, lineWidth: 1)
-        )
+        .padding(16)
+        .rwGlass(radius: 15)
+        .accessibilityIdentifier("search.result.\(index)")
     }
 
     // MARK: - Actions
