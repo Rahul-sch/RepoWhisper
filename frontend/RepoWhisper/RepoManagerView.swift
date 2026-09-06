@@ -59,21 +59,25 @@ struct RepoManagerView: View {
                         .rwGlass()
                     } else {
                         VStack(alignment: .leading, spacing: 12) {
-                            Label("Approved Repositories", systemImage: "checkmark.shield.fill")
-                                .font(.headline)
-                                .foregroundStyle(OverlayTheme.textPrimary)
+                            HStack {
+                                Label("Approved access", systemImage: "checkmark.shield.fill")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(RWTheme.text)
+                                Spacer()
+                                Text("\(bookmarkManager.approvedPaths.count)")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(RWTheme.textFaint)
+                            }
 
                             ForEach(bookmarkManager.approvedPaths, id: \.self) { path in
                                 repositoryRow(path: path)
                             }
                         }
-                        .padding()
-                        .background(OverlayTheme.elevated)
-                        .clipShape(RoundedRectangle(cornerRadius: 13))
-                        .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
+                        .padding(18)
+                        .rwGlass()
                     }
                 }
-                .padding()
+                .padding(RWTheme.pagePadding)
             }
         }
         .frame(minWidth: 500, minHeight: 600)
