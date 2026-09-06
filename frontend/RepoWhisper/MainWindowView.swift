@@ -138,140 +138,25 @@ struct SearchView: View {
         VStack(spacing: 0) {
             // Header with search bar
             VStack(spacing: 16) {
-                HStack(spacing: 10) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(OverlayTheme.accent)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Ask RepoWhisper")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(OverlayTheme.textPrimary)
-                        Text("Search code, explain context, or listen live")
-                            .font(.system(size: 11))
-                            .foregroundStyle(OverlayTheme.textSecondary)
-                    }
-                    Spacer()
+                RWPageHeader(
+                    eyebrow: "Code intelligence",
+                    title: "Ask your codebase",
+                    subtitle: "Find implementation details, trace behavior, or explain what is on screen."
+                ) {
+                    HStack(spacing: 8) {
+                        Button { popupManager.centerAndShow() } label: {
+                            Label("Overlay", systemImage: "macwindow.on.rectangle")
+                        }
+                        .buttonStyle(RWSecondaryButtonStyle())
+                        .help("Open floating display · ⌘⇧Space")
 
-                    Button {
-                        popupManager.centerAndShow()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "macwindow.on.rectangle")
-                            Text("Floating Display")
-                                .font(.caption)
-                                .fontWeight(.medium)
+                        Button { Task { await explainCoordinator.explain() } } label: {
+                            Label(explainCoordinator.isWorking ? "Explaining" : "Explain", systemImage: "viewfinder")
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .foregroundStyle(OverlayTheme.textSecondary)
-                        .background(OverlayTheme.elevated)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .buttonStyle(RWSecondaryButtonStyle())
+                        .disabled(explainCoordinator.isWorking)
+                        .help("Explain visible code · ⌘⇧E")
                     }
-                    .buttonStyle(.plain)
-                    .help("Open and center the floating display (⌘⇧Space)")
-
-                    Button {
-                        Task { await explainCoordinator.explain() }
-                    } label: {
-                        HStack(spacing: 6) {
-                            if explainCoordinator.isWorking {
-                                ProgressView().scaleEffect(0.6)
-                            } else {
-                                Image(systemName: "sparkles")
-                            }
-                            Text(explainCoordinator.isWorking ? "Explaining" : "Explain Visible")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .foregroundStyle(OverlayTheme.accent)
-                        .background(OverlayTheme.accent.opacity(0.10))
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(explainCoordinator.isWorking)
-                    .help("Capture and explain the visible function (⌘⇧E)")
-
-                    // Audio file upload button
-                    Button {
-                        showAudioFilePicker = true
-                    } label: {
-                        HStack(spacing: 6) {
-                            if isTranscribing {
-                                ProgressView()
-                                    .scaleEffect(0.6)
-                            } else {
-                                Image(systemName: "waveform.circle.fill")
-                                    .foregroundStyle(
-                                        LinearGradient(colors: [.orange, .pink], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                    )
-                            }
-                            Text(isTranscribing ? "Transcribing" : "Upload")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .foregroundStyle(OverlayTheme.textSecondary)
-                        .background(OverlayTheme.elevated)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isTranscribing)
-                    .fileImporter(
-                        isPresented: $showAudioFilePicker,
-                        allowedContentTypes: [.audio],
-                        allowsMultipleSelection: false
-                    ) { result in
-                        handleAudioFileSelection(result)
-                    }
-
-                    // Voice button (compact)
-                    Button {
-                        if audioCapture.isRecording {
-                            audioCapture.stopRecording()
-                        } else {
-                            Task { @MainActor in
-                                if SecurityScopedBookmarkManager.shared.approvedPaths.isEmpty {
-                                    FloatingPopupManager.shared.showErrorToast("Add a repository folder first.")
-                                    return
-                                }
-                                if !BackendProcessManager.shared.isRunning {
-                                    FloatingPopupManager.shared.showErrorToast("Starting backend…")
-                                    do { try await BackendProcessManager.shared.start() }
-                                    catch {
-                                        FloatingPopupManager.shared.showErrorToast(
-                                            "Backend failed: \(error.localizedDescription)"
-                                        )
-                                        return
-                                    }
-                                }
-                                let granted = await audioCapture.requestPermission()
-                                if granted {
-                                    audioCapture.startRecording()
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: audioCapture.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                                .foregroundStyle(
-                                    audioCapture.isRecording ?
-                                    LinearGradient(colors: [OverlayTheme.danger], startPoint: .top, endPoint: .bottom) :
-                                    LinearGradient(colors: [OverlayTheme.accent], startPoint: .top, endPoint: .bottom)
-                                )
-                            Text(audioCapture.isRecording ? "Stop" : "Voice")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .foregroundStyle(audioCapture.isRecording ? OverlayTheme.danger : OverlayTheme.textSecondary)
-                        .background(audioCapture.isRecording ? OverlayTheme.danger.opacity(0.12) : OverlayTheme.elevated)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
                 }
 
                 // Search bar
