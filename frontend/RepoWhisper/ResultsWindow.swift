@@ -192,13 +192,18 @@ struct ResultsWindow: View {
 
     private var dragArea: some View {
         HStack(spacing: 8) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .fill(isRecording ? OverlayTheme.danger : OverlayTheme.accent)
-                .frame(width: 6, height: 6)
+            RWBrandMark(size: 20)
 
             Text(isRecording ? "Listening" : "RepoWhisper")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(OverlayTheme.textSecondary)
+                .foregroundStyle(RWTheme.textMuted)
+
+            if isRecording {
+                Circle()
+                    .fill(RWTheme.danger)
+                    .frame(width: 6, height: 6)
+                    .accessibilityLabel("Recording")
+            }
 
             Spacer()
 
@@ -215,7 +220,7 @@ struct ResultsWindow: View {
             .onHover { isHoveringCloseButton = $0 }
             }
         .padding(.horizontal, 14)
-        .frame(height: 36)
+        .frame(height: 38)
         .contentShape(Rectangle())
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
