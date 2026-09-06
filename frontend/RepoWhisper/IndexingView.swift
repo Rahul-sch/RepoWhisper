@@ -57,29 +57,18 @@ struct IndexingView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Repository Selection
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Select Repository", systemImage: "folder")
-                            .font(.headline)
-                            .foregroundStyle(OverlayTheme.textPrimary)
-
+                    RWSectionCard(
+                        title: "Repository",
+                        subtitle: "Pick one approved source folder",
+                        symbol: "folder"
+                    ) {
                         if bookmarkManager.approvedPaths.isEmpty {
-                            // Empty state
-                            VStack(spacing: 12) {
-                                Image(systemName: "folder.badge.questionmark")
-                                    .font(.system(size: 40))
-                                    .foregroundStyle(OverlayTheme.textSecondary)
-
-                                Text("No repositories approved")
-                                    .font(.subheadline)
-                                    .foregroundStyle(OverlayTheme.textPrimary)
-
-                                Text("Go to the Repositories tab to add a folder")
-                                    .font(.caption)
-                                    .foregroundStyle(OverlayTheme.textSecondary)
-                                    .multilineTextAlignment(.center)
-                            }
+                            RWEmptyState(
+                                symbol: "folder.badge.questionmark",
+                                title: "No approved repository",
+                                message: "Add a folder from the Repositories view before indexing."
+                            )
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 20)
                         } else {
                             Picker("Repository", selection: $selectedRepoPath) {
                                 Text("Choose a repository...").tag("")
@@ -112,10 +101,6 @@ struct IndexingView: View {
                             }
                         }
                     }
-                    .padding()
-                    .background(OverlayTheme.elevated)
-                    .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // Index Mode Selection
                     VStack(alignment: .leading, spacing: 12) {
