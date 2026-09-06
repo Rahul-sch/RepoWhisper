@@ -581,31 +581,89 @@ struct SearchView: View {
 // MARK: - Boss Mode View
 
 struct BossModeView: View {
+    @StateObject private var audioCapture = AudioCapture.shared
+    @StateObject private var popupManager = FloatingPopupManager.shared
+
     var body: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "person.wave.2.fill")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(OverlayTheme.accent)
-                .frame(width: 48, height: 48)
-                .background(OverlayTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-            
-            Text("Boss Mode")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(OverlayTheme.textPrimary)
-            
-            Text("Live meeting intelligence and screen-aware answers")
-                .font(.system(size: 13))
-                .foregroundStyle(OverlayTheme.textSecondary)
-            
-            Label("Configure and start from the menu bar", systemImage: "menubar.rectangle")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(OverlayTheme.textSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(OverlayTheme.elevated, in: RoundedRectangle(cornerRadius: 9))
+        ScrollView {
+            VStack(alignment: .leading, spacing: RWTheme.sectionSpacing) {
+                RWPageHeader(
+                    eyebrow: "Live intelligence",
+                    title: "Assist in the moment",
+                    subtitle: "Keep a compact answer surface nearby while you speak, share, or review code."
+                ) {
+                    RWStatusPill(
+                        title: audioCapture.isRecording ? "Listening" : "Standby",
+                        color: audioCapture.isRecording ? RWTheme.danger : RWTheme.success
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 14) {
+                        RWBrandMark(size: 42)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Floating Assist")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(RWTheme.text)
+                            Text("Screen-aware answers without leaving your active window")
+                                .font(.system(size: 11))
+                                .foregroundStyle(RWTheme.textMuted)
+                        }
+                        Spacer()
+                    }
+
+                    HStack(spacing: 10) {
+                        Button { popupManager.centerAndShow() } label: {
+                            Label("Open overlay", systemImage: "macwindow.on.rectangle")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(RWPrimaryButtonStyle())
+
+                        Button(action: toggleRecording) {
+                            Label(audioCapture.isRecording ? "Stop listening" : "Start listening",
+                                  systemImage: audioCapture.isRecording ? "stop.fill" : "mic.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(RWSecondaryButtonStyle())
+                    }
+                }
+                .padding(20)
+                .rwGlass(emphasized: true)
+
+                HStack(spacing: 12) {
+                    shortcutCard("Show overlay", keys: "⌘⇧Space", symbol: "rectangle.on.rectangle")
+                    shortcutCard("Explain visible", keys: "⌘⇧E", symbol: "viewfinder")
+                    shortcutCard("Toggle voice", keys: "⌘⇧R", symbol: "waveform")
+                }
+            }
+            .padding(RWTheme.pagePadding)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(OverlayTheme.canvas)
+    }
+
+    private func shortcutCard(_ title: String, keys: String, symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Image(systemName: symbol)
+                .foregroundStyle(RWTheme.accentBright)
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(RWTheme.text)
+            RWKeycap(keys: keys)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .rwGlass(radius: 14)
+    }
+
+    private func toggleRecording() {
+        if audioCapture.isRecording {
+            audioCapture.stopRecording()
+        } else {
+            Task { @MainActor in
+                if await audioCapture.requestPermission() {
+                    audioCapture.startRecording()
+                }
+            }
+        }
     }
 }
 
