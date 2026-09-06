@@ -10,18 +10,18 @@ import SwiftUI
 // MARK: - Overlay Design System
 
 enum OverlayTheme {
-    static let canvas = Color(red: 0.035, green: 0.039, blue: 0.047)
-    static let elevated = Color(red: 0.065, green: 0.071, blue: 0.084)
-    static let hover = Color.white.opacity(0.07)
-    static let border = Color.white.opacity(0.10)
-    static let borderStrong = Color.white.opacity(0.16)
-    static let textPrimary = Color.white.opacity(0.94)
-    static let textSecondary = Color.white.opacity(0.78)
-    static let accent = Color(red: 0.38, green: 0.58, blue: 1.0)
-    static let success = Color(red: 0.35, green: 0.82, blue: 0.62)
-    static let danger = Color(red: 1.0, green: 0.38, blue: 0.42)
-    static let cornerRadius: CGFloat = 18
-    static let controlRadius: CGFloat = 11
+    static let canvas = RWTheme.canvas
+    static let elevated = RWTheme.canvasRaised
+    static let hover = RWTheme.surfaceHover
+    static let border = RWTheme.border
+    static let borderStrong = RWTheme.borderStrong
+    static let textPrimary = RWTheme.text
+    static let textSecondary = RWTheme.textMuted
+    static let accent = RWTheme.accent
+    static let success = RWTheme.success
+    static let danger = RWTheme.danger
+    static let cornerRadius = RWTheme.cardRadius
+    static let controlRadius = RWTheme.controlRadius
 }
 
 // MARK: - Custom Animations
