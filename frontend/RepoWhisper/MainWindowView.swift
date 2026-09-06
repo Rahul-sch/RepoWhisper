@@ -228,11 +228,12 @@ struct SearchView: View {
                 .accessibilityIdentifier("search.composer")
 
                 HStack(spacing: 8) {
-                    Image(systemName: "folder")
-                        .foregroundStyle(OverlayTheme.textSecondary)
-                    Text("Search in")
-                        .font(.caption)
-                        .foregroundStyle(OverlayTheme.textSecondary)
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(RWTheme.accentBright)
+                    Text("Scope")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(RWTheme.textMuted)
                     Picker("Repository", selection: $selectedRepoPath) {
                         Text("All repositories").tag(nil as String?)
                         ForEach(bookmarkManager.approvedPaths, id: \.self) { path in
@@ -241,9 +242,12 @@ struct SearchView: View {
                         }
                     }
                     .labelsHidden()
-                    .frame(maxWidth: 240)
+                    .controlSize(.small)
+                    .frame(maxWidth: 220)
                     Spacer()
+                    RWKeycap(keys: "↩")
                 }
+                .padding(.horizontal, 4)
 
                 // Stats row
                 if searchLatency > 0 || apiClient.indexCount > 0 {
