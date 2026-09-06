@@ -105,17 +105,11 @@ struct MainWindowView: View {
         .navigationTitle(selectedTab.title)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                // Connection status
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(backendManager.isHealthy ? OverlayTheme.success : OverlayTheme.danger)
-                        .frame(width: 8, height: 8)
-                    Text(backendManager.isHealthy ? "Connected" : backendManager.statusMessage)
-                        .font(.caption)
-                        .foregroundStyle(OverlayTheme.textSecondary)
-                        .lineLimit(1)
-                }
-                
+                RWStatusPill(
+                    title: backendManager.isHealthy ? "Ready" : backendManager.statusMessage,
+                    color: backendManager.isHealthy ? RWTheme.success : RWTheme.warning
+                )
+                .help(backendManager.isHealthy ? "Local backend is healthy" : backendManager.statusMessage)
             }
         }
     }
