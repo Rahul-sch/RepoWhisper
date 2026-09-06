@@ -25,14 +25,15 @@ struct IndexingView: View {
         VStack(spacing: 0) {
             // Header
             VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(OverlayTheme.accent)
-                    Text("Index Repository")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(OverlayTheme.textPrimary)
-                    Spacer()
+                RWPageHeader(
+                    eyebrow: "Knowledge",
+                    title: "Build the index",
+                    subtitle: "Choose a repository and decide how much context to include."
+                ) {
+                    RWStatusPill(
+                        title: backendManager.isHealthy ? "Ready" : "Backend unavailable",
+                        color: backendManager.isHealthy ? RWTheme.success : RWTheme.warning
+                    )
                 }
 
                 // Backend status indicator
@@ -50,8 +51,8 @@ struct IndexingView: View {
                     .cornerRadius(8)
                 }
             }
-            .padding(20)
-            .background(OverlayTheme.canvas)
+            .padding(.horizontal, RWTheme.pagePadding)
+            .padding(.top, 24)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
