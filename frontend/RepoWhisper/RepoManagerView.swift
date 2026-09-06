@@ -107,9 +107,10 @@ struct RepoManagerView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "folder.fill")
-                    .foregroundStyle(OverlayTheme.accent)
-                    .font(.title3)
-                    .frame(width: 24)
+                    .foregroundStyle(RWTheme.accentBright)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(width: 34, height: 34)
+                    .background(RWTheme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(URL(fileURLWithPath: path).lastPathComponent)
@@ -127,16 +128,16 @@ struct RepoManagerView: View {
                 Spacer()
 
                 Button(action: { confirmRemove(path: path) }) {
-                    Image(systemName: "minus.circle.fill")
-                        .foregroundStyle(OverlayTheme.danger)
-                        .font(.title3)
+                    Image(systemName: "trash")
+                        .foregroundStyle(RWTheme.textFaint)
+                        .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
                 .help("Remove repository")
             }
-            .padding()
-            .background(OverlayTheme.canvas.opacity(0.72))
-            .clipShape(RoundedRectangle(cornerRadius: 9))
+            .padding(12)
+            .background(RWTheme.surface.opacity(0.55), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(RWTheme.border))
 
             // Warning for overly broad paths
             if isOverlyBroadPath(path) {
