@@ -22,14 +22,16 @@ struct RepoManagerView: View {
         VStack(spacing: 0) {
             // Header with backend status
             VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "folder.badge.gearshape")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(OverlayTheme.accent)
-                    Text("Repositories")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(OverlayTheme.textPrimary)
-                    Spacer()
+                RWPageHeader(
+                    eyebrow: "Workspace",
+                    title: "Repositories",
+                    subtitle: "Control exactly which folders RepoWhisper can read."
+                ) {
+                    Button(action: addRepository) {
+                        Label("Add repository", systemImage: "plus")
+                    }
+                    .buttonStyle(RWPrimaryButtonStyle())
+                    .accessibilityIdentifier("repositories.add")
                 }
 
                 // Backend status pill
@@ -63,8 +65,8 @@ struct RepoManagerView: View {
                 .background(OverlayTheme.elevated)
                 .clipShape(RoundedRectangle(cornerRadius: 9))
             }
-            .padding(20)
-            .background(OverlayTheme.canvas)
+            .padding(.horizontal, RWTheme.pagePadding)
+            .padding(.top, 24)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
