@@ -39,7 +39,7 @@ struct MenuBarView: View {
             // project edit; clean up alongside LoginView in a future pass.
             authenticatedView
         }
-        .frame(width: 360)
+        .frame(width: 340, idealHeight: 520)
         .onAppear {
             setupBossMode()
             Task { @MainActor in
