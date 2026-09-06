@@ -251,35 +251,22 @@ struct SearchView: View {
 
                 // Stats row
                 if searchLatency > 0 || apiClient.indexCount > 0 {
-                    HStack(spacing: 20) {
+                    HStack(spacing: 8) {
                         if apiClient.indexCount > 0 {
-                            HStack(spacing: 4) {
-                                Image(systemName: "doc.text.fill")
-                                    .font(.caption2)
-                                Text("\(apiClient.indexCount) chunks")
-                                    .font(.caption)
-                            }
-                            .foregroundColor(.secondary)
+                            RWMetricChip(symbol: "doc.text", value: "\(apiClient.indexCount)", label: "chunks")
                         }
 
                         if searchLatency > 0 {
-                            HStack(spacing: 4) {
-                                Image(systemName: "bolt.fill")
-                                    .font(.caption2)
-                                Text("\(Int(searchLatency))ms")
-                                    .font(.caption)
-                            }
-                            .foregroundColor(.secondary)
+                            RWMetricChip(symbol: "bolt.fill", value: "\(Int(searchLatency))ms", label: "latency")
                         }
 
                         if !searchResults.isEmpty {
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.caption2)
-                                Text("\(searchResults.count) results")
-                                    .font(.caption)
-                            }
-                            .foregroundColor(.green)
+                            RWMetricChip(
+                                symbol: "checkmark.circle.fill",
+                                value: "\(searchResults.count)",
+                                label: "results",
+                                tint: RWTheme.success
+                            )
                         }
 
                         Spacer()
