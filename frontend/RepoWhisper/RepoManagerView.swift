@@ -70,41 +70,15 @@ struct RepoManagerView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Add repository button
-                    Button(action: addRepository) {
-                        HStack {
-                            Image(systemName: "folder.badge.plus")
-                            Text("Add Repository")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(OverlayTheme.accent)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius))
-                    }
-                    .buttonStyle(.plain)
-
                     // Approved repositories list
                     if bookmarkManager.approvedPaths.isEmpty {
-                        // Empty state
-                        VStack(spacing: 16) {
-                            Image(systemName: "folder.badge.questionmark")
-                                .font(.system(size: 50))
-                                .foregroundStyle(OverlayTheme.textSecondary)
-
-                            Text("No Repositories Added")
-                                .font(.headline)
-                                .foregroundStyle(OverlayTheme.textSecondary)
-
-                            Text("Add a repository to start indexing and searching your code")
-                                .font(.caption)
-                                .foregroundStyle(OverlayTheme.textSecondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
-                        }
+                        RWEmptyState(
+                            symbol: "folder.badge.plus",
+                            title: "No repositories yet",
+                            message: "Add a project folder to make its code available for local indexing and search."
+                        )
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 60)
+                        .rwGlass()
                     } else {
                         VStack(alignment: .leading, spacing: 12) {
                             Label("Approved Repositories", systemImage: "checkmark.shield.fill")
