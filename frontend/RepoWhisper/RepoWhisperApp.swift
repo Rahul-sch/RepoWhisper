@@ -159,6 +159,7 @@ private func scheduleBackendWarmupWhenHealthy() {
 class AppDelegate: NSObject, NSApplicationDelegate {
     /// Combine subscriptions retained for the app lifetime.
     private var cancellables = Set<AnyCancellable>()
+    private let didShowWelcomeKey = "didShowWelcomeOverlay"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("✅ RepoWhisper app finished launching")
@@ -172,26 +173,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             await self.ensureBackendStartup()
         }
 
-        // Auto-launch: Show centered welcome popup on first launch
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            print("🎯 [APP] Auto-launching centered welcome popup...")
-            FloatingPopupManager.shared.showPopup(
-                results: [
-                    SearchResultItem(
-                        filePath: "Welcome to RepoWhisper",
-                        chunk: "Press ⌘⇧R to start voice recording\nYour query will search the indexed codebase\n\nHotkeys:\n• ⌘⇧R - Toggle recording\n• ⌘⇧Space - Center popup\n• ⌘B - Toggle visibility\n• ⌘⇧H - Stealth mode",
-                        score: 1.0,
-                        lineStart: 1,
-                        lineEnd: 8
-                    )
-                ],
-                query: "Getting Started",
-                latency: 0,
-                isRecording: false
-            )
-            // Center the popup after it's created
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                FloatingPopupManager.shared.centerAndShow()
+        // Auto-launch: Show centered welcome popup on first launch.
+        if !UserDefaults.standard.bool(forKey: didShowWelcomeKey) {
+            UserDefaults.standard.set(true, forKey: didShowWelcomeKey)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                print("🎯 [APP] Auto-launching centered welcome popup...")
+                FloatingPopupManager.shared.showPopup(
+                    results: [
+                        SearchResultItem(
+                            filePath: "Welcome to RepoWhisper",
+                            chunk: "Press ⌘⇧R to start voice recording\nYour query will search the indexed codebase\n\nHotkeys:\n• ⌘⇧R - Toggle recording\n• ⌘⇧Space - Center popup\n• ⌘B - Toggle visibility\n• ⌘⇧H - Stealth mode",
+                            score: 1.0,
+                            lineStart: 1,
+                            lineEnd: 8
+                        )
+                    ],
+                    query: "Getting Started",
+                    latency: 0,
+                    isRecording: false
+                )
+                // Center the popup after it's created
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    FloatingPopupManager.shared.centerAndShow()
+                }
             }
         }
 
