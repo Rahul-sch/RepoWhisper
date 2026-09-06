@@ -230,45 +230,33 @@ struct MenuBarView: View {
     // MARK: - Premium Header
 
     private var premiumHeader: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(OverlayTheme.accent)
-                .frame(width: 28, height: 28)
-                .background(OverlayTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+        HStack(spacing: 10) {
+            RWBrandMark(size: 30)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("RepoWhisper")
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundStyle(OverlayTheme.textPrimary)
                 
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(statusColor)
-                        .frame(width: 6, height: 6)
-
-                    Text(statusLabel)
-                        .font(.system(size: 11, weight: .regular, design: .rounded))
-                        .foregroundStyle(OverlayTheme.textSecondary)
-
+                HStack(spacing: 5) {
+                    RWStatusPill(title: statusLabel, color: statusColor)
                     if apiClient.modelsLoading {
                         ProgressView()
                             .controlSize(.mini)
                             .scaleEffect(0.6)
                     }
 
-                    if popupManager.isStealthMode {
-                        // So users know whether the overlay is currently
-                        // hidden from screen sharing (toggled via ⌘⇧H).
-                        Image(systemName: "eye.slash.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(OverlayTheme.accent)
-                            .help("Stealth mode ON — overlay is hidden from screen sharing")
-                    }
                 }
             }
             
             Spacer()
+
+            if popupManager.isStealthMode {
+                Image(systemName: "eye.slash.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(RWTheme.accentBright)
+                    .help("Stealth mode is active")
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
