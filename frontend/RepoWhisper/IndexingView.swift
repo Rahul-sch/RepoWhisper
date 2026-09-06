@@ -103,10 +103,11 @@ struct IndexingView: View {
                     }
 
                     // Index Mode Selection
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Indexing Mode", systemImage: "slider.horizontal.3")
-                            .font(.headline)
-
+                    RWSectionCard(
+                        title: "Indexing mode",
+                        subtitle: "Balance speed and control",
+                        symbol: "slider.horizontal.3"
+                    ) {
                         Picker("Mode", selection: $selectedIndexMode) {
                             ForEach(IndexMode.allCases, id: \.self) { mode in
                                 VStack(alignment: .leading, spacing: 4) {
@@ -134,10 +135,6 @@ struct IndexingView: View {
                         .background(OverlayTheme.accent.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 9))
                     }
-                    .padding()
-                    .background(OverlayTheme.elevated)
-                    .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // Index Button
                     Button(action: startIndexing) {
