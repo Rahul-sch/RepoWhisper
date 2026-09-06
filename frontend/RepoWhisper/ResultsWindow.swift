@@ -116,26 +116,26 @@ struct ResultsWindow: View {
             // Bottom control bar
             controlBar
         }
-        .frame(width: 520, height: isStealthMode ? 420 : 520)
+        .frame(width: 500, height: isStealthMode ? 400 : 500)
         .preferredColorScheme(.dark)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
-                    .fill(OverlayTheme.canvas.opacity(isStealthMode ? 0.72 : 0.90))
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(RWTheme.canvas.opacity(isStealthMode ? 0.68 : 0.88))
             }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
-                .stroke(OverlayTheme.borderStrong, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(RWTheme.borderStrong, lineWidth: 1)
         )
         .overlay(
             // Pulsating border when recording
             Group {
                 if isRecording {
-                    RoundedRectangle(cornerRadius: OverlayTheme.cornerRadius, style: .continuous)
-                        .stroke(OverlayTheme.accent, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(RWTheme.accentBright, lineWidth: 1)
                         .opacity(pulsatingOpacity)
                         .animation(
                             .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
