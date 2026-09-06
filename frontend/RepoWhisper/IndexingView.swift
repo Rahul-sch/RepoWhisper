@@ -151,14 +151,11 @@ struct IndexingView: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(canStartIndexing ? OverlayTheme.accent : Color.gray)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RWPrimaryButtonStyle())
                     .disabled(!canStartIndexing)
-                    .opacity(canStartIndexing ? 1.0 : 0.5)
+                    .opacity(canStartIndexing ? 1.0 : 0.38)
+                    .accessibilityIdentifier("indexing.start")
 
                     // Progress section
                     if isIndexing {
@@ -174,10 +171,8 @@ struct IndexingView: View {
                                     .foregroundStyle(OverlayTheme.textSecondary)
                             }
                         }
-                        .padding()
-                        .background(OverlayTheme.elevated)
-                        .clipShape(RoundedRectangle(cornerRadius: 13))
-                        .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
+                        .padding(18)
+                        .rwGlass()
                     }
 
                     // Completion stats
@@ -207,7 +202,7 @@ struct IndexingView: View {
                         .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.success.opacity(0.22)))
                     }
                 }
-                .padding()
+                .padding(RWTheme.pagePadding)
             }
         }
         .frame(minWidth: 500, minHeight: 600)
