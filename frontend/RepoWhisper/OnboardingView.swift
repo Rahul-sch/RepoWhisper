@@ -61,25 +61,24 @@ struct OnboardingView: View {
             // Call to action
             VStack(spacing: 16) {
                 Button(action: addFirstRepository) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "folder.badge.plus")
-                        Text("Add Your First Repository")
-                            .fontWeight(.semibold)
+                        Text("Choose a repository")
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
-                    .background(OverlayTheme.accent)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RWPrimaryButtonStyle())
+                .accessibilityIdentifier("onboarding.chooseRepository")
 
-                Text("You can always add more repositories later")
-                    .font(.caption)
-                    .foregroundStyle(OverlayTheme.textSecondary)
+                HStack(spacing: 6) {
+                    Image(systemName: "lock.fill")
+                    Text("Only the folder you choose becomes accessible")
+                }
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(RWTheme.textFaint)
             }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 40)
+            .padding(.horizontal, 18)
+            .padding(.bottom, 8)
             }
             .padding(32)
             .rwGlass(radius: 24, emphasized: true)
