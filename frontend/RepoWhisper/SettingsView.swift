@@ -129,20 +129,17 @@ struct SettingsView: View {
                     }
 
                     // App Info
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("About RepoWhisper", systemImage: "info.circle.fill")
-                            .font(.headline)
-
+                    RWSectionCard(
+                        title: "About",
+                        subtitle: "Build information",
+                        symbol: "info.circle"
+                    ) {
                         VStack(spacing: 8) {
                             infoRow(label: "Version", value: appVersion)
                             infoRow(label: "Build", value: appBuild)
                             infoRow(label: "Bundle ID", value: bundleIdentifier)
                         }
                     }
-                    .padding()
-                    .background(OverlayTheme.elevated)
-                    .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
                 }
                 .padding(RWTheme.pagePadding)
             }
