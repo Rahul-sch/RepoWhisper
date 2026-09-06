@@ -19,17 +19,15 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                Image(systemName: "gearshape.circle.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(OverlayTheme.accent)
-                Text("Settings")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(OverlayTheme.textPrimary)
-                Spacer()
+            RWPageHeader(
+                eyebrow: "Application",
+                title: "Settings",
+                subtitle: "Tune startup behavior and inspect the local runtime."
+            ) {
+                RWStatusPill(title: backendManager.statusMessage, color: statusColor)
             }
-            .padding(20)
-            .background(OverlayTheme.canvas)
+            .padding(.horizontal, RWTheme.pagePadding)
+            .padding(.top, 24)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -155,7 +153,7 @@ struct SettingsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 13))
                     .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
                 }
-                .padding()
+                .padding(RWTheme.pagePadding)
             }
         }
         .frame(minWidth: 500, minHeight: 600)
