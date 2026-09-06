@@ -54,7 +54,7 @@ struct OnboardingView: View {
                     description: "Find code using natural language. Just describe what you're looking for."
                 )
             }
-            .padding(.horizontal, 44)
+            .padding(.horizontal, 18)
 
             Spacer()
 
@@ -117,24 +117,23 @@ struct FeatureRow: View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(OverlayTheme.accent)
-                .frame(width: 34, height: 34)
-                .background(OverlayTheme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
+                .foregroundStyle(RWTheme.accentBright)
+                .frame(width: 32, height: 32)
+                .background(RWTheme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(OverlayTheme.textPrimary)
+                    .foregroundStyle(RWTheme.text)
 
                 Text(description)
                     .font(.system(size: 12))
-                    .foregroundStyle(OverlayTheme.textSecondary)
+                    .foregroundStyle(RWTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(12)
-        .background(OverlayTheme.elevated.opacity(0.72), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(OverlayTheme.border, lineWidth: 1))
+        .padding(11)
+        .background(RWTheme.surface.opacity(0.65), in: RoundedRectangle(cornerRadius: 12))
     }
 }
 
