@@ -1205,13 +1205,25 @@ struct AskBar: View {
                             .foregroundStyle(OverlayTheme.textSecondary)
                     }
                     .buttonStyle(.plain)
+
+                    Button {
+                        onSubmit(query)
+                    } label: {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 25, height: 25)
+                            .background(RWTheme.accentGradient, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Ask RepoWhisper")
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
             .background(
                 RoundedRectangle(cornerRadius: OverlayTheme.controlRadius, style: .continuous)
-                    .fill(OverlayTheme.elevated)
+                    .fill(RWTheme.surfaceStrong)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: OverlayTheme.controlRadius, style: .continuous)
@@ -1232,6 +1244,7 @@ struct AskBar: View {
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 8)
+        .accessibilityIdentifier("overlay.composer")
     }
 }
 
