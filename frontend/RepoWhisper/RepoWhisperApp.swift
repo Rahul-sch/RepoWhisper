@@ -179,7 +179,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 results: [
                     SearchResultItem(
                         filePath: "Welcome to RepoWhisper",
-                        chunk: "Press ⌘⇧R to start voice recording\\nYour query will search the indexed codebase\\n\\nHotkeys:\\n• ⌘⇧R - Toggle recording\\n• ⌘⇧Space - Center popup\\n• ⌘B - Toggle visibility\\n• ⌘⇧H - Stealth mode",
+                        chunk: "Press ⌘⇧R to start voice recording\nYour query will search the indexed codebase\n\nHotkeys:\n• ⌘⇧R - Toggle recording\n• ⌘⇧Space - Center popup\n• ⌘B - Toggle visibility\n• ⌘⇧H - Stealth mode",
                         score: 1.0,
                         lineStart: 1,
                         lineEnd: 8
