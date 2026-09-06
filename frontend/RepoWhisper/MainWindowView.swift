@@ -35,19 +35,52 @@ struct MainWindowView: View {
 
     var mainContent: some View {
         NavigationSplitView {
-            // Sidebar
-            List(selection: $selectedTab) {
-                ForEach(RWNavigation.allCases) { item in
-                    RWSidebarRow(item: item, isSelected: selectedTab == item)
-                        .tag(item)
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    RWBrandMark(size: 30)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("RepoWhisper")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(RWTheme.text)
+                        Text("Local code intelligence")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(RWTheme.textFaint)
+                    }
+                    Spacer()
                 }
+                .padding(.horizontal, 14)
+                .frame(height: 62)
+
+                List(selection: $selectedTab) {
+                    Section("WORKSPACE") {
+                        ForEach(RWNavigation.allCases.filter { $0 != .settings }) { item in
+                            RWSidebarRow(item: item, isSelected: selectedTab == item)
+                                .tag(item)
+                        }
+                    }
+                    Section("APP") {
+                        RWSidebarRow(item: .settings, isSelected: selectedTab == .settings)
+                            .tag(RWNavigation.settings)
+                    }
+                }
+                .foregroundStyle(RWTheme.textMuted)
+                .tint(RWTheme.accent)
+                .scrollContentBackground(.hidden)
+                .listStyle(.sidebar)
+
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 9))
+                    Text("Local only")
+                        .font(.system(size: 10, weight: .medium))
+                    Spacer()
+                    RWKeycap(keys: "⌘⇧R")
+                }
+                .foregroundStyle(RWTheme.textFaint)
+                .padding(14)
             }
-            .foregroundStyle(OverlayTheme.textSecondary)
-            .tint(OverlayTheme.accent)
-            .scrollContentBackground(.hidden)
-            .background(OverlayTheme.canvas)
-            .navigationSplitViewColumnWidth(min: 176, ideal: 192, max: 220)
-            .listStyle(.sidebar)
+            .background(RWTheme.canvasRaised.opacity(0.96))
+            .navigationSplitViewColumnWidth(min: 188, ideal: 204, max: 224)
         } detail: {
             // Main content area
             ZStack {
