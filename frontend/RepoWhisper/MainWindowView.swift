@@ -82,9 +82,8 @@ struct MainWindowView: View {
             .background(RWTheme.canvasRaised.opacity(0.96))
             .navigationSplitViewColumnWidth(min: 188, ideal: 204, max: 224)
         } detail: {
-            // Main content area
             ZStack {
-                OverlayTheme.canvas.ignoresSafeArea()
+                RWAmbientBackground()
                 
                 // Content based on selected tab
                 Group {
@@ -103,7 +102,7 @@ struct MainWindowView: View {
                 }
             }
         }
-        .navigationTitle("RepoWhisper")
+        .navigationTitle(selectedTab.title)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 // Connection status
