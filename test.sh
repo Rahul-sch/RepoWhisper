@@ -5,6 +5,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 "$REPO_ROOT/scripts/audit_secrets.sh"
 "$REPO_ROOT/scripts/test_embed_backend.sh"
+"$REPO_ROOT/scripts/test_ui_contract.sh"
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 if "$PYTHON_BIN" -c 'import sys; raise SystemExit(sys.version_info < (3, 12))' 2>/dev/null; then
