@@ -334,36 +334,12 @@ struct ResultsWindow: View {
             
             // Stealth mode indicator
             if isStealthMode {
-                HStack(spacing: 4) {
-                    Image(systemName: "eye.slash.fill")
-                        .font(.system(size: 9, weight: .semibold))
-                    Text("STEALTH")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                }
-                .foregroundStyle(OverlayTheme.accent)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule()
-                        .fill(OverlayTheme.accent.opacity(0.12))
-                )
+                RWStatusPill(title: "Stealth", color: RWTheme.accentBright, symbol: "eye.slash.fill")
             }
 
             // Latency badge
             if latencyMs > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 9, weight: .semibold))
-                    Text("\(Int(latencyMs))ms")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                }
-                .foregroundStyle(OverlayTheme.success)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule()
-                        .fill(OverlayTheme.success.opacity(0.10))
-                )
+                RWMetricChip(symbol: "bolt.fill", value: "\(Int(latencyMs))ms", label: "")
             }
 
             // Clear All button (shows when results > 3)
