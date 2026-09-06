@@ -32,10 +32,11 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // General Settings
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("General", systemImage: "slider.horizontal.3")
-                            .font(.headline)
-
+                    RWSectionCard(
+                        title: "General",
+                        subtitle: "Launch and availability",
+                        symbol: "slider.horizontal.3"
+                    ) {
                         Toggle(isOn: $startBackendOnLaunch) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Start backend on launch")
@@ -48,10 +49,6 @@ struct SettingsView: View {
                         .toggleStyle(.switch)
                         .padding(.vertical, 8)
                     }
-                    .padding()
-                    .background(OverlayTheme.elevated)
-                    .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // Backend Status
                     VStack(alignment: .leading, spacing: 12) {
