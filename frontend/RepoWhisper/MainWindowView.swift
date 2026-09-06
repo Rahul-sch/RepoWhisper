@@ -162,41 +162,70 @@ struct SearchView: View {
                 // Search bar
                 HStack(spacing: 10) {
                     Image(systemName: "sparkles")
-                        .foregroundStyle(OverlayTheme.accent)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(RWTheme.accentBright)
 
                     TextField("Ask anything about your repository…", text: $searchQuery)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 14))
-                        .foregroundStyle(OverlayTheme.textPrimary)
+                        .font(.system(size: 13))
+                        .foregroundStyle(RWTheme.text)
                         .onSubmit { performSearch() }
 
                     if !searchQuery.isEmpty {
                         Button(action: { searchQuery = "" }) {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(OverlayTheme.textSecondary)
+                                .foregroundStyle(RWTheme.textFaint)
                         }
                         .buttonStyle(.plain)
                     }
+
+                    Button { showAudioFilePicker = true } label: {
+                        Image(systemName: isTranscribing ? "hourglass" : "paperclip")
+                            .frame(width: 26, height: 26)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(RWTheme.textMuted)
+                    .disabled(isTranscribing)
+                    .help("Transcribe an audio file")
+                    .fileImporter(
+                        isPresented: $showAudioFilePicker,
+                        allowedContentTypes: [.audio],
+                        allowsMultipleSelection: false,
+                        onCompletion: handleAudioFileSelection
+                    )
+
+                    Button(action: toggleVoiceRecording) {
+                        Image(systemName: audioCapture.isRecording ? "stop.fill" : "mic.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(audioCapture.isRecording ? RWTheme.danger : RWTheme.textMuted)
+                            .frame(width: 28, height: 28)
+                            .background(
+                                (audioCapture.isRecording ? RWTheme.danger : RWTheme.surfaceStrong).opacity(0.16),
+                                in: Circle()
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .help(audioCapture.isRecording ? "Stop recording" : "Start voice search")
 
                     if isSearching {
                         ProgressView()
                             .scaleEffect(0.8)
                     } else if !searchQuery.isEmpty {
                         Button(action: performSearch) {
-                            Image(systemName: "arrow.right.circle.fill")
-                                .foregroundStyle(OverlayTheme.accent)
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 28, height: 28)
+                                .background(RWTheme.accentGradient, in: Circle())
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 14)
-                .frame(height: 44)
-                .background(OverlayTheme.elevated)
-                .clipShape(RoundedRectangle(cornerRadius: OverlayTheme.controlRadius, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: OverlayTheme.controlRadius, style: .continuous)
-                        .stroke(OverlayTheme.border, lineWidth: 1)
-                )
+                .padding(.horizontal, 15)
+                .frame(height: 52)
+                .rwGlass(radius: 16, emphasized: true)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("search.composer")
 
                 HStack(spacing: 8) {
                     Image(systemName: "folder")
@@ -440,6 +469,30 @@ struct SearchView: View {
     }
 
     // MARK: - Actions
+
+    private func toggleVoiceRecording() {
+        if audioCapture.isRecording {
+            audioCapture.stopRecording()
+            return
+        }
+        Task { @MainActor in
+            guard !bookmarkManager.approvedPaths.isEmpty else {
+                popupManager.showErrorToast("Add a repository folder first.")
+                return
+            }
+            if !BackendProcessManager.shared.isRunning {
+                popupManager.showErrorToast("Starting backend…")
+                do { try await BackendProcessManager.shared.start() }
+                catch {
+                    popupManager.showErrorToast("Backend failed: \(error.localizedDescription)")
+                    return
+                }
+            }
+            if await audioCapture.requestPermission() {
+                audioCapture.startRecording()
+            }
+        }
+    }
 
     private func performSearch() {
         guard !searchQuery.isEmpty else { return }
