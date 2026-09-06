@@ -15,7 +15,9 @@ struct OnboardingView: View {
     var onComplete: () -> Void
 
     var body: some View {
-        VStack(spacing: 24) {
+        ZStack {
+            RWAmbientBackground()
+            VStack(spacing: 24) {
             // Header
             VStack(spacing: 12) {
                 Image(systemName: "sparkles")
@@ -80,9 +82,12 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 40)
             .padding(.bottom, 40)
+            }
+            .padding(32)
+            .rwGlass(radius: 24, emphasized: true)
+            .padding(28)
         }
-        .frame(width: 560, height: 620)
-        .background(OverlayTheme.canvas)
+        .frame(minWidth: 620, minHeight: 620)
         .alert("Error", isPresented: $showError) {
             Button("OK") { showError = false }
         } message: {
