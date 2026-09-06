@@ -278,28 +278,15 @@ struct SearchView: View {
 
             // Results or empty state
             if searchResults.isEmpty && !isSearching {
-                // Empty state
-                VStack(spacing: 20) {
+                VStack {
                     Spacer()
-
-                    Image(systemName: searchQuery.isEmpty ? "magnifyingglass" : "doc.text.magnifyingglass")
-                        .font(.system(size: 60))
-                        .foregroundStyle(OverlayTheme.textSecondary)
-
-                    Text(searchQuery.isEmpty ? "Search Your Code" : "No Results Found")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(OverlayTheme.textPrimary)
-
-                    Text(searchQuery.isEmpty ?
-                         "Type a query or use voice search to find code" :
-                         "Try a different search query"
+                    RWEmptyState(
+                        symbol: searchQuery.isEmpty ? "text.magnifyingglass" : "doc.text.magnifyingglass",
+                        title: searchQuery.isEmpty ? "Ready when you are" : "Nothing matched",
+                        message: searchQuery.isEmpty
+                            ? "Ask in plain language, attach audio, or use the microphone to search your indexed repositories."
+                            : "Try a broader phrase or switch the repository scope."
                     )
-                        .font(.subheadline)
-                        .foregroundStyle(OverlayTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-
                     Spacer()
                 }
             } else {
