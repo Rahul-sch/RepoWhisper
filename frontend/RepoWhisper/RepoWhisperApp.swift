@@ -38,7 +38,7 @@ struct RepoWhisperApp: App {
         WindowGroup("RepoWhisper", id: "main") {
             MainWindowView()
                 .preferredColorScheme(.dark)
-                .frame(minWidth: 800, minHeight: 600)
+                .frame(minWidth: 900, minHeight: 640)
                 .onAppear {
                     print("🪟 [APP] Main window appeared")
                 }
@@ -51,6 +51,7 @@ struct RepoWhisperApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+        .defaultSize(width: 1020, height: 720)
         .commands {
             CommandGroup(replacing: .newItem) { }
         }
