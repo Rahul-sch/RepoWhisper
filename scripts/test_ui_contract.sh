@@ -12,7 +12,7 @@ for source in RWTheme.swift RWAmbientBackground.swift RWNavigation.swift RWPageH
 done
 
 for identifier in search.composer onboarding.chooseRepository repositories.add indexing.start overlay.composer menubar.recording; do
-    if ! grep -R -q "accessibilityIdentifier(\"${identifier}\")" "${repo_root}/frontend/RepoWhisper"; then
+    if ! grep -R --include='*.swift' -q "accessibilityIdentifier(\"${identifier}\")" "${repo_root}/frontend/RepoWhisper"; then
         echo "UI contract failed: ${identifier} is missing."
         exit 1
     fi
