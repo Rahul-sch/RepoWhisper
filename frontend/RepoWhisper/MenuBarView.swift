@@ -307,8 +307,7 @@ struct MenuBarView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "keyboard")
                             .font(.system(size: 10))
-                        Text("⌘⇧R")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        RWKeycap(keys: "⌘⇧R")
                     }
                         .foregroundStyle(OverlayTheme.textSecondary)
                 }
@@ -332,16 +331,10 @@ struct MenuBarView: View {
                 }
             }
             .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(OverlayTheme.elevated)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .stroke(audioCapture.isRecording ? OverlayTheme.danger.opacity(0.45) : OverlayTheme.border, lineWidth: 1)
-            )
+            .rwGlass(radius: 14, emphasized: audioCapture.isRecording)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("menubar.recording")
     }
     
     // MARK: - Status Section
