@@ -51,10 +51,11 @@ struct SettingsView: View {
                     }
 
                     // Backend Status
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Backend Status", systemImage: "server.rack")
-                            .font(.headline)
-
+                    RWSectionCard(
+                        title: "Local backend",
+                        subtitle: "Process and index health",
+                        symbol: "server.rack"
+                    ) {
                         VStack(spacing: 12) {
                             statusRow(
                                 icon: "circle.fill",
@@ -80,10 +81,6 @@ struct SettingsView: View {
                             )
                         }
                     }
-                    .padding()
-                    .background(OverlayTheme.elevated)
-                    .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // Diagnostics
                     VStack(alignment: .leading, spacing: 12) {
