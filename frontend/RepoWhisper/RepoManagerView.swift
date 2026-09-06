@@ -35,35 +35,13 @@ struct RepoManagerView: View {
                 }
 
                 // Backend status pill
-                HStack(spacing: 12) {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(statusColor)
-                            .frame(width: 8, height: 8)
-                        Text(backendManager.statusMessage)
-                            .font(.caption)
-                            .foregroundStyle(OverlayTheme.textSecondary)
-                    }
-
+                HStack(spacing: 8) {
+                    RWStatusPill(title: backendManager.statusMessage, color: statusColor)
                     if backendManager.isHealthy && backendManager.indexCount > 0 {
-                        Divider()
-                            .frame(height: 12)
-
-                        HStack(spacing: 4) {
-                            Image(systemName: "doc.text.fill")
-                                .font(.caption2)
-                            Text("\(backendManager.indexCount) chunks")
-                                .font(.caption)
-                        }
-                        .foregroundStyle(OverlayTheme.textSecondary)
+                        RWMetricChip(symbol: "doc.text", value: "\(backendManager.indexCount)", label: "chunks")
                     }
-
                     Spacer()
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(OverlayTheme.elevated)
-                .clipShape(RoundedRectangle(cornerRadius: 9))
             }
             .padding(.horizontal, RWTheme.pagePadding)
             .padding(.top, 24)
