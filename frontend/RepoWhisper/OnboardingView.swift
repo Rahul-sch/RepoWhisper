@@ -20,21 +20,19 @@ struct OnboardingView: View {
             VStack(spacing: 24) {
             // Header
             VStack(spacing: 12) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(OverlayTheme.accent)
-                    .frame(width: 52, height: 52)
-                    .background(OverlayTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 15))
+                RWBrandMark(size: 52)
 
-                Text("Welcome to RepoWhisper")
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(OverlayTheme.textPrimary)
+                Text("Meet your codebase")
+                    .font(.system(size: 34, weight: .semibold, design: .rounded))
+                    .foregroundStyle(RWTheme.text)
 
-                Text("Ask questions about your code without leaving your flow.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(OverlayTheme.textSecondary)
+                Text("Private, screen-aware code intelligence that stays on your Mac.")
+                    .font(.system(size: 14))
+                    .foregroundStyle(RWTheme.textMuted)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 390)
             }
-            .padding(.top, 32)
+            .padding(.top, 8)
 
             // Explanation
             VStack(alignment: .leading, spacing: 10) {
