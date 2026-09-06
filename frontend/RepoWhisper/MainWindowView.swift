@@ -273,8 +273,9 @@ struct SearchView: View {
                     }
                 }
             }
-            .padding(20)
-            .background(OverlayTheme.canvas)
+            .padding(.horizontal, RWTheme.pagePadding)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
 
             // Results or empty state
             if searchResults.isEmpty && !isSearching {
@@ -297,7 +298,8 @@ struct SearchView: View {
                             searchResultRow(result: result, index: index)
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, RWTheme.pagePadding)
+                    .padding(.bottom, RWTheme.pagePadding)
                 }
             }
         }
