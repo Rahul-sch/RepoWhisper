@@ -83,10 +83,11 @@ struct SettingsView: View {
                     }
 
                     // Diagnostics
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Diagnostics", systemImage: "wrench.and.screwdriver.fill")
-                            .font(.headline)
-
+                    RWSectionCard(
+                        title: "Diagnostics",
+                        subtitle: "Logs and privacy checks",
+                        symbol: "wrench.and.screwdriver"
+                    ) {
                         Button(action: openLogs) {
                             HStack {
                                 Image(systemName: "doc.text.fill")
@@ -126,10 +127,6 @@ struct SettingsView: View {
                         .buttonStyle(.plain)
                         .disabled(isRunningAudit)
                     }
-                    .padding()
-                    .background(OverlayTheme.elevated)
-                    .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(OverlayTheme.border))
 
                     // App Info
                     VStack(alignment: .leading, spacing: 12) {
