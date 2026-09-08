@@ -16,6 +16,12 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_gif_screenshot_is_rejected(self):
+        encoded = BytesIO()
+        Image.new("RGB", (2, 2)).save(encoded, format="GIF")
+        with self.assertRaises(ValueError):
+            process_screenshot(encoded.getvalue())
+
     def test_advisor_network_work_is_bounded(self):
         with patch.dict(os.environ, {"GROQ_API_KEY": "test", "REPOWHISPER_ADVISOR_PROVIDER": "groq"}):
             with patch("advise.openai.OpenAI") as client:
