@@ -151,7 +151,8 @@ class UnixSocketHTTPClient {
 
         let statusParts = statusLine.components(separatedBy: " ")
         guard statusParts.count >= 2,
-              let statusCode = Int(statusParts[1]) else {
+              ["HTTP/1.0", "HTTP/1.1"].contains(statusParts[0]),
+              let statusCode = Int(statusParts[1]), (100...599).contains(statusCode) else {
             throw HTTPError.invalidResponse
         }
 
@@ -160,6 +161,7 @@ class UnixSocketHTTPClient {
         for line in lines.dropFirst() {
             if let colon = line.firstIndex(of: ":") {
                 let key = String(line[..<colon]).lowercased()
+                guard headers[key] == nil else { throw HTTPError.invalidResponse }
                 let value = line[line.index(after: colon)...]
                     .trimmingCharacters(in: .whitespaces)
                 headers[key] = value
@@ -167,6 +169,9 @@ class UnixSocketHTTPClient {
         }
 
         let bodyData: Data
+        guard !(headers["transfer-encoding"] != nil && headers["content-length"] != nil) else {
+            throw HTTPError.invalidResponse
+        }
         if headers["transfer-encoding"]?.lowercased().contains("chunked") == true {
             bodyData = try decodeChunkedBody(rawBody)
         } else if let lengthText = headers["content-length"] {
