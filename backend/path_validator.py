@@ -102,6 +102,8 @@ class PathValidator:
         Returns:
             True if path is under an allowed root, False otherwise
         """
+        if not isinstance(path, str) or not path or "\x00" in path or not os.path.isabs(path):
+            return False
         abs_path = os.path.abspath(path)
 
         for allowed_root in self.allowed_paths:
