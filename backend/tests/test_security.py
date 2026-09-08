@@ -16,6 +16,10 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_duplicate_authentication_is_rejected(self):
+        response = self.client.get("/repos", headers=[("X-Auth-Token", "security-test-token"), ("X-Auth-Token", "security-test-token")])
+        self.assertEqual(response.status_code, 401)
+
     def setUp(self):
         main.app.state.auth_token = "security-test-token"
         self.client = TestClient(main.app)
