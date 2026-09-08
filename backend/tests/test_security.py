@@ -16,6 +16,10 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_negative_request_length_is_rejected(self):
+        response = self.client.post("/search", headers={**self.headers, "Content-Length": "-1"}, content=b"{}")
+        self.assertEqual(response.status_code, 400)
+
     def test_actual_oversize_is_rejected(self):
         response = self.client.post("/search", headers=self.headers, content=b"x" * (2 * 1024 * 1024 + 1))
         self.assertEqual(response.status_code, 413)
