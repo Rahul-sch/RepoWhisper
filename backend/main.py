@@ -107,7 +107,9 @@ async def auth_token_middleware(request: Request, call_next):
     token = request.headers.get("X-Auth-Token")
     expected_token = getattr(app.state, "auth_token", None)
 
-    if not token or not expected_token or not hmac.compare_digest(token, expected_token):
+    tokens = request.headers.getlist("X-Auth-Token")
+    if (len(tokens) != 1 or not token or not expected_token or len(token) > 512
+            or not hmac.compare_digest(token.encode("utf-8"), expected_token.encode("utf-8"))):
         return JSONResponse(
             status_code=401,
             content={"detail": "Unauthorized: Invalid or missing X-Auth-Token"}
