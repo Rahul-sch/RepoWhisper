@@ -16,6 +16,10 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_declared_oversize_is_rejected(self):
+        response = self.client.post("/search", headers={**self.headers, "Content-Length": "9999999"}, content=b"{}")
+        self.assertEqual(response.status_code, 413)
+
     def test_errors_are_not_cacheable(self):
         response = self.client.get("/repos")
         self.assertEqual(response.headers["cache-control"], "no-store")
