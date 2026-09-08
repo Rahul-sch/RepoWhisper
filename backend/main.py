@@ -124,14 +124,17 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error("unhandled_exception", error=str(exc), path=request.url.path)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Internal server error", "error": str(exc) if settings.debug else "An error occurred"}
+        content={"detail": "Internal server error"}
     )
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": jsonable_encoder(exc.errors())}
+        content={"detail": [
+            {"loc": error["loc"], "type": error["type"], "msg": "Invalid request value"}
+            for error in exc.errors()
+        ]}
     )
 
 
