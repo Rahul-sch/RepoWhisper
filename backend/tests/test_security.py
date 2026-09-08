@@ -16,6 +16,13 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_api_key_alone_cannot_enable_external_advice(self):
+        with patch.dict(os.environ, {"GROQ_API_KEY": "test", "REPOWHISPER_ADVISOR_PROVIDER": ""}):
+            with patch("advise.openai.OpenAI") as client:
+                advisor = BossModeAdvisor()
+        client.assert_not_called()
+        self.assertIsNone(advisor.client)
+
     def test_clear_index_requires_a_string_path(self):
         response = self.client.post("/clear_index", headers=self.headers, json={"repo_path": ["unexpected"]})
         self.assertEqual(response.status_code, 422)
