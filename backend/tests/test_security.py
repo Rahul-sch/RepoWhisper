@@ -16,6 +16,13 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_advisor_network_work_is_bounded(self):
+        with patch.dict(os.environ, {"GROQ_API_KEY": "test", "REPOWHISPER_ADVISOR_PROVIDER": "groq"}):
+            with patch("advise.openai.OpenAI") as client:
+                BossModeAdvisor()
+        self.assertEqual(client.call_args.kwargs["timeout"], 20.0)
+        self.assertEqual(client.call_args.kwargs["max_retries"], 0)
+
     def test_api_key_alone_cannot_enable_external_advice(self):
         with patch.dict(os.environ, {"GROQ_API_KEY": "test", "REPOWHISPER_ADVISOR_PROVIDER": ""}):
             with patch("advise.openai.OpenAI") as client:
