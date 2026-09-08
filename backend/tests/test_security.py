@@ -16,6 +16,10 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_clear_index_requires_a_string_path(self):
+        response = self.client.post("/clear_index", headers=self.headers, json={"repo_path": ["unexpected"]})
+        self.assertEqual(response.status_code, 422)
+
     def test_negative_request_length_is_rejected(self):
         response = self.client.post("/search", headers={**self.headers, "Content-Length": "-1"}, content=b"{}")
         self.assertEqual(response.status_code, 400)
