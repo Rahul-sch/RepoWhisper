@@ -147,8 +147,11 @@ def chunk_file(file_path: str, max_chunk_size: int = 1000) -> list[CodeChunk]:
         List of CodeChunk objects
     """
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
+        with open(file_path, 'rb') as f:
+            raw = f.read(get_settings().max_index_file_bytes + 1)
+        if len(raw) > get_settings().max_index_file_bytes or b'\x00' in raw:
+            return []
+        content = raw.decode('utf-8', errors='ignore')
     except Exception as e:
         print(f"Error reading {file_path}: {e}")
         return []
