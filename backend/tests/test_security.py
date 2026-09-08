@@ -16,6 +16,11 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_errors_are_not_cacheable(self):
+        response = self.client.get("/repos")
+        self.assertEqual(response.headers["cache-control"], "no-store")
+        self.assertEqual(response.headers["x-content-type-options"], "nosniff")
+
     def test_browser_origin_is_denied(self):
         response = self.client.get("/health", headers={"Origin": "https://example.com"})
         self.assertEqual(response.status_code, 403)
