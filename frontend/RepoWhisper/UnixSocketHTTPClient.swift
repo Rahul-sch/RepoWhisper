@@ -117,6 +117,9 @@ class UnixSocketHTTPClient {
             let bytesRead = recv(sock, &buffer, buffer.count, 0)
             if bytesRead == 0 { break }
             if bytesRead < 0 { throw HTTPError.receiveFailed }
+            guard responseData.count + bytesRead <= 64 * 1024 * 1024 else {
+                throw HTTPError.invalidResponse
+            }
             responseData.append(contentsOf: buffer[0..<bytesRead])
         }
 
@@ -166,8 +169,11 @@ class UnixSocketHTTPClient {
         let bodyData: Data
         if headers["transfer-encoding"]?.lowercased().contains("chunked") == true {
             bodyData = try decodeChunkedBody(rawBody)
-        } else if let lengthText = headers["content-length"],
-                  let expectedLength = Int(lengthText) {
+        } else if let lengthText = headers["content-length"] {
+            guard !lengthText.isEmpty, lengthText.allSatisfy({ $0.isASCII && $0.isNumber }),
+                  let expectedLength = Int(lengthText), expectedLength >= 0 else {
+                throw HTTPError.invalidResponse
+            }
             guard rawBody.count >= expectedLength else { throw HTTPError.incompleteResponse }
             bodyData = rawBody.prefix(expectedLength)
         } else {
