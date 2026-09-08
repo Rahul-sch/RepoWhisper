@@ -213,4 +213,4 @@ def process_screenshot(screenshot_data: bytes) -> str:
         return base64.b64encode(output.read()).decode("utf-8")
         
     except Exception as e:
-        raise ValueError(f"Failed to process screenshot: {str(e)}")
+        raise ValueError("Invalid or oversized JPEG/PNG screenshot") from e
