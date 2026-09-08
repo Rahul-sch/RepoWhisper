@@ -16,6 +16,12 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_chunker_rejects_binary_content(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = Path(root) / "sample.py"
+            source.write_bytes(b"print('hello')\x00secret")
+            self.assertEqual(chunk_file(str(source)), [])
+
     def test_invalid_paths_fail_closed(self):
         with tempfile.TemporaryDirectory() as root:
             allowlist = Path(root) / "allowlist.json"
