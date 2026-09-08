@@ -16,6 +16,14 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_invalid_paths_fail_closed(self):
+        with tempfile.TemporaryDirectory() as root:
+            allowlist = Path(root) / "allowlist.json"
+            allowlist.write_text(json.dumps([root]))
+            validator = PathValidator(str(allowlist))
+            for value in [None, 7, "", "relative", root + "/nul\x00"]:
+                self.assertFalse(validator.is_path_allowed(value))
+
     def test_relative_allowlist_root_is_rejected(self):
         with tempfile.TemporaryDirectory() as root:
             allowlist = Path(root) / "allowlist.json"
