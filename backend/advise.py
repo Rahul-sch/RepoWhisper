@@ -42,7 +42,9 @@ class BossModeAdvisor:
             # Groq uses OpenAI-compatible API, just change base_url
             self.client = openai.OpenAI(
                 base_url="https://api.groq.com/openai/v1",
-                api_key=api_key
+                api_key=api_key,
+                timeout=20.0,
+                max_retries=0,
             )
         else:
             self.client = None
