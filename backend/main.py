@@ -177,6 +177,10 @@ class IndexResponse(BaseModel):
     message: str
 
 
+class ClearIndexRequest(BaseModel):
+    repo_path: str = Field(min_length=1, max_length=4096)
+
+
 class SearchRequest(BaseModel):
     """Request model for searching the index."""
     query: str = Field(min_length=1, max_length=500)
@@ -422,7 +426,7 @@ async def index_repository(
 @limiter.limit("10/minute")
 async def clear_index(
     request: Request,
-    clear_request: dict,
+    clear_request: ClearIndexRequest,
     user_id: str = Depends(get_local_user_id)
 ):
     """
@@ -434,7 +438,7 @@ async def clear_index(
 
     try:
         # Extract repo_path from request
-        repo_path = clear_request.get("repo_path")
+        repo_path = clear_request.repo_path
         if not repo_path:
             raise HTTPException(status_code=400, detail="repo_path is required")
 
