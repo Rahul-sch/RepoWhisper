@@ -16,6 +16,17 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_revoked_search_results_are_filtered(self):
+        result = Mock(file_path="/revoked/file.py", content="PRIVATE", score=1.0, line_start=1, line_end=1)
+        store = Mock()
+        store.search.return_value = ([result], 1.0)
+        validator = Mock()
+        validator.is_path_allowed.return_value = False
+        with patch("main.get_vector_store", return_value=store), patch("main.get_path_validator", return_value=validator):
+            response = self.client.post("/search", headers=self.headers, json={"query": "private"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["results"], [])
+
     def test_chunker_rejects_fifo_without_blocking(self):
         with tempfile.TemporaryDirectory() as root:
             fifo = Path(root) / "pipe.py"
