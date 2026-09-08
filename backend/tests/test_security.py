@@ -16,6 +16,13 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_relative_allowlist_root_is_rejected(self):
+        with tempfile.TemporaryDirectory() as root:
+            allowlist = Path(root) / "allowlist.json"
+            allowlist.write_text(json.dumps(["relative/project"]))
+            with self.assertRaises(ValueError):
+                PathValidator(str(allowlist))
+
     def test_pixel_bomb_is_rejected_before_decode(self):
         fake = Mock(width=5000, height=5000, format="PNG")
         with patch("advise.Image.open", return_value=fake):
