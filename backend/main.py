@@ -41,6 +41,7 @@ from explain_visible import (
 )
 from path_validator import init_path_validator, get_path_validator
 import uuid
+from request_limits import RequestLimits
 
 
 # ============ Lifespan Management ============
@@ -87,6 +88,7 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan
 )
+app.add_middleware(RequestLimits)
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
