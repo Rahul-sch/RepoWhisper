@@ -16,6 +16,13 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_pixel_bomb_is_rejected_before_decode(self):
+        fake = Mock(width=5000, height=5000, format="PNG")
+        with patch("advise.Image.open", return_value=fake):
+            with self.assertRaises(ValueError):
+                process_screenshot(b"fake")
+        fake.thumbnail.assert_not_called()
+
     def test_tall_screenshot_is_bounded(self):
         encoded = BytesIO()
         Image.new("RGB", (10, 3000)).save(encoded, format="PNG")
