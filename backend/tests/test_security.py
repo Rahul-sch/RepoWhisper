@@ -16,6 +16,24 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_streamed_body_without_length_is_bounded(self):
+        import asyncio
+        from request_limits import RequestLimits
+        from unittest.mock import AsyncMock
+        endpoint = AsyncMock()
+        middleware = RequestLimits(endpoint)
+        middleware.LIMITS = {"/search": 4}
+        messages = iter([
+            {"type": "http.request", "body": b"abc", "more_body": True},
+            {"type": "http.request", "body": b"def", "more_body": False},
+        ])
+        async def receive():
+            return next(messages)
+        send = AsyncMock()
+        asyncio.run(middleware({"type": "http", "path": "/search", "headers": []}, receive, send))
+        endpoint.assert_not_called()
+        self.assertEqual(send.call_args_list[0].args[0]["status"], 413)
+
     def test_revoked_search_results_are_filtered(self):
         result = Mock(file_path="/revoked/file.py", content="PRIVATE", score=1.0, line_start=1, line_end=1)
         store = Mock()
