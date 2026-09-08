@@ -16,6 +16,12 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_tall_screenshot_is_bounded(self):
+        encoded = BytesIO()
+        Image.new("RGB", (10, 3000)).save(encoded, format="PNG")
+        result = Image.open(BytesIO(base64.b64decode(process_screenshot(encoded.getvalue()))))
+        self.assertLessEqual(max(result.size), 1024)
+
     def test_gif_screenshot_is_rejected(self):
         encoded = BytesIO()
         Image.new("RGB", (2, 2)).save(encoded, format="GIF")
