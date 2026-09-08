@@ -16,6 +16,12 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_chunker_rejects_fifo_without_blocking(self):
+        with tempfile.TemporaryDirectory() as root:
+            fifo = Path(root) / "pipe.py"
+            os.mkfifo(fifo)
+            self.assertEqual(chunk_file(str(fifo)), [])
+
     def test_chunker_rejects_symlink_substitution(self):
         with tempfile.TemporaryDirectory() as root:
             source = Path(root) / "source.py"
