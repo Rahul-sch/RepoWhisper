@@ -16,6 +16,10 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_oversized_authentication_is_rejected(self):
+        response = self.client.get("/repos", headers={"X-Auth-Token": "x" * 513})
+        self.assertEqual(response.status_code, 401)
+
     def test_duplicate_authentication_is_rejected(self):
         response = self.client.get("/repos", headers=[("X-Auth-Token", "security-test-token"), ("X-Auth-Token", "security-test-token")])
         self.assertEqual(response.status_code, 401)
