@@ -16,6 +16,14 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_chunker_rejects_symlink_substitution(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = Path(root) / "source.py"
+            source.write_text("private = 1")
+            link = Path(root) / "link.py"
+            link.symlink_to(source)
+            self.assertEqual(chunk_file(str(link)), [])
+
     def test_chunker_rejects_binary_content(self):
         with tempfile.TemporaryDirectory() as root:
             source = Path(root) / "sample.py"
