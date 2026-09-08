@@ -26,7 +26,7 @@ struct OnboardingView: View {
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
                     .foregroundStyle(RWTheme.text)
 
-                Text("Private, screen-aware code intelligence that stays on your Mac.")
+                Text("Code intelligence with local indexing and optional AI providers.")
                     .font(.system(size: 14))
                     .foregroundStyle(RWTheme.textMuted)
                     .multilineTextAlignment(.center)
@@ -39,7 +39,7 @@ struct OnboardingView: View {
                 FeatureRow(
                     icon: "lock.shield",
                     title: "Privacy First",
-                    description: "All processing happens locally. Your code never leaves your Mac."
+                    description: "Indexing stays on your Mac. Explicitly configured AI providers receive the context used for answers."
                 )
 
                 FeatureRow(

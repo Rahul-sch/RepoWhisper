@@ -71,7 +71,7 @@ struct MainWindowView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 9))
-                    Text("Local only")
+                    Text("Local backend")
                         .font(.system(size: 10, weight: .medium))
                     Spacer()
                     RWKeycap(keys: "⌘⇧R")
