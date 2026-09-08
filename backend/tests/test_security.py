@@ -16,6 +16,10 @@ from indexer import chunk_file
 
 
 class SecurityTests(unittest.TestCase):
+    def test_browser_origin_is_denied(self):
+        response = self.client.get("/health", headers={"Origin": "https://example.com"})
+        self.assertEqual(response.status_code, 403)
+
     def test_oversized_authentication_is_rejected(self):
         response = self.client.get("/repos", headers={"X-Auth-Token": "x" * 513})
         self.assertEqual(response.status_code, 401)
