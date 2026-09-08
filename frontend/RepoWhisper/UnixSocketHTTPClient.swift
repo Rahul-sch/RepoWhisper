@@ -197,7 +197,9 @@ class UnixSocketHTTPClient {
             guard let sizeLineRange = data[cursor...].range(of: lineEnding),
                   let sizeLine = String(data: data[cursor..<sizeLineRange.lowerBound], encoding: .utf8),
                   let sizeText = sizeLine.split(separator: ";", maxSplits: 1).first,
-                  let size = Int(sizeText.trimmingCharacters(in: .whitespaces), radix: 16) else {
+                  sizeText.allSatisfy({ $0.isASCII && $0.isHexDigit }),
+                  let size = Int(sizeText, radix: 16), size >= 0,
+                  size <= 64 * 1024 * 1024 else {
                 throw HTTPError.invalidResponse
             }
             cursor = sizeLineRange.upperBound
