@@ -518,7 +518,7 @@ async def search_code(
                     line_start=r.line_start,
                     line_end=r.line_end
                 )
-                for r in results
+                for r in results if get_path_validator().is_path_allowed(r.file_path)
             ],
             query=search_request.query,
             latency_ms=latency_ms
