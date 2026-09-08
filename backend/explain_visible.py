@@ -145,6 +145,8 @@ class GroqExplanationProvider:
         self.client = openai.OpenAI(
             base_url="https://api.groq.com/openai/v1",
             api_key=api_key,
+            timeout=20.0,
+            max_retries=0,
         )
         self.model = model
 
