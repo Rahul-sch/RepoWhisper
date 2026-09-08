@@ -97,6 +97,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 @app.middleware("http")
 async def auth_token_middleware(request: Request, call_next):
     """Validate X-Auth-Token header on all requests (except /health)."""
+    if request.headers.get("origin") is not None:
+        return JSONResponse(status_code=403, content={"detail": "Browser requests are not supported"})
     # Allow /health without auth for monitoring
     if request.url.path == "/health":
         return await call_next(request)
