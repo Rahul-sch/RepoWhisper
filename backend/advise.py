@@ -38,7 +38,7 @@ class BossModeAdvisor:
         self.settings = get_settings()
         # Initialize Groq client (OpenAI-compatible API)
         api_key = os.getenv("GROQ_API_KEY", "")
-        if api_key:
+        if api_key and os.getenv("REPOWHISPER_ADVISOR_PROVIDER", "").strip().lower() == "groq":
             # Groq uses OpenAI-compatible API, just change base_url
             self.client = openai.OpenAI(
                 base_url="https://api.groq.com/openai/v1",
@@ -210,4 +210,3 @@ def process_screenshot(screenshot_data: bytes) -> str:
         
     except Exception as e:
         raise ValueError(f"Failed to process screenshot: {str(e)}")
-
