@@ -10,6 +10,7 @@ from typing import Generator
 from dataclasses import dataclass
 import fnmatch
 import re
+import stat
 
 from config import get_settings, IndexMode
 
@@ -147,7 +148,10 @@ def chunk_file(file_path: str, max_chunk_size: int = 1000) -> list[CodeChunk]:
         List of CodeChunk objects
     """
     try:
-        with open(file_path, 'rb') as f:
+        descriptor = os.open(file_path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(descriptor, 'rb') as f:
+            if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+                return []
             raw = f.read(get_settings().max_index_file_bytes + 1)
         if len(raw) > get_settings().max_index_file_bytes or b'\x00' in raw:
             return []
