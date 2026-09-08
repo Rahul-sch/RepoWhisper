@@ -54,9 +54,14 @@ class PathValidator:
 
     def _reload(self, require_nonempty: bool = False) -> None:
         with open(self.allowlist_file, "r", encoding="utf-8") as handle:
-            decoded = json.load(handle)
+            raw = handle.read(1024 * 1024 + 1)
+            if len(raw) > 1024 * 1024:
+                raise ValueError("Allowlist exceeds size limit")
+            decoded = json.loads(raw)
         if not isinstance(decoded, list) or not all(isinstance(path, str) for path in decoded):
             raise ValueError("Allowlist must be a JSON array of paths")
+        if any(not os.path.isabs(path) or "\x00" in path for path in decoded):
+            raise ValueError("Allowlist entries must be absolute paths without NUL bytes")
         normalized = [os.path.abspath(path) for path in decoded if path.strip()]
         if require_nonempty and not normalized:
             raise ValueError(
