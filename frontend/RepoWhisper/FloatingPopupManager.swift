@@ -181,7 +181,7 @@ class FloatingPopupManager: ObservableObject {
         }
 
         saveSearchHistoryLocal()
-        print("📝 [POPUP] Added to history: '\(query)' (\(resultsCount) results)")
+        print("📝 [POPUP] Added history entry (\(resultsCount) results)")
     }
 
     /// Clear all search history
@@ -209,7 +209,7 @@ class FloatingPopupManager: ObservableObject {
     
     /// Show the floating popup with search results
     func showPopup(results: [SearchResultItem], query: String, latency: Double, isRecording: Bool) {
-        print("🎯 [POPUP] showPopup called with \(results.count) results, query: '\(query)'")
+        print("🎯 [POPUP] showPopup called with \(results.count) results")
 
         // Add to search history
         addToSearchHistory(query: query, resultsCount: results.count)

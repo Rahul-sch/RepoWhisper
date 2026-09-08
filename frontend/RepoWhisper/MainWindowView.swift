@@ -475,7 +475,7 @@ struct SearchView: View {
     private func performSearch() {
         guard !searchQuery.isEmpty else { return }
 
-        print("🔍 [SEARCH] Starting search for: '\(searchQuery)'")
+        print("🔍 [SEARCH] Starting search")
         isSearching = true
         searchResults = []
         searchError = nil
@@ -558,7 +558,7 @@ struct SearchView: View {
                     contentType: contentType
                 )
 
-                print("✅ [AUDIO] Transcription complete: \(result.text)")
+                print("✅ [AUDIO] Transcription complete")
 
                 // Fill search query and trigger search
                 await MainActor.run {
