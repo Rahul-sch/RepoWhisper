@@ -194,13 +194,15 @@ def process_screenshot(screenshot_data: bytes) -> str:
     try:
         # Open and validate image
         image = Image.open(BytesIO(screenshot_data))
+        if image.width * image.height > 16_000_000:
+            image.close()
+            raise ValueError("Screenshot exceeds the pixel budget")
+        if image.format not in {"JPEG", "PNG"}:
+            image.close()
+            raise ValueError("Screenshot must be JPEG or PNG")
         
         # Resize if too large (max 1024px width for API efficiency)
-        max_width = 1024
-        if image.width > max_width:
-            ratio = max_width / image.width
-            new_height = int(image.height * ratio)
-            image = image.resize((max_width, new_height), Image.Resampling.LANCZOS)
+        image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
         
         # Convert to JPEG for smaller size
         output = BytesIO()
